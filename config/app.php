@@ -69,6 +69,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Clinic Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Data is stored in UTC. The clinic works in this timezone: working hours
+    | are entered in it, and dates are shown in it. Convert only at the edges.
+    |
+    */
+
+    'clinic_timezone' => 'Asia/Manila',
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

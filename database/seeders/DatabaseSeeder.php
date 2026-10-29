@@ -1,25 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+// No WithoutModelEvents here: HasUlids fills `appointments.ulid` in a `creating` event,
+// so seeding with events off would leave seeded appointments without a ULID.
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
-     * Seed the application's database.
+     * Seed the application's database with a fake clinic. Fake data only.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            ServiceSeeder::class,
+            UserSeeder::class,
+            DoctorSeeder::class,
         ]);
     }
 }
