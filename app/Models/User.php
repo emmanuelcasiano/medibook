@@ -60,6 +60,43 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    public function isPatient(): bool
+    {
+        return $this->role === Role::Patient;
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->role === Role::Staff;
+    }
+
+    public function isDoctor(): bool
+    {
+        return $this->role === Role::Doctor;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::Admin;
+    }
+
+    /** True when this role must have 2FA on, and it is not on yet. */
+    public function needsTwoFactorSetup(): bool
+    {
+        return $this->role->requiresTwoFactor() && ! $this->hasEnabledTwoFactorAuthentication();
+    }
+
+    /**
+     * The id of this user's doctor profile, or null for non-doctors.
+     * Policies compare ids instead of reading the `doctor` relation, because lazy loading throws in strict mode.
+     */
+    public function doctorId(): ?int
+    {
+        return once(fn (): ?int => $this->isDoctor()
+            ? Doctor::query()->where('user_id', $this->id)->value('id')
+            : null);
+    }
+
     /**
      * The doctor profile, only for users with the doctor role.
      *
