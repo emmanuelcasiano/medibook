@@ -1,9 +1,15 @@
 <?php
 
 use App\Enums\Role;
+use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\Service;
+use App\Models\TimeOff;
 use App\Models\User;
+use App\Models\WorkingHour;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /*
@@ -70,4 +76,58 @@ function userWithRole(Role $role, bool $twoFactor = true): User
     }
 
     return $user;
+}
+
+/** A clinic date (Asia/Manila) as the slot Actions receive it. */
+function slotDay(string $date): CarbonImmutable
+{
+    return CarbonImmutable::parse($date, 'Asia/Manila');
+}
+
+/**
+ * A doctor who offers $service and works the given ranges.
+ *
+ * @param  list<array{int, string, string}>  $ranges  [weekday, 'H:i' start, 'H:i' end], clinic time.
+ */
+function doctorWorking(Service $service, array $ranges): Doctor
+{
+    $doctor = Doctor::factory()->create();
+    $doctor->services()->attach($service);
+
+    foreach ($ranges as [$weekday, $startsAt, $endsAt]) {
+        WorkingHour::factory()->for($doctor)->onWeekday($weekday)->between($startsAt, $endsAt)->create();
+    }
+
+    return $doctor;
+}
+
+/**
+ * The slots as clinic-time strings, so a test reads like the doctor's day.
+ *
+ * @param  Collection<int, CarbonImmutable>  $slots
+ * @return list<string>
+ */
+function slotTimes(Collection $slots, string $format = 'H:i'): array
+{
+    return $slots->map(fn (CarbonImmutable $slot): string => $slot->setTimezone('Asia/Manila')->format($format))->values()->all();
+}
+
+/**
+ * A booking for $doctor starting at a clinic time. $state is an AppointmentFactory state
+ * (booked, checkedIn, completed, cancelled, noShow). Its end and buffer come from $service.
+ */
+function bookingAt(Doctor $doctor, Service $service, string $startsAt, string $state = 'booked'): Appointment
+{
+    return Appointment::factory()->for($doctor)->for($service)->{$state}()->create([
+        'starts_at' => CarbonImmutable::parse($startsAt, 'Asia/Manila')->utc(),
+    ]);
+}
+
+/** Time off for $doctor between two clinic times. */
+function slotTimeOff(Doctor $doctor, string $startsAt, string $endsAt): TimeOff
+{
+    return TimeOff::factory()->for($doctor)->create([
+        'starts_at' => CarbonImmutable::parse($startsAt, 'Asia/Manila')->utc(),
+        'ends_at' => CarbonImmutable::parse($endsAt, 'Asia/Manila')->utc(),
+    ]);
 }

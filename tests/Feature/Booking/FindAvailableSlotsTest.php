@@ -3,11 +3,8 @@
 declare(strict_types=1);
 
 use App\Actions\Booking\FindAvailableSlots;
-use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Service;
-use App\Models\TimeOff;
-use App\Models\WorkingHour;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -23,63 +20,11 @@ beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-30 09:00', 'Asia/Manila'));
 });
 
-/** A clinic date (Asia/Manila) as the Action receives it. */
-function slotDay(string $date): CarbonImmutable
-{
-    return CarbonImmutable::parse($date, 'Asia/Manila');
-}
-
-/**
- * A doctor who offers $service and works the given ranges.
- *
- * @param  list<array{int, string, string}>  $ranges  [weekday, 'H:i' start, 'H:i' end], clinic time.
- */
-function doctorWorking(Service $service, array $ranges): Doctor
-{
-    $doctor = Doctor::factory()->create();
-    $doctor->services()->attach($service);
-
-    foreach ($ranges as [$weekday, $startsAt, $endsAt]) {
-        WorkingHour::factory()->for($doctor)->onWeekday($weekday)->between($startsAt, $endsAt)->create();
-    }
-
-    return $doctor;
-}
-
-/**
- * The slots as clinic-time strings, so a test reads like the doctor's day.
- *
- * @param  Collection<int, CarbonImmutable>  $slots
- * @return list<string>
- */
-function slotTimes(Collection $slots, string $format = 'H:i'): array
-{
-    return $slots->map(fn (CarbonImmutable $slot): string => $slot->setTimezone('Asia/Manila')->format($format))->values()->all();
-}
+// slotDay(), doctorWorking(), slotTimes(), bookingAt() and slotTimeOff() are shared helpers in tests/Pest.php.
 
 function findSlots(Service $service, Doctor $doctor, string $from, ?string $to = null): Collection
 {
     return app(FindAvailableSlots::class)->handle($service, $doctor, slotDay($from), slotDay($to ?? $from));
-}
-
-/**
- * A booking for $doctor starting at a clinic time. $state is an AppointmentFactory state
- * (booked, checkedIn, completed, cancelled, noShow). Its end and buffer come from $service.
- */
-function bookingAt(Doctor $doctor, Service $service, string $startsAt, string $state = 'booked'): Appointment
-{
-    return Appointment::factory()->for($doctor)->for($service)->{$state}()->create([
-        'starts_at' => CarbonImmutable::parse($startsAt, 'Asia/Manila')->utc(),
-    ]);
-}
-
-/** Time off for $doctor between two clinic times. */
-function slotTimeOff(Doctor $doctor, string $startsAt, string $endsAt): TimeOff
-{
-    return TimeOff::factory()->for($doctor)->create([
-        'starts_at' => CarbonImmutable::parse($startsAt, 'Asia/Manila')->utc(),
-        'ends_at' => CarbonImmutable::parse($endsAt, 'Asia/Manila')->utc(),
-    ]);
 }
 
 it('lists a start time every 15 minutes across a working range', function () {
