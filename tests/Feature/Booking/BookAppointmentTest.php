@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Service;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -41,9 +42,21 @@ function bookingErrors(Closure $attempt): array
     throw new RuntimeException('The booking was expected to fail, but it went through.');
 }
 
+/** A booking of $patient's own, for the patient limit tests. $state is an AppointmentFactory state. */
+function patientBookingAt(User $patient, Doctor $doctor, Service $service, string $startsAt, string $state = 'booked'): Appointment
+{
+    return Appointment::factory()->for($doctor)->for($service)->for($patient, 'patient')->{$state}()->create([
+        'starts_at' => slotDay($startsAt)->utc(),
+    ]);
+}
+
 const SLOT_TAKEN = 'This time is no longer free. Please pick another slot.';
+const PATIENT_LIMIT = 'You can have at most 3 upcoming appointments. Cancel one before booking another.';
+const PATIENT_BUSY = 'You already have an appointment at this time. Please pick another slot.';
 
 beforeEach(function () {
+    // Fixed "now" (Friday 30 October 2026, 09:00 in Manila), so "upcoming" and "already started" are not left to the real clock.
+    $this->travelTo(CarbonImmutable::parse('2026-10-30 09:00', 'Asia/Manila'));
     $this->service = Service::factory()->lasting(30, 15)->create();
     $this->doctor = doctorWorking($this->service, []);
     $this->patient = User::factory()->patient()->create();
@@ -182,6 +195,133 @@ it('reads the start time as the instant it is, whatever timezone it comes in', f
         $this->service,
         slotDay('2026-11-02 09:15')->setTimezone('Europe/Paris'),
     )))->toBe(['starts_at' => [SLOT_TAKEN]]);
+});
+
+it('lets a patient with two upcoming bookings book a third', function () {
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-03 09:00');
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-04 09:00');
+
+    $appointment = bookAt($this->patient, $this->doctor, $this->service, '2026-11-05 09:00');
+
+    expect($appointment->exists)->toBeTrue()
+        ->and(Appointment::query()->where('patient_id', $this->patient->id)->count())->toBe(3);
+});
+
+it('refuses a fourth upcoming booking and writes nothing', function (string $state) {
+    foreach (['2026-11-03', '2026-11-04', '2026-11-05'] as $day) {
+        patientBookingAt($this->patient, $this->doctor, $this->service, "{$day} 09:00", $state);
+    }
+
+    expect(bookingErrors(fn () => bookAt($this->patient, $this->doctor, $this->service, '2026-11-06 09:00')))
+        ->toBe(['starts_at' => [PATIENT_LIMIT]])
+        ->and(Appointment::query()->count())->toBe(3);
+})->with(['booked', 'checkedIn', 'completed']);
+
+it('does not count a booking that is cancelled, a no-show or already started', function (string $state, string $startsAt) {
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-03 09:00');
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-04 09:00');
+    patientBookingAt($this->patient, $this->doctor, $this->service, $startsAt, $state);
+
+    expect(bookAt($this->patient, $this->doctor, $this->service, '2026-11-05 09:00')->exists)->toBeTrue();
+})->with([
+    'cancelled' => ['cancelled', '2026-11-06 09:00'],
+    'no-show' => ['noShow', '2026-11-06 09:00'],
+    'started 10 minutes ago' => ['booked', '2026-10-30 08:50'],
+    'completed yesterday' => ['completed', '2026-10-29 09:00'],
+]);
+
+// "Now" is 09:00 in Manila. A booking that starts at 09:00 sharp has started, so it no longer counts.
+it('counts a booking from one minute after now, and not one that starts exactly now', function (string $startsAt, bool $counts) {
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-03 09:00');
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-04 09:00');
+    patientBookingAt($this->patient, $this->doctor, $this->service, $startsAt);
+
+    if ($counts) {
+        expect(bookingErrors(fn () => bookAt($this->patient, $this->doctor, $this->service, '2026-11-05 09:00')))
+            ->toBe(['starts_at' => [PATIENT_LIMIT]]);
+
+        return;
+    }
+
+    expect(bookAt($this->patient, $this->doctor, $this->service, '2026-11-05 09:00')->exists)->toBeTrue();
+})->with([
+    'starts exactly now' => ['2026-10-30 09:00', false],
+    'starts one minute from now' => ['2026-10-30 09:01', true],
+]);
+
+it('does not count the bookings of other patients', function () {
+    $other = User::factory()->patient()->create();
+
+    foreach (['2026-11-03', '2026-11-04', '2026-11-05'] as $day) {
+        patientBookingAt($other, $this->doctor, $this->service, "{$day} 09:00");
+    }
+
+    expect(bookAt($this->patient, $this->doctor, $this->service, '2026-11-06 09:00')->exists)->toBeTrue();
+});
+
+it('refuses a time that overlaps the patient own booking with another doctor, and allows one that touches it', function (string $time, bool $works) {
+    $secondDoctor = doctorWorking($this->service, []);
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-02 09:00');
+
+    if ($works) {
+        expect(bookAt($this->patient, $secondDoctor, $this->service, "2026-11-02 {$time}")->exists)->toBeTrue();
+
+        return;
+    }
+
+    expect(bookingErrors(fn () => bookAt($this->patient, $secondDoctor, $this->service, "2026-11-02 {$time}")))
+        ->toBe(['starts_at' => [PATIENT_BUSY]])
+        ->and(Appointment::query()->count())->toBe(1);
+})->with([
+    'same start' => ['09:00', false],
+    'starts inside the visit' => ['09:15', false],
+    'ends inside the visit' => ['08:45', false],
+    // The 15-minute buffer is the first doctor's, so it does not stop the patient from walking to another doctor.
+    'starts right when the visit ends' => ['09:30', true],
+    'ends right when the visit starts' => ['08:30', true],
+]);
+
+it('does not let a cancelled booking of the patient block the time', function () {
+    $secondDoctor = doctorWorking($this->service, []);
+    patientBookingAt($this->patient, $this->doctor, $this->service, '2026-11-02 09:00', 'cancelled');
+
+    expect(bookAt($this->patient, $secondDoctor, $this->service, '2026-11-02 09:00')->exists)->toBeTrue();
+});
+
+it('does not let another patient booking at the same time block this patient with another doctor', function () {
+    $secondDoctor = doctorWorking($this->service, []);
+    bookAt(User::factory()->patient()->create(), $this->doctor, $this->service, '2026-11-02 09:00');
+
+    expect(bookAt($this->patient, $secondDoctor, $this->service, '2026-11-02 09:00')->exists)->toBeTrue();
+});
+
+it('says the doctor is busy, not the patient, when only the doctor clashes', function () {
+    bookAt(User::factory()->patient()->create(), $this->doctor, $this->service, '2026-11-02 09:00');
+
+    expect(bookingErrors(fn () => bookAt($this->patient, $this->doctor, $this->service, '2026-11-02 09:30')))
+        ->toBe(['starts_at' => [SLOT_TAKEN]]);
+});
+
+// The limits only hold if two requests from the same patient can't both pass the count. One PHP process can't truly
+// race itself, so this checks the patient row is locked inside the transaction, and before the doctor row.
+it('locks the patient row before the doctor row, inside the transaction', function () {
+    $locks = [];
+    DB::listen(function ($query) use (&$locks): void {
+        if (! str_contains($query->sql, 'for update')) {
+            return;
+        }
+
+        foreach (['users', 'doctors'] as $table) {
+            if (str_contains($query->sql, "from `{$table}`")) {
+                $locks[] = [$table, DB::transactionLevel()];
+            }
+        }
+    });
+
+    bookAt($this->patient, $this->doctor, $this->service, '2026-11-02 09:00');
+
+    expect(array_column($locks, 0))->toBe(['users', 'doctors'])
+        ->and($locks[0][1])->toBeGreaterThan(1);
 });
 
 // Guard 1: one PHP process can't truly race itself, so this checks the lock is asked for, on the doctor's row,

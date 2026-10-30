@@ -15,6 +15,9 @@ use Illuminate\Validation\ValidationException;
 
 final class BookAppointment
 {
+    /** PROJECT.md F3: how many future active bookings one patient may hold. */
+    private const int MAX_UPCOMING_PER_PATIENT = 3;
+
     /**
      * Book $service with $doctor for $patient at $startsAt. This is the last line of defence against a double
      * booking (PROJECT.md F4): the slot the user picked may have been taken since the slot list was built.
@@ -24,11 +27,15 @@ final class BookAppointment
      * 2. the overlap check below, which counts the buffer of both visits;
      * 3. the unique index on (doctor_id, starts_at, active_key), which refuses the same start twice.
      *
-     * The caller has already authorized this and chosen a slot from FindAvailableSlots. This Action checks the
-     * service and doctor pair and the overlap; it does not re-check working hours, time off or the lead time,
-     * and the patient limits come in step 5.2.
+     * The patient has limits too (PROJECT.md F3): at most 3 future active bookings, and no two of their own
+     * bookings overlapping, even with different doctors.
      *
-     * @throws ValidationException When the service is switched off, the doctor does not offer it, or the time is taken.
+     * The caller has already authorized this and chosen a slot from FindAvailableSlots. This Action checks the
+     * service and doctor pair, the patient limits and the overlap; it does not re-check working hours, time off
+     * or the lead time.
+     *
+     * @throws ValidationException When the service is switched off, the doctor does not offer it, the patient is
+     *                             over a limit, or the time is taken.
      */
     public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt): Appointment
     {
@@ -40,6 +47,11 @@ final class BookAppointment
         $blockedUntil = $endsAt->addMinutes($service->buffer_minutes);
 
         return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil): Appointment {
+            // Lock the patient row first. The doctor lock below can't stop one patient from booking two different
+            // doctors at the same moment, so without this both requests could pass the limit checks. Always patient
+            // then doctor, in that order, so two transactions can never wait on each other.
+            User::query()->whereKey($patient->id)->lockForUpdate()->first();
+
             // Lock the doctor row. A second booking for this doctor waits here until this transaction ends,
             // so two requests can't both pass the overlap check below.
             Doctor::query()->whereKey($doctor->id)->lockForUpdate()->first();
@@ -52,6 +64,32 @@ final class BookAppointment
             // A wrong doctor and service pair can't be booked, even if the caller skipped the slot finder.
             if (! $doctor->services()->whereKey($service->id)->exists()) {
                 throw ValidationException::withMessages(['doctor_id' => 'This doctor does not offer that service.']);
+            }
+
+            // A booking that has already started no longer counts as upcoming.
+            $upcoming = Appointment::query()
+                ->where('patient_id', $patient->id)
+                ->active()
+                ->where('starts_at', '>', CarbonImmutable::now())
+                ->count();
+
+            if ($upcoming >= self::MAX_UPCOMING_PER_PATIENT) {
+                throw ValidationException::withMessages([
+                    'starts_at' => sprintf('You can have at most %d upcoming appointments. Cancel one before booking another.', self::MAX_UPCOMING_PER_PATIENT),
+                ]);
+            }
+
+            // The patient can't be in two places at once. This compares the visits only: the buffer is the doctor's
+            // clean-up time, so a patient may go from one visit straight to the next.
+            $ownClash = Appointment::query()
+                ->where('patient_id', $patient->id)
+                ->active()
+                ->where('starts_at', '<', $endsAt)
+                ->where('ends_at', '>', $startsAt)
+                ->exists();
+
+            if ($ownClash) {
+                throw ValidationException::withMessages(['starts_at' => 'You already have an appointment at this time. Please pick another slot.']);
             }
 
             // Overlap test: an active booking clashes when it starts before the new one is free again
