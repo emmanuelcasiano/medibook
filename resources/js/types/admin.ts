@@ -17,6 +17,29 @@ export type RoleOption = {
     label: string;
 };
 
+/** One row of the admin services list, as the page receives it. */
+export type AdminServiceListItem = {
+    id: number;
+    name: string;
+    description: string | null;
+    durationMinutes: number;
+    bufferMinutes: number;
+    isActive: boolean;
+    doctorNames: string[];
+    appointmentsCount: number;
+    can: { update: boolean; delete: boolean };
+};
+
+/** The fields of the service form. */
+export type AdminServiceFormValues = {
+    id: number;
+    name: string;
+    description: string | null;
+    durationMinutes: number;
+    bufferMinutes: number;
+    isActive: boolean;
+};
+
 /** The parts of Laravel's paginator that the pages use. */
 export type Paginated<T> = {
     data: T[];

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,9 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::get('users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('users', [UserController::class, 'store'])->middleware('throttle:20,1')->name('users.store');
         Route::patch('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+
+        Route::resource('services', ServiceController::class)->except(['show', 'store']);
+        Route::post('services', [ServiceController::class, 'store'])->middleware('throttle:20,1')->name('services.store');
     });
 
     // The screens for these groups come on later days (booking Day 6, schedule Day 7, doctor view Day 10).
