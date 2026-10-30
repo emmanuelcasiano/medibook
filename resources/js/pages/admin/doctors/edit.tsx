@@ -1,5 +1,6 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
+import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import DoctorForm from '@/components/admin/doctor-form';
 import Heading from '@/components/heading';
 import type { AdminDoctorFormValues, AdminDoctorServiceOption } from '@/types';
@@ -27,7 +28,18 @@ export default function AdminDoctorsEdit({ doctor, services }: Props) {
                     services={services}
                 />
 
-                {/* Working hours (step 3.3) and time off (step 3.4) are added to this page next. */}
+                <p className="text-sm text-muted-foreground">
+                    The times this doctor sees patients are set on the{' '}
+                    <Link
+                        href={WorkingHourController.edit(doctor.id)}
+                        className="font-medium underline underline-offset-4"
+                    >
+                        working hours
+                    </Link>{' '}
+                    page.
+                </p>
+
+                {/* Time off (step 3.4) is added to this page next. */}
             </div>
         </>
     );

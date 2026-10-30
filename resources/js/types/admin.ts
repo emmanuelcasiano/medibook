@@ -67,6 +67,19 @@ export type AdminDoctorServiceOption = {
     isActive: boolean;
 };
 
+/** One working range as the page receives it. `weekday` is 0 (Sunday) to 6 (Saturday). Times are clinic-local `HH:mm`. */
+export type AdminWorkingHourRange = {
+    weekday: number;
+    startsAt: string;
+    endsAt: string;
+};
+
+/** The doctor the working hours page is about. */
+export type AdminWorkingHoursDoctor = {
+    id: number;
+    name: string;
+};
+
 /** The parts of Laravel's paginator that the pages use. */
 export type Paginated<T> = {
     data: T[];

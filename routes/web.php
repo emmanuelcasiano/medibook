@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DoctorController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WorkingHourController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -23,6 +24,10 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
 
         // No create or delete: a doctor row is made with the doctor's account (users.store).
         Route::resource('doctors', DoctorController::class)->only(['index', 'edit', 'update']);
+
+        // The weekly schedule is saved as a whole: the form sends every range and the old ones are replaced.
+        Route::get('doctors/{doctor}/working-hours', [WorkingHourController::class, 'edit'])->name('doctors.working-hours.edit');
+        Route::put('doctors/{doctor}/working-hours', [WorkingHourController::class, 'update'])->name('doctors.working-hours.update');
     });
 
     // The screens for these groups come on later days (booking Day 6, schedule Day 7, doctor view Day 10).

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
+import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ export default function AdminDoctorsIndex({ doctors }: Props) {
             <div className="space-y-6 p-4">
                 <Heading
                     title="Doctors"
-                    description="Set each doctor's specialty, bio and services. A new doctor is added on the Users page."
+                    description="Set each doctor's specialty, bio, services and working hours. A new doctor is added on the Users page."
                 />
 
                 <div className="overflow-x-auto rounded-xl border">
@@ -79,23 +80,42 @@ export default function AdminDoctorsIndex({ doctors }: Props) {
                                     <td className="px-4 py-3">
                                         <div className="flex justify-end gap-2">
                                             {doctor.can.update && (
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    size="sm"
-                                                >
-                                                    <Link
-                                                        href={DoctorController.edit(
-                                                            doctor.id,
-                                                        )}
+                                                <>
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
                                                     >
-                                                        Edit
-                                                        <span className="sr-only">
-                                                            {' '}
-                                                            {doctor.name}
-                                                        </span>
-                                                    </Link>
-                                                </Button>
+                                                        <Link
+                                                            href={WorkingHourController.edit(
+                                                                doctor.id,
+                                                            )}
+                                                        >
+                                                            Working hours
+                                                            <span className="sr-only">
+                                                                {' '}
+                                                                of {doctor.name}
+                                                            </span>
+                                                        </Link>
+                                                    </Button>
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
+                                                        <Link
+                                                            href={DoctorController.edit(
+                                                                doctor.id,
+                                                            )}
+                                                        >
+                                                            Edit
+                                                            <span className="sr-only">
+                                                                {' '}
+                                                                {doctor.name}
+                                                            </span>
+                                                        </Link>
+                                                    </Button>
+                                                </>
                                             )}
                                         </div>
                                     </td>
