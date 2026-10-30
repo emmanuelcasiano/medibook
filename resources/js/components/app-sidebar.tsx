@@ -8,6 +8,7 @@ import {
     Stethoscope,
     Users,
 } from 'lucide-react';
+import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import AppLogo from '@/components/app-logo';
@@ -46,6 +47,11 @@ const roleNavItems: Record<Role, NavItem[]> = {
             title: 'Services',
             href: ServiceController.index(),
             icon: ClipboardList,
+        },
+        {
+            title: 'Doctors',
+            href: DoctorController.index(),
+            icon: Stethoscope,
         },
     ],
 };
