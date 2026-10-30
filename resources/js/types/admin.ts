@@ -80,6 +80,21 @@ export type AdminWorkingHoursDoctor = {
     name: string;
 };
 
+/** The doctor the time off page is about. */
+export type AdminTimeOffDoctor = {
+    id: number;
+    name: string;
+};
+
+/** One upcoming time off as the page receives it. Times are ISO 8601 UTC. `bookingsInside` is a count, never patient data. */
+export type AdminTimeOffListItem = {
+    id: number;
+    startsAt: string;
+    endsAt: string;
+    reason: string | null;
+    bookingsInside: number;
+};
+
 /** The parts of Laravel's paginator that the pages use. */
 export type Paginated<T> = {
     data: T[];

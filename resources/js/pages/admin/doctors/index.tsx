@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
+import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,7 @@ export default function AdminDoctorsIndex({ doctors }: Props) {
             <div className="space-y-6 p-4">
                 <Heading
                     title="Doctors"
-                    description="Set each doctor's specialty, bio, services and working hours. A new doctor is added on the Users page."
+                    description="Set each doctor's specialty, bio, services, working hours and time off. A new doctor is added on the Users page."
                 />
 
                 <div className="overflow-x-auto rounded-xl border">
@@ -92,6 +93,23 @@ export default function AdminDoctorsIndex({ doctors }: Props) {
                                                             )}
                                                         >
                                                             Working hours
+                                                            <span className="sr-only">
+                                                                {' '}
+                                                                of {doctor.name}
+                                                            </span>
+                                                        </Link>
+                                                    </Button>
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
+                                                        <Link
+                                                            href={TimeOffController.index(
+                                                                doctor.id,
+                                                            )}
+                                                        >
+                                                            Time off
                                                             <span className="sr-only">
                                                                 {' '}
                                                                 of {doctor.name}

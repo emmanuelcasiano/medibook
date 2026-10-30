@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DoctorController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\TimeOffController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WorkingHourController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,12 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         // The weekly schedule is saved as a whole: the form sends every range and the old ones are replaced.
         Route::get('doctors/{doctor}/working-hours', [WorkingHourController::class, 'edit'])->name('doctors.working-hours.edit');
         Route::put('doctors/{doctor}/working-hours', [WorkingHourController::class, 'update'])->name('doctors.working-hours.update');
+
+        // Time off is added and removed one at a time. `scopeBindings` makes `{timeOff}` load through the doctor
+        // in the URL, so another doctor's time off can't be removed from here (404).
+        Route::get('doctors/{doctor}/time-offs', [TimeOffController::class, 'index'])->name('doctors.time-offs.index');
+        Route::post('doctors/{doctor}/time-offs', [TimeOffController::class, 'store'])->middleware('throttle:20,1')->name('doctors.time-offs.store');
+        Route::delete('doctors/{doctor}/time-offs/{timeOff}', [TimeOffController::class, 'destroy'])->scopeBindings()->name('doctors.time-offs.destroy');
     });
 
     // The screens for these groups come on later days (booking Day 6, schedule Day 7, doctor view Day 10).

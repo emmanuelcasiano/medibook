@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
+import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import DoctorForm from '@/components/admin/doctor-form';
 import Heading from '@/components/heading';
@@ -36,10 +37,15 @@ export default function AdminDoctorsEdit({ doctor, services }: Props) {
                     >
                         working hours
                     </Link>{' '}
+                    page. Days off are added on the{' '}
+                    <Link
+                        href={TimeOffController.index(doctor.id)}
+                        className="font-medium underline underline-offset-4"
+                    >
+                        time off
+                    </Link>{' '}
                     page.
                 </p>
-
-                {/* Time off (step 3.4) is added to this page next. */}
             </div>
         </>
     );
