@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\Role;
+use App\Models\Doctor;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +47,27 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A user with the given role. Staff, doctors and admins get 2FA, because they need it to reach the app
+ * (pass `twoFactor: false` to test the redirect). A doctor also gets a doctor profile.
+ */
+function userWithRole(Role $role, bool $twoFactor = true): User
 {
-    // ..
+    $factory = User::factory()->state(['role' => $role]);
+
+    if ($role !== Role::Patient) {
+        $factory = $factory->state(['birth_date' => null]);
+
+        if ($twoFactor) {
+            $factory = $factory->withTwoFactor();
+        }
+    }
+
+    $user = $factory->create();
+
+    if ($role === Role::Doctor) {
+        Doctor::factory()->create(['user_id' => $user->id]);
+    }
+
+    return $user;
 }
