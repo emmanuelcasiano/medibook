@@ -2,11 +2,13 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     CalendarDays,
+    ClipboardList,
     FolderGit2,
     LayoutGrid,
     Stethoscope,
     Users,
 } from 'lucide-react';
+import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -38,7 +40,14 @@ const roleNavItems: Record<Role, NavItem[]> = {
     patient: [{ title: 'My appointments', href: myHome(), icon: CalendarDays }],
     staff: [{ title: 'Schedule', href: staffHome(), icon: CalendarDays }],
     doctor: [{ title: 'Today', href: doctorHome(), icon: Stethoscope }],
-    admin: [{ title: 'Users', href: UserController.index(), icon: Users }],
+    admin: [
+        { title: 'Users', href: UserController.index(), icon: Users },
+        {
+            title: 'Services',
+            href: ServiceController.index(),
+            icon: ClipboardList,
+        },
+    ],
 };
 
 const footerNavItems: NavItem[] = [
