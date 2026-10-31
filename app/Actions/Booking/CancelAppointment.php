@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 final class CancelAppointment
 {
     /** PROJECT.md section 4: a patient can cancel up to this many hours before the start. */
-    private const int PATIENT_CANCEL_HOURS = 2;
+    public const int PATIENT_CANCEL_HOURS = 2;
 
     /** `appointments.cancel_reason` is a plain VARCHAR(255). */
     private const int MAX_REASON_LENGTH = 255;

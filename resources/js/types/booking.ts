@@ -24,3 +24,24 @@ export type BookingDay = {
 export type BookingSlot = {
     startsAt: string;
 };
+
+/** The visit a patient is about to confirm. All times are ISO 8601 UTC. */
+export type BookingDraft = {
+    service: BookableService;
+    /** null means "Any doctor": the doctor is picked when the booking is made. */
+    doctor: BookableDoctor | null;
+    startsAt: string;
+    endsAt: string;
+    /** The last moment the patient can cancel on their own. */
+    cancelUntil: string;
+};
+
+/** A booking just made, as the "You're booked" page receives it. The doctor is known now, even after "Any doctor". */
+export type BookedAppointment = {
+    ulid: string;
+    startsAt: string;
+    endsAt: string;
+    cancelUntil: string;
+    service: BookableService;
+    doctor: BookableDoctor;
+};

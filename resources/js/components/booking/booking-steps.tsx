@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 const steps = ['Service', 'Doctor', 'Time', 'Confirm'];
 
 /** The steps of booking. Each one has a text label and a number, so the state never depends on color alone. */
-export default function BookingSteps({ current }: { current: 1 | 2 | 3 }) {
+export default function BookingSteps({ current }: { current: 1 | 2 | 3 | 4 }) {
     return (
         <nav aria-label="Booking steps">
             <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">

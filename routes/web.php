@@ -5,15 +5,17 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\TimeOffController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WorkingHourController;
+use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Booking\DoctorController as BookingDoctorController;
 use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
+use App\Http\Controllers\Patient\IntakeController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
 // Public booking: anyone can look at services, doctors and free times. Login or registration is asked only at the
-// confirm step (Day 6.2). These pages only read, so there is no Policy. `scopeBindings` loads `{doctor}` through the
+// confirm step (further down, behind `auth`). These pages only read, so there is no Policy. `scopeBindings` loads `{doctor}` through the
 // service in the URL, so a doctor who does not offer it is a 404. The order matters: `any` is checked before `{doctor}`.
 // A slot page runs several queries per doctor, so the `booking-pages` limiter (AppServiceProvider) caps each visitor.
 Route::middleware('throttle:booking-pages')->prefix('book')->name('booking.')->group(function () {
@@ -61,8 +63,19 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::inertia('/', 'role-home', ['title' => 'Today', 'note' => 'The doctor view is built on Day 10.'])->name('home');
     });
 
-    Route::middleware('role:patient')->prefix('my')->name('my.')->group(function () {
-        Route::inertia('/', 'role-home', ['title' => 'My appointments', 'note' => 'Booking and "My appointments" are built on Day 6.'])->name('home');
+    Route::middleware('role:patient')->group(function () {
+        // The last step of booking. A guest who picked a time lands here through `auth` and `verified`, which send
+        // them to log in, register or verify and then back to this address. Booking is rate limited per patient.
+        Route::get('book/{service:slug}/confirm', [BookingController::class, 'confirm'])->middleware('throttle:booking-pages')->name('booking.confirm');
+        Route::post('book/{service:slug}/confirm', [BookingController::class, 'store'])->middleware('throttle:booking')->name('booking.store');
+
+        Route::prefix('my')->name('my.')->group(function () {
+            Route::inertia('/', 'role-home', ['title' => 'My appointments', 'note' => '"My appointments" is built in step 6.3.'])->name('home');
+
+            // `{appointment}` is a ULID, and the Policy lets a patient open their own booking only.
+            Route::get('appointments/{appointment}/confirmation', [BookingController::class, 'confirmation'])->name('appointments.confirmation');
+            Route::get('appointments/{appointment}/intake', [IntakeController::class, 'edit'])->name('appointments.intake');
+        });
     });
 });
 

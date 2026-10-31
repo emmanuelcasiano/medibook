@@ -15,6 +15,9 @@ use Illuminate\Validation\ValidationException;
 
 final class BookAppointment
 {
+    /** The `starts_at` error when the doctor is busy then. BookAnyDoctor reads it to know it may try the next doctor. */
+    public const string TIME_TAKEN_MESSAGE = 'This time is no longer free. Please pick another slot.';
+
     /** PROJECT.md F3: how many future active bookings one patient may hold. */
     private const int MAX_UPCOMING_PER_PATIENT = 3;
 
@@ -107,7 +110,7 @@ final class BookAppointment
                 ->exists();
 
             if ($clash) {
-                throw ValidationException::withMessages(['starts_at' => 'This time is no longer free. Please pick another slot.']);
+                throw ValidationException::withMessages(['starts_at' => self::TIME_TAKEN_MESSAGE]);
             }
 
             return Appointment::create([

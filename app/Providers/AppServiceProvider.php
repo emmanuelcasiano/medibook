@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -40,6 +41,10 @@ class AppServiceProvider extends ServiceProvider
         // The public booking pages run several queries per doctor. 60 views a minute per visitor is enough to click
         // through every day of the booking window, and too few to hammer the database.
         RateLimiter::for('booking-pages', fn (Request $request): Limit => Limit::perMinute(60)->by((string) $request->ip()));
+
+        // Booking writes a row and takes two row locks, so it is capped per signed-in patient (not per IP, which
+        // clinics and phones share). 10 a minute is far above a real patient and too few to hold the locks in a loop.
+        RateLimiter::for('booking', fn (Request $request): Limit => Limit::perMinute(10)->by((string) (Auth::id() ?? $request->ip())));
     }
 
     /**
