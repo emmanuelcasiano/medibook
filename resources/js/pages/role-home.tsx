@@ -6,7 +6,7 @@ type Props = {
     note: string;
 };
 
-/** Landing page for the /staff, /doctor and /my groups until their real screens are built. */
+/** Landing page for the /staff and /doctor groups until their real screens are built. */
 export default function RoleHome({ title, note }: Props) {
     return (
         <>

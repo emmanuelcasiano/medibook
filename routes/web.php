@@ -9,6 +9,7 @@ use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Booking\DoctorController as BookingDoctorController;
 use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
+use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,7 +54,7 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::delete('doctors/{doctor}/time-offs/{timeOff}', [TimeOffController::class, 'destroy'])->scopeBindings()->name('doctors.time-offs.destroy');
     });
 
-    // The screens for these groups come on later days (booking Day 6, schedule Day 7, doctor view Day 10).
+    // The screens for these groups come on later days (schedule Day 7, doctor view Day 10).
     // Until then each group has one landing page, so the role gate is real and testable now.
     Route::middleware('role:staff')->prefix('staff')->name('staff.')->group(function () {
         Route::inertia('/', 'role-home', ['title' => 'Schedule', 'note' => 'The day schedule is built on Day 7.'])->name('home');
@@ -70,9 +71,10 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::post('book/{service:slug}/confirm', [BookingController::class, 'store'])->middleware('throttle:booking')->name('booking.store');
 
         Route::prefix('my')->name('my.')->group(function () {
-            Route::inertia('/', 'role-home', ['title' => 'My appointments', 'note' => '"My appointments" is built in step 6.3.'])->name('home');
+            Route::get('/', [AppointmentController::class, 'index'])->name('home');
 
-            // `{appointment}` is a ULID, and the Policy lets a patient open their own booking only.
+            // `{appointment}` is a ULID, and the Policy lets a patient open or cancel their own booking only.
+            Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->middleware('throttle:booking')->name('appointments.cancel');
             Route::get('appointments/{appointment}/confirmation', [BookingController::class, 'confirmation'])->name('appointments.confirmation');
             Route::get('appointments/{appointment}/intake', [IntakeController::class, 'edit'])->name('appointments.intake');
         });
