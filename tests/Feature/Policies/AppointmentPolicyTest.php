@@ -8,6 +8,15 @@ use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 
+it('lets only staff and admins open the day schedule', function (Role $role, bool $allowed) {
+    expect(Gate::forUser(userWithRole($role))->allows('viewSchedule', Appointment::class))->toBe($allowed);
+})->with([
+    'patient' => [Role::Patient, false],
+    'staff' => [Role::Staff, true],
+    'doctor' => [Role::Doctor, false],
+    'admin' => [Role::Admin, true],
+]);
+
 it('lets a patient see and cancel only their own appointment', function () {
     $appointment = Appointment::factory()->booked()->create();
     $stranger = userWithRole(Role::Patient);

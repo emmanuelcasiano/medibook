@@ -19,6 +19,16 @@ final class AppointmentPolicy
         return true;
     }
 
+    /**
+     * The staff day schedule shows every doctor's bookings, so unlike `viewAny` it is not open to every role.
+     * Staff run it; an admin may look (PROJECT.md section 3) but gets none of its action buttons, because those
+     * Policy methods below are staff only. Patients and doctors have their own screens.
+     */
+    public function viewSchedule(User $user): bool
+    {
+        return $user->isStaff() || $user->isAdmin();
+    }
+
     public function view(User $user, Appointment $appointment): bool
     {
         return match (true) {

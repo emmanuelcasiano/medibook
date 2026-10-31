@@ -42,6 +42,8 @@ const roleNavItems: Record<Role, NavItem[]> = {
     staff: [{ title: 'Schedule', href: staffHome(), icon: CalendarDays }],
     doctor: [{ title: 'Today', href: doctorHome(), icon: Stethoscope }],
     admin: [
+        // An admin can look at the schedule but not act on it, so the page says "View only".
+        { title: 'Schedule', href: staffHome(), icon: CalendarDays },
         { title: 'Users', href: UserController.index(), icon: Users },
         {
             title: 'Services',
