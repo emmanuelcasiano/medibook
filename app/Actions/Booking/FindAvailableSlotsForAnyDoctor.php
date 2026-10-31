@@ -24,7 +24,7 @@ final class FindAvailableSlotsForAnyDoctor
      *
      * @param  CarbonImmutable  $fromDate  Any instant on the first day. It is read as a clinic date.
      * @param  CarbonImmutable  $toDate  Any instant on the last day. It is read as a clinic date.
-     * @return Collection<int, CarbonImmutable> UTC start times, earliest first, no repeats. Empty if the service is switched off or no doctor offers it.
+     * @return Collection<int, CarbonImmutable> UTC start times, earliest first, no repeats. Empty if the service is switched off or no bookable doctor offers it.
      *
      * @throws InvalidArgumentException When $toDate is on a day before $fromDate.
      */
@@ -42,8 +42,9 @@ final class FindAvailableSlotsForAnyDoctor
             return collect();
         }
 
-        // One query for every doctor who offers the service. A doctor who does not offer it is never asked.
-        return $service->doctors()->get()
+        // One query for every bookable doctor who offers the service. A doctor who does not offer it, or whose
+        // account is switched off, is never asked.
+        return $service->doctors()->bookable()->get()
             ->flatMap(fn ($doctor): Collection => $this->findSlots->handle($service, $doctor, $fromDate, $toDate))
             ->unique(fn (CarbonImmutable $slot): int => $slot->getTimestamp())
             ->sortBy(fn (CarbonImmutable $slot): int => $slot->getTimestamp())

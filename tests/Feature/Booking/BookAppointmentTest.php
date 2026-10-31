@@ -170,6 +170,22 @@ it('refuses a service that was switched off after the caller loaded it', functio
         ->and(Appointment::query()->count())->toBe(0);
 });
 
+it('refuses a doctor whose account is switched off, and writes nothing', function () {
+    $this->doctor->user->forceFill(['is_active' => false])->save();
+
+    expect(bookingErrors(fn () => bookAt($this->patient, $this->doctor, $this->service, '2026-11-02 09:00')))
+        ->toBe(['doctor_id' => ['This doctor is not taking bookings.']])
+        ->and(Appointment::query()->count())->toBe(0);
+});
+
+it('keeps the old bookings of a doctor whose account was switched off', function () {
+    $booking = bookAt($this->patient, $this->doctor, $this->service, '2026-11-02 09:00');
+    $this->doctor->user->forceFill(['is_active' => false])->save();
+
+    expect($booking->fresh()->status)->toBe(AppointmentStatus::Booked)
+        ->and(Appointment::query()->count())->toBe(1);
+});
+
 it('refuses a doctor who does not offer the service', function () {
     $otherService = Service::factory()->lasting(30, 15)->create();
 

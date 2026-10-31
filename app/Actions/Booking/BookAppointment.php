@@ -34,8 +34,8 @@ final class BookAppointment
      * service and doctor pair, the patient limits and the overlap; it does not re-check working hours, time off
      * or the lead time.
      *
-     * @throws ValidationException When the service is switched off, the doctor does not offer it, the patient is
-     *                             over a limit, or the time is taken.
+     * @throws ValidationException When the service is switched off, the doctor's account is switched off, the doctor
+     *                             does not offer the service, the patient is over a limit, or the time is taken.
      */
     public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt): Appointment
     {
@@ -59,6 +59,11 @@ final class BookAppointment
             // Read the service inside the lock: it may have been switched off since the page was built.
             if (! Service::query()->whereKey($service->id)->where('is_active', true)->exists()) {
                 throw ValidationException::withMessages(['service_id' => 'This service is not available for booking.']);
+            }
+
+            // Read inside the lock too: a doctor whose account was switched off keeps their old bookings, but takes no new ones.
+            if (! Doctor::query()->whereKey($doctor->id)->bookable()->exists()) {
+                throw ValidationException::withMessages(['doctor_id' => 'This doctor is not taking bookings.']);
             }
 
             // A wrong doctor and service pair can't be booked, even if the caller skipped the slot finder.

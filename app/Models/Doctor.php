@@ -6,6 +6,8 @@ namespace App\Models;
 
 use Database\Factories\DoctorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +28,18 @@ class Doctor extends Model
 {
     /** @use HasFactory<DoctorFactory> */
     use HasFactory;
+
+    /**
+     * Doctors a patient may book: the account is switched on. A deactivated doctor stays in the database
+     * (appointments point at them) but must not be offered on the public booking pages.
+     *
+     * @param  Builder<Doctor>  $query
+     */
+    #[Scope]
+    protected function bookable(Builder $query): void
+    {
+        $query->whereHas('user', fn (Builder $user) => $user->where('is_active', true));
+    }
 
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo

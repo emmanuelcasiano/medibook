@@ -6,6 +6,8 @@ namespace App\Models;
 
 use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -36,6 +38,19 @@ class Service extends Model
             'buffer_minutes' => 'integer',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Services a patient can start booking: switched on, and at least one bookable doctor offers it.
+     * A service nobody can see would only lead to an empty page.
+     *
+     * @param  Builder<Service>  $query
+     */
+    #[Scope]
+    protected function bookable(Builder $query): void
+    {
+        $query->where('is_active', true)
+            ->whereHas('doctors', fn (Builder $doctors) => $doctors->bookable());
     }
 
     /** @return BelongsToMany<Doctor, $this> */
