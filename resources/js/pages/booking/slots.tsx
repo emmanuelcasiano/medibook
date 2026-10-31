@@ -2,10 +2,12 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import DoctorController from '@/actions/App/Http/Controllers/Booking/DoctorController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
+import BookingController from '@/actions/App/Http/Controllers/Booking/BookingController';
 import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
 import DayPicker from '@/components/booking/day-picker';
 import SlotGrid from '@/components/booking/slot-grid';
+import { Button } from '@/components/ui/button';
 import { formatClinicDate, formatClinicTime } from '@/lib/clinic-time';
 import type {
     BookableDoctor,
@@ -30,7 +32,7 @@ export default function BookingSlots({
     selectedDate,
     slots,
 }: Props) {
-    const { errors } = usePage().props;
+    const { auth, errors } = usePage().props;
 
     // The chosen time is remembered with its day. When another day is opened, the old choice no longer matches
     // `selectedDate`, so it is dropped without an effect.
@@ -86,6 +88,18 @@ export default function BookingSlots({
                             title="That day can't be shown."
                         />
                     )}
+                    {/* Sent back from the confirm step: the time was taken or is not offered any more. */}
+                    {(errors.starts_at || errors.doctor_id) && (
+                        <AlertError
+                            errors={[
+                                errors.starts_at,
+                                errors.doctor_id,
+                            ].flatMap((error) =>
+                                typeof error === 'string' ? [error] : [],
+                            )}
+                            title="That time can't be booked."
+                        />
+                    )}
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-[minmax(0,22rem)_1fr]">
@@ -139,6 +153,49 @@ export default function BookingSlots({
                                 ? 'Pick a time to see your visit here.'
                                 : `Your visit: ${formatClinicDate(selectedDate)} at ${formatClinicTime(selectedSlot)}, ${doctorLabel}.`}
                         </p>
+
+                        {auth.user && auth.user.role !== 'patient' ? (
+                            <p className="text-sm text-muted-foreground">
+                                You are signed in as {auth.user.role}. Only
+                                patients can book an appointment.
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {selectedSlot === null ? (
+                                    <Button disabled>Continue</Button>
+                                ) : (
+                                    <Button asChild>
+                                        <Link
+                                            href={BookingController.confirm(
+                                                service,
+                                                {
+                                                    query:
+                                                        doctor === null
+                                                            ? {
+                                                                  starts_at:
+                                                                      selectedSlot,
+                                                              }
+                                                            : {
+                                                                  starts_at:
+                                                                      selectedSlot,
+                                                                  doctor_id:
+                                                                      doctor.id,
+                                                              },
+                                                },
+                                            )}
+                                        >
+                                            Continue
+                                        </Link>
+                                    </Button>
+                                )}
+                                {!auth.user && (
+                                    <p className="text-sm text-muted-foreground">
+                                        Next you log in or create an account.
+                                        Nothing is booked until you confirm.
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </section>
                 </div>
             </div>
