@@ -5,9 +5,23 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\TimeOffController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WorkingHourController;
+use App\Http\Controllers\Booking\DoctorController as BookingDoctorController;
+use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
+use App\Http\Controllers\Booking\SlotController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+
+// Public booking: anyone can look at services, doctors and free times. Login or registration is asked only at the
+// confirm step (Day 6.2). These pages only read, so there is no Policy. `scopeBindings` loads `{doctor}` through the
+// service in the URL, so a doctor who does not offer it is a 404. The order matters: `any` is checked before `{doctor}`.
+// A slot page runs several queries per doctor, so the `booking-pages` limiter (AppServiceProvider) caps each visitor.
+Route::middleware('throttle:booking-pages')->prefix('book')->name('booking.')->group(function () {
+    Route::get('/', [BookingServiceController::class, 'index'])->name('services');
+    Route::get('{service:slug}', [BookingDoctorController::class, 'index'])->name('doctors');
+    Route::get('{service:slug}/any', [SlotController::class, 'any'])->name('slots.any');
+    Route::get('{service:slug}/doctors/{doctor}', [SlotController::class, 'doctor'])->scopeBindings()->name('slots.doctor');
+});
 
 // Every app route needs a signed-in, verified user. `two-factor` sends staff, doctors and admins to the 2FA
 // setup page until it is on. `role:` closes a whole group to other roles; Policies check each action inside it.

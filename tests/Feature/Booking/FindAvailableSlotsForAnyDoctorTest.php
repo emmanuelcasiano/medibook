@@ -11,9 +11,9 @@ use Illuminate\Support\Facades\DB;
 // Same "now" as FindAvailableSlotsTest: Friday 30 October 2026, 09:00 in Manila. Monday 2 November is weekday 1.
 // The rules for one doctor (time off, bookings, lead time, window) are tested in FindAvailableSlotsTest. These
 // tests cover the merge, and that each doctor's own rules still count.
-// There is no route or policy yet, so there is no denied-access test. The closest rule is that a doctor who
-// does not offer the service adds nothing. The public booking screens (Day 6) call this Action behind their
-// own Form Request and Policy.
+// This Action has no route or policy of its own, so there is no denied-access test. The closest rules are that a
+// doctor who does not offer the service, or whose account is switched off, adds nothing. The public booking pages
+// (step 6.1) reach it through FindBookableDays. They only read public data, so they have no Policy.
 
 beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-30 09:00', 'Asia/Manila'));
@@ -130,6 +130,19 @@ it('ignores a doctor who does not offer the service', function () {
     doctorWorking($otherService, [[1, '13:00', '17:00']]);
 
     expect(slotTimes(findAnyDoctorSlots($service, '2026-11-02')))->toBe(['08:00']);
+});
+
+it('ignores a doctor whose account is switched off, and offers nothing when they are the only one', function () {
+    $service = Service::factory()->lasting(60)->create();
+    $active = doctorWorking($service, [[1, '08:00', '09:00']]);
+    $retired = doctorWorking($service, [[1, '13:00', '14:00']]);
+    $retired->user->forceFill(['is_active' => false])->save();
+
+    expect(slotTimes(findAnyDoctorSlots($service, '2026-11-02')))->toBe(['08:00']);
+
+    $active->user->forceFill(['is_active' => false])->save();
+
+    expect(findAnyDoctorSlots($service, '2026-11-02'))->toBeEmpty();
 });
 
 it('offers nothing when no doctor offers the service', function () {
