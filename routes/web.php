@@ -11,6 +11,7 @@ use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
 use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
+use App\Http\Controllers\Staff\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -54,12 +55,14 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::delete('doctors/{doctor}/time-offs/{timeOff}', [TimeOffController::class, 'destroy'])->scopeBindings()->name('doctors.time-offs.destroy');
     });
 
-    // The screens for these groups come on later days (schedule Day 7, doctor view Day 10).
-    // Until then each group has one landing page, so the role gate is real and testable now.
-    Route::middleware('role:staff')->prefix('staff')->name('staff.')->group(function () {
-        Route::inertia('/', 'role-home', ['title' => 'Schedule', 'note' => 'The day schedule is built on Day 7.'])->name('home');
+    // The schedule is for staff, and an admin may look at it (PROJECT.md section 3). The action routes added to this
+    // group in steps 7.2 to 7.4 are staff only: their Policy methods refuse an admin.
+    Route::middleware('role:staff,admin')->prefix('staff')->name('staff.')->group(function () {
+        Route::get('/', [ScheduleController::class, 'index'])->name('home');
     });
 
+    // The doctor screen comes on Day 10. Until then its group has one landing page, so the role gate is real and
+    // testable now.
     Route::middleware('role:doctor')->prefix('doctor')->name('doctor.')->group(function () {
         Route::inertia('/', 'role-home', ['title' => 'Today', 'note' => 'The doctor view is built on Day 10.'])->name('home');
     });

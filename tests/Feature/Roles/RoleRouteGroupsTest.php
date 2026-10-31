@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 
-// Each role-only route group and the one role that may enter it.
+// Each role-only route group and the roles that may enter it. An admin may also open the staff area, because the
+// day schedule is shown to staff and admin (PROJECT.md section 3).
 dataset('role_route_groups', [
-    'admin area' => ['admin.users.index', Role::Admin],
-    'staff area' => ['staff.home', Role::Staff],
-    'doctor area' => ['doctor.home', Role::Doctor],
-    'patient area' => ['my.home', Role::Patient],
+    'admin area' => ['admin.users.index', [Role::Admin]],
+    'staff area' => ['staff.home', [Role::Staff, Role::Admin]],
+    'doctor area' => ['doctor.home', [Role::Doctor]],
+    'patient area' => ['my.home', [Role::Patient]],
 ]);
 
-it('lets only the right role into a route group', function (string $routeName, Role $allowed, Role $actual) {
+it('lets only the right roles into a route group', function (string $routeName, array $allowed, Role $actual) {
     $response = $this->actingAs(userWithRole($actual))->get(route($routeName));
 
-    if ($actual === $allowed) {
+    if (in_array($actual, $allowed, true)) {
         $response->assertOk();
     } else {
         $response->assertForbidden();
