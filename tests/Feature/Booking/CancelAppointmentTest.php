@@ -13,8 +13,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-// There is no cancel route yet (the patient button is step 6.3, the staff panel is step 7.3), so the denied-access
-// test calls the Action, which checks AppointmentPolicy::cancel itself. A denied call writes nothing.
+// These tests call the Action directly. The patient's cancel route (step 6.3) is tested in MyAppointmentsTest; the
+// staff panel comes in step 7.3. The Action checks AppointmentPolicy::cancel itself, and a denied call writes nothing.
 // "Now" is fixed at Friday 30 October 2026, 09:00 in Manila. The 2 hour limit counts from the start of the visit.
 
 function cancelAs(User $actor, Appointment $appointment, ?string $reason = null): Appointment
