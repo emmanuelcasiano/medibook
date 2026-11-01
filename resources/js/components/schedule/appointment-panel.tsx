@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import StaffAppointmentController from '@/actions/App/Http/Controllers/Staff/AppointmentController';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import AlertError from '@/components/alert-error';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import type {
@@ -108,7 +110,8 @@ export default function AppointmentPanel({
     }
 
     const { appointment, doctor } = found;
-    const canAct = selected.can.checkIn || selected.can.markNoShow;
+    const canAct =
+        selected.can.checkIn || selected.can.markNoShow || selected.can.cancel;
 
     // After a button works, the button is gone (the booking has a new status), so focus would drop to the top of the
     // page. The panel heading is the place to go instead.
@@ -203,6 +206,10 @@ export default function AppointmentPanel({
                     />
                 )}
 
+                {selected.can.cancel && (
+                    <CancelDialog appointment={appointment} />
+                )}
+
                 {!canAct && (
                     <p className="text-sm text-muted-foreground">
                         {viewOnly
@@ -212,6 +219,108 @@ export default function AppointmentPanel({
                 )}
             </section>
         </aside>
+    );
+}
+
+/** `appointments.cancel_reason` is a VARCHAR(255). The server checks the length again. */
+const MAX_REASON_LENGTH = 255;
+
+/**
+ * The cancel button and its reason form. Staff must give a reason. On success the booking leaves the grid and the page
+ * comes back without a panel, so the dialog goes with it and there is no focus to hand back.
+ */
+function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
+    const reasonId = `cancel-reason-${appointment.ulid}`;
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    data-test="cancel-button"
+                >
+                    Cancel appointment
+                </Button>
+            </DialogTrigger>
+
+            <DialogContent>
+                <Form
+                    {...StaffAppointmentController.cancel.form(
+                        appointment.ulid,
+                    )}
+                    options={{ preserveScroll: true }}
+                    className="space-y-4"
+                >
+                    {({ errors, processing }) => (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle>
+                                    Cancel this appointment?
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {appointment.patientName} will lose the{' '}
+                                    {formatClinicTime(appointment.startsAt)}{' '}
+                                    {appointment.serviceName} booking and the
+                                    time becomes free for other patients.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor={reasonId}>Reason</Label>
+                                <textarea
+                                    id={reasonId}
+                                    name="reason"
+                                    rows={3}
+                                    required
+                                    maxLength={MAX_REASON_LENGTH}
+                                    aria-invalid={
+                                        errors.reason ? true : undefined
+                                    }
+                                    aria-describedby={
+                                        errors.reason
+                                            ? `${reasonId}-error`
+                                            : undefined
+                                    }
+                                    className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                                />
+                                <InputError
+                                    id={`${reasonId}-error`}
+                                    message={errors.reason}
+                                />
+                            </div>
+
+                            <div role="alert">
+                                {errors.appointment && (
+                                    <AlertError
+                                        errors={[errors.appointment]}
+                                        title="The appointment was not cancelled."
+                                    />
+                                )}
+                            </div>
+
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button type="button" variant="outline">
+                                        Go back
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={processing}
+                                    data-test="confirm-cancel-button"
+                                >
+                                    {processing && <Spinner />}
+                                    Cancel appointment
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
+                </Form>
+            </DialogContent>
+        </Dialog>
     );
 }
 

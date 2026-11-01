@@ -89,7 +89,8 @@ describe('the selected prop', function () {
             ->assertInertia(fn (Assert $page) => $page
                 ->where('selected.ulid', $booking->ulid)
                 ->where('selected.can.checkIn', false)
-                ->where('selected.can.markNoShow', false));
+                ->where('selected.can.markNoShow', false)
+                ->where('selected.can.cancel', false));
     })->with(['checkedIn', 'completed', 'noShow']);
 
     it('gives an admin the panel but no buttons, and the same schedule as staff', function () {
@@ -352,6 +353,154 @@ describe('marking a no-show', function () {
     });
 });
 
+describe('cancelling', function () {
+    it('cancels a booking with a reason and returns to the same day', function () {
+        $this->actingAs($this->staff)
+            ->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => 'The doctor is ill.'])
+            ->assertRedirect(route('staff.home', ['date' => '2026-10-30']))
+            ->assertSessionHas('inertia.flash_data.toast.type', 'success')
+            ->assertSessionHas('inertia.flash_data.toast.message', 'The appointment of '.$this->upcoming->patient->name.' was cancelled.');
+
+        $fresh = $this->upcoming->fresh();
+
+        expect($fresh->status)->toBe(AppointmentStatus::Cancelled)
+            ->and($fresh->cancel_reason)->toBe('The doctor is ill.')
+            ->and($fresh->cancelled_by)->toBe($this->staff->id)
+            ->and($fresh->cancelled_at)->toEqual(CarbonImmutable::now()->startOfSecond())
+            ->and($fresh->active_key)->toBeNull();
+    });
+
+    it('lets staff cancel a booking that starts in less than 2 hours, or has already started', function () {
+        // The 2 hour rule is for patients only.
+        $soon = panelBooking('2026-10-30 10:00');
+
+        foreach ([$soon, $this->started] as $booking) {
+            $this->actingAs($this->staff)
+                ->post(route('staff.appointments.cancel', $booking), ['reason' => 'Walk-in emergency.'])
+                ->assertSessionHasNoErrors();
+
+            expect($booking->fresh()->status)->toBe(AppointmentStatus::Cancelled);
+        }
+    });
+
+    it('takes the booking off the grid and frees the slot', function () {
+        $this->actingAs($this->staff)
+            ->followingRedirects()
+            ->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => 'Patient called.'])
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('selected', null)
+                ->where('schedule.doctors', fn ($doctors): bool => collect($doctors)
+                    ->flatMap(fn (array $doctor): array => $doctor['appointments'])
+                    ->doesntContain('ulid', $this->upcoming->ulid)));
+
+        // The unique index ignores a cancelled booking, so the same doctor and time can be booked again.
+        expect(Appointment::factory()->booked()->create([
+            'doctor_id' => $this->upcoming->doctor_id,
+            'service_id' => $this->upcoming->service_id,
+            'starts_at' => $this->upcoming->starts_at,
+        ])->exists)->toBeTrue();
+    });
+
+    it('turns away everyone but staff with a 403 and changes nothing', function (Role $role) {
+        $this->actingAs(userWithRole($role))
+            ->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => 'A valid reason.'])
+            ->assertForbidden();
+
+        expect($this->upcoming->fresh()->status)->toBe(AppointmentStatus::Booked)
+            ->and($this->upcoming->fresh()->cancel_reason)->toBeNull();
+    })->with([
+        'admin' => Role::Admin,
+        'doctor' => Role::Doctor,
+        'patient' => Role::Patient,
+    ]);
+
+    it('turns away the patient who owns the booking', function () {
+        // The Policy lets a patient cancel their own booking from "My appointments". This staff route must not.
+        $this->actingAs($this->upcoming->patient)
+            ->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => 'A valid reason.'])
+            ->assertForbidden();
+
+        expect($this->upcoming->fresh()->status)->toBe(AppointmentStatus::Booked)
+            ->and($this->upcoming->fresh()->cancel_reason)->toBeNull();
+    });
+
+    it('turns an admin away with a 403 even when the reason is missing', function () {
+        // Authorization comes before validation, so an admin learns nothing about what the route wants.
+        $this->actingAs(userWithRole(Role::Admin))
+            ->post(route('staff.appointments.cancel', $this->upcoming))
+            ->assertForbidden();
+    });
+
+    it('sends a guest to the login page', function () {
+        $this->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => 'A valid reason.'])
+            ->assertRedirect(route('login'));
+
+        expect($this->upcoming->fresh()->status)->toBe(AppointmentStatus::Booked);
+    });
+
+    it('refuses a missing, blank or too long reason and changes nothing', function (array $input) {
+        $this->actingAs($this->staff)
+            ->from(panelPage($this->upcoming))
+            ->post(route('staff.appointments.cancel', $this->upcoming), $input)
+            ->assertRedirect(panelPage($this->upcoming))
+            ->assertSessionHasErrors('reason')
+            ->assertSessionMissing('inertia.flash_data.toast');
+
+        expect($this->upcoming->fresh()->status)->toBe(AppointmentStatus::Booked)
+            ->and($this->upcoming->fresh()->cancelled_at)->toBeNull();
+    })->with([
+        'missing' => [[]],
+        'empty' => [['reason' => '']],
+        'spaces only' => [['reason' => '   ']],
+        'not a string' => [['reason' => ['a']]],
+        'over 255 characters' => [['reason' => str_repeat('a', 256)]],
+    ]);
+
+    it('accepts a reason of exactly 255 characters', function () {
+        $this->actingAs($this->staff)
+            ->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => str_repeat('a', 255)])
+            ->assertSessionHasNoErrors();
+
+        expect($this->upcoming->fresh()->status)->toBe(AppointmentStatus::Cancelled);
+    });
+
+    it('sends the error back to the panel when the booking is not booked', function (string $state) {
+        $booking = panelBooking('2026-10-30 12:00', $state);
+
+        $this->actingAs($this->staff)
+            ->from(panelPage($booking))
+            ->post(route('staff.appointments.cancel', $booking), ['reason' => 'A valid reason.'])
+            ->assertRedirect(panelPage($booking))
+            ->assertSessionHasErrors(['appointment' => 'This appointment can no longer be cancelled.'])
+            ->assertSessionMissing('inertia.flash_data.toast');
+
+        expect($booking->fresh()->status)->toBe($booking->status)
+            ->and($booking->fresh()->cancel_reason)->toBeNull();
+    })->with(['checkedIn', 'completed', 'noShow', 'cancelled']);
+
+    it('answers 404 for a ULID that does not exist', function () {
+        $this->actingAs($this->staff)
+            ->post(route('staff.appointments.cancel', '01JAAAAAAAAAAAAAAAAAAAAAAA'), ['reason' => 'A valid reason.'])
+            ->assertNotFound();
+    });
+
+    it('tells the panel that staff may cancel a booked booking and nobody may cancel the rest', function () {
+        $this->actingAs($this->staff)
+            ->get(panelPage($this->started))
+            ->assertInertia(fn (Assert $page) => $page->where('selected.can.cancel', true));
+
+        $checkedIn = panelBooking('2026-10-30 10:00', 'checkedIn');
+
+        $this->actingAs($this->staff)
+            ->get(panelPage($checkedIn))
+            ->assertInertia(fn (Assert $page) => $page->where('selected.can.cancel', false));
+
+        $this->actingAs(userWithRole(Role::Admin))
+            ->get(panelPage($this->started))
+            ->assertInertia(fn (Assert $page) => $page->where('selected.can.cancel', false));
+    });
+});
+
 describe('rate limit', function () {
     it('allows 60 clicks a minute per staff member and then answers 429', function () {
         RateLimiter::clear('staff-actions');
@@ -368,5 +517,20 @@ describe('rate limit', function () {
         $this->actingAs(userWithRole(Role::Staff))
             ->post(route('staff.appointments.check-in', $this->started))
             ->assertRedirect();
+    });
+
+    it('also caps the cancel route', function () {
+        RateLimiter::clear('staff-actions');
+
+        // A refused cancel (no reason) counts too: the limit is on clicks, not on successes.
+        foreach (range(1, 60) as $click) {
+            $this->actingAs($this->staff)->post(route('staff.appointments.cancel', $this->upcoming));
+        }
+
+        $this->actingAs($this->staff)
+            ->post(route('staff.appointments.cancel', $this->upcoming), ['reason' => 'A valid reason.'])
+            ->assertStatus(429);
+
+        expect($this->upcoming->fresh()->status)->toBe(AppointmentStatus::Booked);
     });
 });

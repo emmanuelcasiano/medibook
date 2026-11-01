@@ -41,6 +41,7 @@ export type SelectedAppointment = {
     can: {
         checkIn: boolean;
         markNoShow: boolean;
+        cancel: boolean;
     };
 };
 
