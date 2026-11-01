@@ -29,6 +29,17 @@ final class AppointmentPolicy
         return $user->isStaff() || $user->isAdmin();
     }
 
+    /**
+     * Whether the schedule may say that an intake is still empty and that a booking has the emergency flag. Staff
+     * only: an admin sees the schedule but not these (PROJECT.md section 3, least privilege). It is a fact about
+     * health data, so it is never sent to a role that may not have it. No model argument: it is asked once for the
+     * whole schedule.
+     */
+    public function viewIntakeStatus(User $user): bool
+    {
+        return $user->isStaff();
+    }
+
     public function view(User $user, Appointment $appointment): bool
     {
         return match (true) {

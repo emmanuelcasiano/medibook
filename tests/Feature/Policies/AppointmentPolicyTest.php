@@ -17,6 +17,15 @@ it('lets only staff and admins open the day schedule', function (Role $role, boo
     'admin' => [Role::Admin, true],
 ]);
 
+it('lets only staff learn whether an intake is empty and a booking is flagged', function (Role $role, bool $allowed) {
+    expect(Gate::forUser(userWithRole($role))->allows('viewIntakeStatus', Appointment::class))->toBe($allowed);
+})->with([
+    'patient' => [Role::Patient, false],
+    'staff' => [Role::Staff, true],
+    'doctor' => [Role::Doctor, false],
+    'admin' => [Role::Admin, false],
+]);
+
 it('lets a patient see and cancel only their own appointment', function () {
     $appointment = Appointment::factory()->booked()->create();
     $stranger = userWithRole(Role::Patient);
