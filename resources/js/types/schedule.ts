@@ -1,4 +1,5 @@
 import type { AppointmentStatus } from './appointments';
+import type { BookingSlot } from './booking';
 
 /** One booking in a doctor's column of the staff schedule. Only the patient's name is sent about them. */
 export type ScheduleAppointment = {
@@ -42,7 +43,19 @@ export type SelectedAppointment = {
         checkIn: boolean;
         markNoShow: boolean;
         cancel: boolean;
+        move: boolean;
     };
+};
+
+/**
+ * What the Move picker offers for the open booking. The page does not get it with the first load: the Move section
+ * asks for it (a partial reload of `move`) once staff open it, and again when they change the doctor or the day.
+ */
+export type MoveOptions = {
+    /** Bookable doctors who offer the booking's service, by name. Includes the booking's own doctor. */
+    doctors: Array<{ id: number; name: string }>;
+    /** Free start times of the picked doctor and day, earliest first. Empty until both are picked. */
+    slots: BookingSlot[];
 };
 
 /** One clinic day, as the staff schedule page receives it. Dates are clinic dates ('Y-m-d'), with no time zone. */

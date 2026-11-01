@@ -56,8 +56,8 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::delete('doctors/{doctor}/time-offs/{timeOff}', [TimeOffController::class, 'destroy'])->scopeBindings()->name('doctors.time-offs.destroy');
     });
 
-    // The schedule is for staff, and an admin may look at it (PROJECT.md section 3). The action routes added to this
-    // group in steps 7.2 to 7.4 are staff only: their Policy methods refuse an admin.
+    // The schedule is for staff, and an admin may look at it (PROJECT.md section 3). The action routes in this
+    // group (steps 7.2 to 7.4) are staff only: their Policy methods refuse an admin.
     Route::middleware('role:staff,admin')->prefix('staff')->name('staff.')->group(function () {
         Route::get('/', [ScheduleController::class, 'index'])->name('home');
 
@@ -65,6 +65,7 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::post('appointments/{appointment}/check-in', [StaffAppointmentController::class, 'checkIn'])->middleware('throttle:staff-actions')->name('appointments.check-in');
         Route::post('appointments/{appointment}/no-show', [StaffAppointmentController::class, 'noShow'])->middleware('throttle:staff-actions')->name('appointments.no-show');
         Route::post('appointments/{appointment}/cancel', [StaffAppointmentController::class, 'cancel'])->middleware('throttle:staff-actions')->name('appointments.cancel');
+        Route::post('appointments/{appointment}/move', [StaffAppointmentController::class, 'move'])->middleware('throttle:staff-actions')->name('appointments.move');
     });
 
     // The doctor screen comes on Day 10. Until then its group has one landing page, so the role gate is real and

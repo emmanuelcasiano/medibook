@@ -7,6 +7,7 @@ import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import MoveSection from '@/components/schedule/move-section';
 import {
     Dialog,
     DialogClose,
@@ -22,6 +23,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import type {
     DaySchedule,
+    MoveOptions,
     ScheduleAppointment,
     ScheduleDoctor,
     SelectedAppointment,
@@ -30,6 +32,8 @@ import type {
 type Props = {
     schedule: DaySchedule;
     selected: SelectedAppointment;
+    /** The Move picker's data, which the Move section asks the server for. See `MoveOptions`. */
+    move: MoveOptions | null | undefined;
     /** An admin may look at the schedule but not change it. */
     viewOnly: boolean;
 };
@@ -91,6 +95,7 @@ function useHasStarted(startsAt: string, serverSaysStarted: boolean): boolean {
 export default function AppointmentPanel({
     schedule,
     selected,
+    move,
     viewOnly,
 }: Props) {
     const found = findAppointment(schedule, selected.ulid);
@@ -111,7 +116,10 @@ export default function AppointmentPanel({
 
     const { appointment, doctor } = found;
     const canAct =
-        selected.can.checkIn || selected.can.markNoShow || selected.can.cancel;
+        selected.can.checkIn ||
+        selected.can.markNoShow ||
+        selected.can.cancel ||
+        selected.can.move;
 
     // After a button works, the button is gone (the booking has a new status), so focus would drop to the top of the
     // page. The panel heading is the place to go instead.
@@ -203,6 +211,15 @@ export default function AppointmentPanel({
                         appointment={appointment}
                         started={started}
                         onDone={focusHeading}
+                    />
+                )}
+
+                {selected.can.move && (
+                    <MoveSection
+                        appointment={appointment}
+                        doctor={doctor}
+                        schedule={schedule}
+                        move={move}
                     />
                 )}
 

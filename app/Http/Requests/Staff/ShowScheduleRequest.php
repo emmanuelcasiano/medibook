@@ -29,7 +29,29 @@ final class ShowScheduleRequest extends FormRequest
             'date' => ['nullable', 'string', 'date_format:'.self::DATE_FORMAT],
             // The booking whose side panel is open. A well-formed ULID that is not on the day just opens no panel.
             'appointment' => ['nullable', 'string', 'ulid'],
+            // The Move picker (step 7.4): the doctor and the clinic day staff are looking at. Both are optional, and an
+            // unknown doctor just gives no times. They are only read when the picker asks for its own prop.
+            'move_doctor' => ['nullable', 'integer', 'min:1'],
+            'move_date' => ['nullable', 'string', 'date_format:'.self::DATE_FORMAT],
         ];
+    }
+
+    /** The doctor chosen in the Move picker, or null. Call it only after validation passed. */
+    public function moveDoctorId(): ?int
+    {
+        return $this->filled('move_doctor') ? $this->integer('move_doctor') : null;
+    }
+
+    /** The day chosen in the Move picker at 00:00 clinic time, or null. Call it only after validation passed. */
+    public function moveDay(): ?CarbonImmutable
+    {
+        $date = $this->query('move_date');
+
+        if (! is_string($date) || $date === '') {
+            return null;
+        }
+
+        return CarbonImmutable::createFromFormat('!'.self::DATE_FORMAT, $date, (string) config('app.clinic_timezone'));
     }
 
     /** The ULID of the booking whose panel is open, or null. Call it only after validation passed. */

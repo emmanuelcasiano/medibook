@@ -7,8 +7,10 @@ namespace App\Http\Controllers\Staff;
 use App\Actions\Booking\CancelAppointment;
 use App\Actions\Booking\CheckInAppointment;
 use App\Actions\Booking\MarkNoShow;
+use App\Actions\Booking\MoveAppointment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Staff\CancelAppointmentRequest;
+use App\Http\Requests\Staff\MoveAppointmentRequest;
 use App\Models\Appointment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,10 +21,10 @@ use Inertia\Inertia;
  * The buttons in the schedule's side panel. Staff only: the `staff` route group also lets an admin in to look at the
  * schedule, so it is the Policy here (and again in each Action) that turns an admin away with a 403.
  *
- * Check-in and no-show take no input, so they have no Form Request. Cancel takes a reason, which has one. The booking
- * comes from the URL (by ULID) and the Action reads its state from the database, never from the browser. The rules
- * (status, "only after the start") are in the Actions. A refusal there comes back as a validation error on
- * `appointment`.
+ * Check-in and no-show take no input, so they have no Form Request. Cancel takes a reason and move takes a doctor and
+ * a new time, so those have one. The booking comes from the URL (by ULID) and the Action reads its state from the
+ * database, never from the browser. The rules (status, "only after the start", whether the new time is free) are in
+ * the Actions. A refusal there comes back as a validation error on `appointment` or `starts_at`.
  */
 final class AppointmentController extends Controller
 {
@@ -60,6 +62,21 @@ final class AppointmentController extends Controller
         return to_route('staff.home', [
             'date' => $appointment->starts_at->setTimezone((string) config('app.clinic_timezone'))->format('Y-m-d'),
         ]);
+    }
+
+    public function move(MoveAppointmentRequest $request, Appointment $appointment, MoveAppointment $move): RedirectResponse
+    {
+        Gate::authorize('move', $appointment);
+
+        $moved = $move->handle($request->user(), $appointment, $request->doctor(), $request->startsAt())->loadMissing('patient:id,name');
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('The appointment of :name was moved to :time.', [
+            'name' => $moved->patient->name,
+            'time' => $moved->starts_at->setTimezone((string) config('app.clinic_timezone'))->format('j M Y, g:i A'),
+        ])]);
+
+        // The booking is a new row on the day of its new time, so open the panel of the new one.
+        return $this->backToPanel($moved);
     }
 
     /** The same day with the same panel open, so staff see the new status at once. */

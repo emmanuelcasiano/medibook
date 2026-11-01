@@ -25,7 +25,7 @@ final class SelectedAppointmentResource extends JsonResource
      * @return array{
      *     ulid: string,
      *     hasStarted: bool,
-     *     can: array{checkIn: bool, markNoShow: bool, cancel: bool},
+     *     can: array{checkIn: bool, markNoShow: bool, cancel: bool, move: bool},
      * }
      */
     public function toArray(Request $request): array
@@ -42,6 +42,7 @@ final class SelectedAppointmentResource extends JsonResource
                 'checkIn' => $booked && Gate::allows('checkIn', $this->resource),
                 'markNoShow' => $booked && Gate::allows('markNoShow', $this->resource),
                 'cancel' => $booked && Gate::allows('cancel', $this->resource),
+                'move' => $booked && Gate::allows('move', $this->resource),
             ],
         ];
     }

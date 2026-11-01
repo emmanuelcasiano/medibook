@@ -12,30 +12,24 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatClinicDate } from '@/lib/clinic-time';
+import { formatClinicDate, isCompleteDate } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
-import type { DaySchedule, SelectedAppointment } from '@/types';
+import type { DaySchedule, MoveOptions, SelectedAppointment } from '@/types';
 
 type Props = {
     schedule: DaySchedule;
     /** The booking whose side panel is open, or null. */
     selected: SelectedAppointment | null;
+    /**
+     * The Move picker's doctors and times. Not part of the first load: the panel's Move section asks for it, so it is
+     * `undefined` until then, and `null` when the user may not move this booking.
+     */
+    move?: MoveOptions | null;
 };
 
 const legendStatuses = Object.keys(statusLabels) as Array<
     keyof typeof statusLabels
 >;
-
-/** Earlier years are only a step on the way to typing a real one, such as the "0202" on the way to "2026". */
-const FIRST_YEAR = 2000;
-
-/** A full 'Y-m-d' date in a plausible year. */
-function isCompleteDate(value: string): boolean {
-    return (
-        /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-        Number(value.slice(0, 4)) >= FIRST_YEAR
-    );
-}
 
 /** Give the focus back to the block that opened the panel, once the panel is closed. */
 function useReturnFocusOnClose(selectedUlid: string | null) {
@@ -57,7 +51,7 @@ function useReturnFocusOnClose(selectedUlid: string | null) {
     }, [selectedUlid]);
 }
 
-export default function StaffSchedule({ schedule, selected }: Props) {
+export default function StaffSchedule({ schedule, selected, move }: Props) {
     const { auth } = usePage().props;
     const viewOnly = auth.user?.role === 'admin';
 
@@ -207,6 +201,7 @@ export default function StaffSchedule({ schedule, selected }: Props) {
                                 key={selected.ulid}
                                 schedule={schedule}
                                 selected={selected}
+                                move={move}
                                 viewOnly={viewOnly}
                             />
                         )}
