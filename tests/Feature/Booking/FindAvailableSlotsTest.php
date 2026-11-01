@@ -258,6 +258,35 @@ it('removes the slots that overlap an active booking and its buffer', function (
     ]);
 });
 
+it('does not let an ignored booking block its own time, which the staff move picker needs', function () {
+    // Same day as above: the booking at 09:00 holds the doctor until 09:40.
+    $service = Service::factory()->lasting(30, 10)->create();
+    $doctor = doctorWorking($service, [[1, '08:00', '12:00']]);
+    $booking = bookingAt($doctor, $service, '2026-11-02 09:00');
+
+    $ignoring = app(FindAvailableSlots::class)->handle($service, $doctor, slotDay('2026-11-02'), slotDay('2026-11-02'), $booking);
+
+    // Every start of the morning, including 09:00 and the ones that overlap it.
+    expect(slotTimes($ignoring))->toBe([
+        '08:00', '08:15', '08:30', '08:45', '09:00', '09:15', '09:30', '09:45', '10:00', '10:15', '10:30', '10:45', '11:00', '11:15',
+    ])
+        // And the same call without it still blocks the booking's time, so nothing else changed.
+        ->and(slotTimes(findSlots($service, $doctor, '2026-11-02')))->not->toContain('09:00');
+});
+
+it('still blocks the time of the other bookings while one booking is ignored', function () {
+    $service = Service::factory()->lasting(30, 10)->create();
+    $doctor = doctorWorking($service, [[1, '08:00', '12:00']]);
+    $ignored = bookingAt($doctor, $service, '2026-11-02 09:00');
+    bookingAt($doctor, $service, '2026-11-02 11:00');
+
+    $times = slotTimes(app(FindAvailableSlots::class)->handle($service, $doctor, slotDay('2026-11-02'), slotDay('2026-11-02'), $ignored));
+
+    expect($times)->toContain('09:00')   // the ignored booking's own time is free
+        ->not->toContain('11:00')        // the other booking is still there
+        ->not->toContain('10:30');       // 10:30 + 40 minutes runs into it
+});
+
 it('uses the buffer of the booked service, not the buffer of the service being searched', function () {
     $booked = Service::factory()->lasting(30, 30)->create(); // holds the doctor from 09:00 to 10:00
     $service = Service::factory()->lasting(15)->create();    // no buffer of its own

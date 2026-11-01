@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Booking;
 
+use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Service;
 use Carbon\CarbonImmutable;
@@ -34,11 +35,14 @@ final class FindAvailableSlots
      *
      * @param  CarbonImmutable  $fromDate  Any instant on the first day. It is read as a clinic date.
      * @param  CarbonImmutable  $toDate  Any instant on the last day. It is read as a clinic date.
+     * @param  Appointment|null  $ignoring  A booking that is about to be moved. It no longer blocks its own time, so
+     *                                      the staff move picker can offer a 15 minute shift. Only used for that;
+     *                                      the patient pages never pass it.
      * @return Collection<int, CarbonImmutable> UTC start times, earliest first. Empty if the doctor does not offer the service, or the dates are all in the past or beyond the window.
      *
      * @throws InvalidArgumentException When $toDate is on a day before $fromDate.
      */
-    public function handle(Service $service, Doctor $doctor, CarbonImmutable $fromDate, CarbonImmutable $toDate): Collection
+    public function handle(Service $service, Doctor $doctor, CarbonImmutable $fromDate, CarbonImmutable $toDate, ?Appointment $ignoring = null): Collection
     {
         $timezone = (string) config('app.clinic_timezone');
         $firstDay = $fromDate->setTimezone($timezone)->startOfDay();
@@ -70,7 +74,7 @@ final class FindAvailableSlots
 
         // One query for the whole week's pattern, then the loop below only does date math.
         $rangesByWeekday = $doctor->workingHours()->orderBy('starts_at')->get()->groupBy('weekday');
-        $blocked = $this->blockedPeriods($doctor, $firstDay, $lastDay->addDay());
+        $blocked = $this->blockedPeriods($doctor, $firstDay, $lastDay->addDay(), $ignoring);
 
         // Visit plus buffer: the buffer keeps the doctor free for the next patient, so it must fit too.
         $minutesNeeded = $service->duration_minutes + $service->buffer_minutes;
@@ -111,7 +115,7 @@ final class FindAvailableSlots
      *
      * @return list<array{int, int}>
      */
-    private function blockedPeriods(Doctor $doctor, CarbonImmutable $from, CarbonImmutable $until): array
+    private function blockedPeriods(Doctor $doctor, CarbonImmutable $from, CarbonImmutable $until, ?Appointment $ignoring): array
     {
         $from = $from->utc();
         $until = $until->utc();
@@ -129,6 +133,7 @@ final class FindAvailableSlots
         // Active only (booked, checked in, completed): cancelled and no-show bookings don't hold the slot.
         $doctor->appointments()
             ->active()
+            ->when($ignoring, fn ($query, Appointment $booking) => $query->whereKeyNot($booking->id))
             ->where('starts_at', '<', $until)
             ->where('blocked_until', '>', $from)
             ->get(['starts_at', 'blocked_until'])

@@ -57,3 +57,17 @@ export function clinicWeekday(date: string): number {
 export function clinicDayOfMonth(date: string): number {
     return clinicDateAsUtc(date).getUTCDate();
 }
+
+/** Earlier years are only a step on the way to typing a real one, such as the "0202" on the way to "2026". */
+const FIRST_YEAR = 2000;
+
+/**
+ * A full 'Y-m-d' date in a plausible year. A date field reports a valid date after every digit of the year
+ * ("0002-11-02", "0020-11-02", ...), so a page that loads data for the date must wait for this to be true.
+ */
+export function isCompleteDate(value: string): boolean {
+    return (
+        /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        Number(value.slice(0, 4)) >= FIRST_YEAR
+    );
+}

@@ -6,12 +6,19 @@ type Props = {
     slots: BookingSlot[];
     selected: string | null;
     onSelect: (startsAt: string) => void;
+    /** For a narrow place such as the staff side panel, which sets its own number of columns. */
+    className?: string;
 };
 
 /** The free start times of one day. Each time is a real button, so the keyboard works without extra code. */
-export default function SlotGrid({ slots, selected, onSelect }: Props) {
+export default function SlotGrid({
+    slots,
+    selected,
+    onSelect,
+    className,
+}: Props) {
     return (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul className={cn('grid grid-cols-3 gap-2 sm:grid-cols-4', className)}>
             {slots.map((slot) => {
                 const isSelected = slot.startsAt === selected;
 
