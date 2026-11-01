@@ -34,8 +34,11 @@ final class ListMyAppointments
         $open = [AppointmentStatus::Booked, AppointmentStatus::CheckedIn];
 
         // The doctor's name lives on the user, so load `doctor.user` too (strict mode throws on a lazy load).
+        // `withExists` adds `intake_exists` in the same query, so the list can say "intake needed" without loading
+        // anyone's health text, and without a query per row.
         $mine = fn () => Appointment::query()
             ->whereBelongsTo($patient, 'patient')
+            ->withExists('intake')
             ->with(['service', 'doctor.user']);
 
         return [

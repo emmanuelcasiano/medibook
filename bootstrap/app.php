@@ -37,4 +37,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // A refused form is sent back with its input flashed to the session, and the sessions table is not encrypted.
+        // The intake answers are health text, so they must never be flashed. No page needs it: Inertia forms keep the
+        // typed values on the screen. (The Handler already skips the password fields.)
+        $exceptions->dontFlash([
+            'reason', 'symptoms', 'duration', 'allergies', 'medicines', 'fever', 'pregnant', 'recent_surgery',
+        ]);
     })->create();

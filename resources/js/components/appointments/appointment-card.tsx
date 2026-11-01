@@ -1,4 +1,8 @@
+import { Link } from '@inertiajs/react';
+import { Check, Info } from 'lucide-react';
+import IntakeController from '@/actions/App/Http/Controllers/Patient/IntakeController';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import type { AppointmentStatus, MyAppointment } from '@/types';
 import CancelAppointmentDialog from './cancel-appointment-dialog';
@@ -23,6 +27,18 @@ const badgeVariants: Record<
 /** One appointment. The status is always written out, so it never depends on color alone. */
 export default function AppointmentCard({ appointment, upcoming }: Props) {
     const { service, doctor, startsAt, endsAt, status } = appointment;
+
+    // A booked visit that has no intake yet is the one that needs attention. Once the patient is checked in, an
+    // empty intake can no longer be filled, so only a saved one is mentioned.
+    const intakeStatus = appointment.intakeFilled
+        ? 'Intake done'
+        : status === 'booked'
+          ? 'Intake needed'
+          : null;
+    const showIntakeButton = upcoming && appointment.can.fillIntake;
+    const intakeButtonLabel = appointment.intakeFilled
+        ? 'Edit intake'
+        : 'Fill intake';
 
     return (
         <li className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between">
@@ -51,6 +67,19 @@ export default function AppointmentCard({ appointment, upcoming }: Props) {
                             ` Reason: ${appointment.cancelReason}`}
                     </p>
                 )}
+                {upcoming && intakeStatus && (
+                    <p>
+                        {/* Written out, so it never depends on color alone. */}
+                        <Badge variant="outline" className="gap-1">
+                            {appointment.intakeFilled ? (
+                                <Check aria-hidden className="size-3" />
+                            ) : (
+                                <Info aria-hidden className="size-3" />
+                            )}
+                            {intakeStatus}
+                        </Badge>
+                    </p>
+                )}
                 {upcoming && status === 'booked' && (
                     <p className="text-sm text-muted-foreground">
                         {appointment.can.cancel ? (
@@ -65,9 +94,26 @@ export default function AppointmentCard({ appointment, upcoming }: Props) {
                 )}
             </div>
 
-            {appointment.can.cancel && (
-                <div className="shrink-0">
-                    <CancelAppointmentDialog appointment={appointment} />
+            {(showIntakeButton || appointment.can.cancel) && (
+                <div className="flex shrink-0 flex-wrap gap-2">
+                    {showIntakeButton && (
+                        <Button
+                            asChild
+                            variant={
+                                appointment.intakeFilled ? 'outline' : 'default'
+                            }
+                        >
+                            <Link
+                                href={IntakeController.edit(appointment.ulid)}
+                                aria-label={`${intakeButtonLabel} for ${service.name} on ${formatClinicDateTime(startsAt)}`}
+                            >
+                                {intakeButtonLabel}
+                            </Link>
+                        </Button>
+                    )}
+                    {appointment.can.cancel && (
+                        <CancelAppointmentDialog appointment={appointment} />
+                    )}
                 </div>
             )}
         </li>

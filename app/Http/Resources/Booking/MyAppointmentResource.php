@@ -7,14 +7,15 @@ namespace App\Http\Resources\Booking;
 use App\Actions\Booking\CancelAppointment;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\Intake;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * One row of "My appointments", as the page receives it. The caller must load `service` and `doctor.user` first
- * (strict mode throws on a lazy load). Names only: no doctor user id, email or bio. Call `->resolve()` to get the
+ * One row of "My appointments", as the page receives it. The caller must load `service` and `doctor.user`, and add
+ * `withExists('intake')`, first (strict mode throws on a lazy load or a missing attribute). Names only: no doctor user id, email or bio. Call `->resolve()` to get the
  * plain array for an Inertia prop.
  *
  * @mixin Appointment
@@ -33,7 +34,8 @@ final class MyAppointmentResource extends JsonResource
      *     cancelledByClinic: bool,
      *     service: array{name: string, durationMinutes: int},
      *     doctor: array{name: string, specialty: string},
-     *     can: array{cancel: bool},
+     *     intakeFilled: bool,
+     *     can: array{cancel: bool, fillIntake: bool},
      * }
      */
     public function toArray(Request $request): array
@@ -58,11 +60,16 @@ final class MyAppointmentResource extends JsonResource
                 'name' => $this->doctor->user->name,
                 'specialty' => $this->doctor->specialty,
             ],
-            // The button is hidden when the Action would refuse. The Policy and the Action still check on submit.
+            // Only "filled or not": never the answers. The patient owns this list, but the answers have their own page.
+            'intakeFilled' => $this->intake_exists,
+            // The buttons are hidden when the Action would refuse. The Policy and the Action still check on submit.
             'can' => [
                 'cancel' => Gate::allows('cancel', $this->resource)
                     && $this->status === AppointmentStatus::Booked
                     && $this->starts_at >= CarbonImmutable::now()->addHours(CancelAppointment::PATIENT_CANCEL_HOURS),
+                // The form is open: the patient's own booking, until check-in. Filling in and editing share this rule
+                // (IntakePolicy create and update), and `create` needs no Intake model, so there is no extra query.
+                'fillIntake' => Gate::allows('create', [Intake::class, $this->resource]),
             ],
         ];
     }

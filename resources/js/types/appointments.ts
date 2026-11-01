@@ -20,6 +20,12 @@ export type MyAppointment = {
     cancelledByClinic: boolean;
     service: { name: string; durationMinutes: number };
     doctor: { name: string; specialty: string };
-    /** Computed on the server. React only shows or hides the button; the Policy checks again on submit. */
-    can: { cancel: boolean };
+    /** Whether an intake form was saved for this visit. Never the answers. */
+    intakeFilled: boolean;
+    /** Computed on the server. React only shows or hides the buttons; the Policy checks again on submit. */
+    can: {
+        cancel: boolean;
+        /** The intake form is still open for this visit (their own booking, until check-in). */
+        fillIntake: boolean;
+    };
 };
