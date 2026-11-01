@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\AppointmentStatus;
 use App\Enums\Role;
 use App\Models\Appointment;
+use App\Models\Intake;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -280,6 +281,77 @@ describe('can.cancel', function () {
             ->assertInertia(fn (Assert $page) => $page
                 // Starts Saturday 31 October 09:00 Manila = 01:00 UTC; 2 hours before that is 23:00 UTC the day before.
                 ->where('upcoming.0.cancelUntil', '2026-10-30T23:00:00Z'));
+    });
+});
+
+// The "Fill intake" button (step 8.2). The form itself, who may save it and the answers are tested in IntakeFormTest and
+// SaveIntakeTest. Here: what the list says about the intake, so a patient who skipped the form after booking can find it.
+describe('the intake button', function () {
+    it('offers the form for a booked appointment with no intake yet', function () {
+        ($this->bookingIn)(24);
+
+        $this->actingAs($this->patient)
+            ->get(route('my.home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.0.intakeFilled', false)
+                ->where('upcoming.0.can.fillIntake', true));
+    });
+
+    it('says which appointments have an intake, one by one, and keeps the form open for an edit', function () {
+        $filled = ($this->bookingIn)(24);
+        $empty = ($this->bookingIn)(48);
+        Intake::factory()->for($filled)->create();
+
+        $this->actingAs($this->patient)
+            ->get(route('my.home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming', pluckEquals('ulid', [$filled->ulid, $empty->ulid]))
+                ->where('upcoming', pluckEquals('intakeFilled', [true, false]))
+                ->where('upcoming', pluckEquals('can.fillIntake', [true, true])));
+    });
+
+    it('closes the form once the patient has checked in, and still says whether an intake was saved', function (bool $filled) {
+        $appointment = ($this->bookingIn)(24, state: 'checkedIn');
+
+        if ($filled) {
+            Intake::factory()->for($appointment)->create();
+        }
+
+        $this->actingAs($this->patient)
+            ->get(route('my.home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.0.intakeFilled', $filled)
+                ->where('upcoming.0.can.fillIntake', false));
+    })->with(['an intake' => true, 'no intake' => false]);
+
+    it('closes the form on cancelled, completed and no-show appointments', function () {
+        ($this->bookingIn)(-24, state: 'cancelled');
+        ($this->bookingIn)(-48, state: 'completed');
+        ($this->bookingIn)(-72, state: 'noShow');
+
+        $this->actingAs($this->patient)
+            ->get(route('my.home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('past.data', pluckEquals('can.fillIntake', [false, false, false])));
+    });
+
+    it('never puts the answers on the list', function () {
+        Intake::factory()->for(($this->bookingIn)(24))->create(['answers' => ['reason' => 'Secret chest rash']]);
+
+        $this->actingAs($this->patient)
+            ->get(route('my.home'))
+            ->assertOk()
+            ->assertDontSee('Secret chest rash')
+            ->assertInertia(fn (Assert $page) => $page->missing('upcoming.0.answers')->missing('upcoming.0.intake'));
+    });
+
+    it('links to a form that opens for that appointment', function () {
+        $appointment = ($this->bookingIn)(24);
+
+        $this->actingAs($this->patient)
+            ->get(route('my.appointments.intake', $appointment))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('can.save', true));
     });
 });
 

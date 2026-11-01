@@ -86,7 +86,9 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
             // `{appointment}` is a ULID, and the Policy lets a patient open or cancel their own booking only.
             Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->middleware('throttle:booking')->name('appointments.cancel');
             Route::get('appointments/{appointment}/confirmation', [BookingController::class, 'confirmation'])->name('appointments.confirmation');
+            // One address for the form: PUT creates the intake the first time and replaces its answers after that.
             Route::get('appointments/{appointment}/intake', [IntakeController::class, 'edit'])->name('appointments.intake');
+            Route::put('appointments/{appointment}/intake', [IntakeController::class, 'update'])->middleware('throttle:intake')->name('appointments.intake.update');
         });
     });
 });
