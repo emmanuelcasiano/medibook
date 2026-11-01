@@ -1,23 +1,43 @@
+import { Link } from '@inertiajs/react';
 import { ChevronDown } from 'lucide-react';
+import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import { Badge } from '@/components/ui/badge';
 import { formatClinicTime } from '@/lib/clinic-time';
+import { cn } from '@/lib/utils';
 import type { ScheduleDoctor } from '@/types';
 
 type Props = {
     doctors: ScheduleDoctor[];
+    /** The clinic day on the page ('Y-m-d'), so a row's link stays on it. */
+    date: string;
+    /** The booking whose side panel is open, if any. */
+    selectedUlid: string | null;
 };
 
 /**
  * The schedule for phones: one list per doctor in time order, instead of the grid. A native `<details>` opens
  * and closes with the keyboard (Enter or Space on the summary) and needs no script.
  */
-export default function ScheduleDoctorList({ doctors }: Props) {
+export default function ScheduleDoctorList({
+    doctors,
+    date,
+    selectedUlid,
+}: Props) {
     return (
         <div className="space-y-3 md:hidden">
             {doctors.map((doctor, index) => (
                 <details
                     key={doctor.id}
-                    open={index === 0 ? true : undefined}
+                    // The first doctor opens by default. So does the doctor whose booking is selected, or the
+                    // selected row would be hidden.
+                    open={
+                        index === 0 ||
+                        doctor.appointments.some(
+                            (appointment) => appointment.ulid === selectedUlid,
+                        )
+                            ? true
+                            : undefined
+                    }
                     className="group rounded-xl border"
                 >
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl p-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
@@ -46,22 +66,46 @@ export default function ScheduleDoctorList({ doctors }: Props) {
                             {doctor.appointments.map((appointment) => (
                                 <li
                                     key={appointment.ulid}
-                                    className="flex items-start gap-3 p-4"
+                                    className={cn(
+                                        appointment.ulid === selectedUlid &&
+                                            'bg-muted',
+                                    )}
                                 >
-                                    <span className="w-16 shrink-0 text-sm font-medium">
-                                        {formatClinicTime(appointment.startsAt)}
-                                    </span>
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block truncate font-medium">
-                                            {appointment.patientName}
+                                    {/* The whole row opens the side panel, which shows under the list on a phone. */}
+                                    <Link
+                                        href={ScheduleController.index({
+                                            query: {
+                                                date,
+                                                appointment: appointment.ulid,
+                                            },
+                                        })}
+                                        preserveScroll
+                                        preserveState
+                                        aria-current={
+                                            appointment.ulid === selectedUlid
+                                                ? 'true'
+                                                : undefined
+                                        }
+                                        data-appointment={appointment.ulid}
+                                        className="flex items-start gap-3 p-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+                                    >
+                                        <span className="w-16 shrink-0 text-sm font-medium">
+                                            {formatClinicTime(
+                                                appointment.startsAt,
+                                            )}
                                         </span>
-                                        <span className="block text-xs text-muted-foreground">
-                                            {appointment.serviceName}
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block truncate font-medium">
+                                                {appointment.patientName}
+                                            </span>
+                                            <span className="block text-xs text-muted-foreground">
+                                                {appointment.serviceName}
+                                            </span>
                                         </span>
-                                    </span>
-                                    <Badge variant="outline">
-                                        {appointment.statusLabel}
-                                    </Badge>
+                                        <Badge variant="outline">
+                                            {appointment.statusLabel}
+                                        </Badge>
+                                    </Link>
                                 </li>
                             ))}
                         </ol>

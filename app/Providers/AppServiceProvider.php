@@ -45,6 +45,10 @@ class AppServiceProvider extends ServiceProvider
         // Booking writes a row and takes two row locks, so it is capped per signed-in patient (not per IP, which
         // clinics and phones share). 10 a minute is far above a real patient and too few to hold the locks in a loop.
         RateLimiter::for('booking', fn (Request $request): Limit => Limit::perMinute(10)->by((string) (Auth::id() ?? $request->ip())));
+
+        // Front-desk buttons (check in, no-show, and later cancel and move). A busy desk can do one a few seconds,
+        // so the cap is higher than for patients: 60 a minute per staff member, and still far too few for a loop.
+        RateLimiter::for('staff-actions', fn (Request $request): Limit => Limit::perMinute(60)->by((string) (Auth::id() ?? $request->ip())));
     }
 
     /**

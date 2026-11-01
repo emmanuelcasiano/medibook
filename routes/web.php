@@ -11,6 +11,7 @@ use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
 use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
+use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +60,10 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
     // group in steps 7.2 to 7.4 are staff only: their Policy methods refuse an admin.
     Route::middleware('role:staff,admin')->prefix('staff')->name('staff.')->group(function () {
         Route::get('/', [ScheduleController::class, 'index'])->name('home');
+
+        // Side panel buttons. Each writes under a row lock, so they are capped per signed-in user.
+        Route::post('appointments/{appointment}/check-in', [StaffAppointmentController::class, 'checkIn'])->middleware('throttle:staff-actions')->name('appointments.check-in');
+        Route::post('appointments/{appointment}/no-show', [StaffAppointmentController::class, 'noShow'])->middleware('throttle:staff-actions')->name('appointments.no-show');
     });
 
     // The doctor screen comes on Day 10. Until then its group has one landing page, so the role gate is real and
