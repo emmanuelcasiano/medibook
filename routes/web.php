@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         // Side panel buttons. Each writes under a row lock, so they are capped per signed-in user.
         Route::post('appointments/{appointment}/check-in', [StaffAppointmentController::class, 'checkIn'])->middleware('throttle:staff-actions')->name('appointments.check-in');
         Route::post('appointments/{appointment}/no-show', [StaffAppointmentController::class, 'noShow'])->middleware('throttle:staff-actions')->name('appointments.no-show');
+        Route::post('appointments/{appointment}/cancel', [StaffAppointmentController::class, 'cancel'])->middleware('throttle:staff-actions')->name('appointments.cancel');
     });
 
     // The doctor screen comes on Day 10. Until then its group has one landing page, so the role gate is real and
