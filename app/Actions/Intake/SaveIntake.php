@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Intake;
 
+use App\Enums\SummaryStatus;
 use App\Models\Appointment;
 use App\Models\Intake;
+use App\Models\IntakeSummary;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class SaveIntake
 {
+    public function __construct(private readonly DetectEmergency $detectEmergency) {}
+
     /**
      * Save the intake form of an appointment: the first save creates the intake, every later save replaces its
      * answers. There is one intake per appointment (a unique index), so a patient never gets a second row.
@@ -20,8 +24,13 @@ final class SaveIntake
      * The answers are stored with `encrypted:array` (see the Intake model). Only the keys of `$answers` are stored, so
      * a stray field in a request can't reach the database. `submitted_at` is the time of the last save.
      *
+     * Every save also runs the emergency check (PROJECT.md F5), in PHP and before any AI. The appointment's
+     * `emergency_flag` follows the latest answers: an emergency phrase sets it and skips the AI summary, and an edit
+     * without one clears it. The flag, the summary row and the answers change in one transaction, so they can't
+     * disagree. The AI summary itself (Day 9) is not part of this Action yet.
+     *
      * This Action checks the Policy itself (architecture.md section 3), so a caller that skips the controller can't
-     * skip the check either. The emergency check (step 8.3) and the AI summary (Day 9) are not part of it yet.
+     * skip the check either.
      *
      * @param  array{reason: string, symptoms: string|null, duration: string|null, allergies: string|null, medicines: string|null, fever: bool, pregnant: bool, recent_surgery: bool}  $answers
      *
@@ -61,7 +70,45 @@ final class SaveIntake
                 'submitted_at' => now(),
             ])->save();
 
+            $this->applyEmergencyCheck($current, $intake);
+
             return $intake;
         });
+    }
+
+    /**
+     * Set the flag and the summary row from the answers just saved. The caller holds the appointment row lock.
+     *
+     * An emergency gets a `skipped` summary row with nothing in it, so the AI never sees the answers and an older
+     * summary of earlier answers can't stay next to a new emergency. Without an emergency, a `skipped` row left by an
+     * earlier emergency is removed: it would say "skipped" for answers that no longer match. A `skipped` row from
+     * another cause (cost cap, AI off) is made by the Day 9 job and is replaced by its next run.
+     */
+    private function applyEmergencyCheck(Appointment $appointment, Intake $intake): void
+    {
+        $answers = $intake->answers;
+
+        $isEmergency = $this->detectEmergency->handle([
+            $answers['reason'],
+            $answers['symptoms'],
+            $answers['allergies'],
+            $answers['medicines'],
+        ]);
+
+        $appointment->update(['emergency_flag' => $isEmergency]);
+
+        if (! $isEmergency) {
+            $intake->summary()->where('status', SummaryStatus::Skipped)->delete();
+
+            return;
+        }
+
+        $summary = IntakeSummary::query()->updateOrCreate(
+            ['intake_id' => $intake->id],
+            ['status' => SummaryStatus::Skipped, 'summary' => null, 'model' => null, 'input_tokens' => null, 'output_tokens' => null, 'error' => null],
+        );
+
+        // The review columns are guarded (only MarkSummaryReviewed sets them), so a replaced summary is un-reviewed here.
+        $summary->forceFill(['reviewed_by' => null, 'reviewed_at' => null])->save();
     }
 }

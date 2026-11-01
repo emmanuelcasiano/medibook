@@ -49,6 +49,8 @@ final class IntakeController extends Controller
                 'doctor' => (new BookableDoctorResource($appointment->doctor))->resolve(),
             ],
             'intake' => $intake === null ? null : (new IntakeResource($intake))->resolve(),
+            // Only a yes/no, never the matched words. Read from the booking, so the message is still there after a refresh.
+            'emergency' => $appointment->emergency_flag,
             'durations' => array_map(
                 fn (IntakeDuration $duration): array => ['value' => $duration->value, 'label' => $duration->label()],
                 IntakeDuration::cases(),
