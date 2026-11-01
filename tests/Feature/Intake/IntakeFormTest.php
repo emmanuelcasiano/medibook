@@ -56,6 +56,7 @@ describe('the form page', function () {
                 ->component('my/appointments/intake')
                 ->where('appointment.ulid', $this->appointment->ulid)
                 ->where('intake', null)
+                ->where('emergency', false)
                 ->where('can.save', true)
                 ->has('durations', 5)
                 ->where('durations.0', ['value' => 'today', 'label' => 'Since today']));
@@ -158,6 +159,79 @@ describe('saving the form', function () {
                 'pregnant' => false,
                 'recent_surgery' => false,
             ]);
+    });
+
+    describe('emergency check', function () {
+        it('flags the booking, saves the intake and shows the 911 message on the form page', function () {
+            $url = route('my.appointments.intake.update', $this->appointment);
+
+            $this->actingAs($this->patient)
+                ->put($url, intakePayload(['reason' => 'Chest pain since this morning']))
+                ->assertRedirect($this->formUrl)
+                ->assertSessionHasNoErrors();
+
+            expect($this->appointment->fresh()->emergency_flag)->toBeTrue()
+                ->and(Intake::query()->count())->toBe(1);
+
+            // The message comes from the booking, so it is still there on a plain reload. The page gets a yes/no only.
+            $this->actingAs($this->patient)
+                ->get($this->formUrl)
+                ->assertInertia(fn (Assert $page) => $page
+                    ->where('emergency', true)
+                    ->where('can.save', true)
+                    ->where('intake.answers.reason', 'Chest pain since this morning'));
+        });
+
+        it('takes the message away when the patient corrects the answers', function () {
+            $url = route('my.appointments.intake.update', $this->appointment);
+
+            $this->actingAs($this->patient)->put($url, intakePayload(['reason' => 'Chest pain']))->assertRedirect();
+            $this->actingAs($this->patient)->put($url, intakePayload(['reason' => 'Mild cough']))->assertRedirect();
+
+            $this->actingAs($this->patient)
+                ->get($this->formUrl)
+                ->assertInertia(fn (Assert $page) => $page->where('emergency', false));
+
+            expect($this->appointment->fresh()->emergency_flag)->toBeFalse();
+        });
+
+        // The whole chain, not a flag set by hand: the patient's real save is what staff see on the day grid.
+        it('shows staff the red flag after the patient saves, and never shows it to an admin', function () {
+            $this->actingAs($this->patient)
+                ->put(route('my.appointments.intake.update', $this->appointment), intakePayload(['reason' => 'Chest pain']))
+                ->assertRedirect();
+
+            $date = $this->appointment->starts_at->timezone(config('app.clinic_timezone'))->toDateString();
+            $rowFor = fn (Role $role): array => collect(
+                $this->actingAs(userWithRole($role))->get(route('staff.home', ['date' => $date]))->assertOk()->inertiaProps('schedule.doctors'),
+            )->flatMap(fn (array $doctor): array => $doctor['appointments'])->firstWhere('ulid', $this->appointment->ulid);
+
+            expect($rowFor(Role::Staff))->toMatchArray(['emergencyFlag' => true, 'intakeMissing' => false])
+                ->and($rowFor(Role::Admin))->not->toHaveKey('emergencyFlag');
+        });
+
+        it('does not flag the booking when the form is refused', function () {
+            ($this->openedForm)();
+
+            $this->actingAs($this->patient)
+                ->put(route('my.appointments.intake.update', $this->appointment), intakePayload([
+                    'reason' => '',
+                    'symptoms' => 'I have chest pain',
+                ]))
+                ->assertSessionHasErrors('reason');
+
+            expect($this->appointment->fresh()->emergency_flag)->toBeFalse()
+                ->and(Intake::query()->count())->toBe(0);
+        });
+
+        it('does not flag the booking when another patient sends an emergency phrase', function () {
+            $this->actingAs(User::factory()->patient()->create())
+                ->put(route('my.appointments.intake.update', $this->appointment), intakePayload(['reason' => 'Chest pain']))
+                ->assertForbidden();
+
+            expect($this->appointment->fresh()->emergency_flag)->toBeFalse();
+        });
+
     });
 
     it('edits the same intake on the next save', function () {

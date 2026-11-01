@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 use App\Actions\Intake\SaveIntake;
 use App\Enums\Role;
+use App\Enums\SummaryStatus;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Intake;
+use App\Models\IntakeSummary;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 // These tests call the Action directly. The form page and the route (HTTP status, redirect, validation messages) are in
 // IntakeFormTest. The Action checks IntakePolicy itself, and a denied call must write nothing. "Now" is Friday
-// 30 October 2026, 09:00 in Manila. The emergency check (step 8.3) and the AI summary (Day 9) are not part of it yet.
+// 30 October 2026, 09:00 in Manila. The AI summary itself (Day 9) is not part of it yet, but the emergency check (step
+// 8.3) is: it sets the appointment's flag and the `skipped` summary row, and it never queues a job.
 
 /**
  * A full set of valid answers, as the Form Request hands them to the Action.
@@ -119,6 +123,108 @@ it('encrypts the answers again on an edit', function () {
     expect(DB::table('intakes')->where('id', $intake->id)->value('answers'))->not->toContain('Secret second reason');
 });
 
+// Emergency check (PROJECT.md F5)
+
+it('flags the appointment and skips the summary when a free-text answer has an emergency phrase', function (string $field) {
+    Queue::fake();
+
+    $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers([$field => 'I have CHEST pain since morning']));
+
+    $summary = IntakeSummary::query()->sole();
+
+    expect($this->appointment->fresh()->emergency_flag)->toBeTrue()
+        ->and($summary->intake_id)->toBe($intake->id)
+        ->and($summary->status)->toBe(SummaryStatus::Skipped)
+        ->and($summary->summary)->toBeNull()
+        ->and($summary->model)->toBeNull();
+
+    // No AI job is queued: the emergency check stops the summary before any AI step.
+    Queue::assertNothingPushed();
+})->with(['reason', 'symptoms', 'allergies', 'medicines']);
+
+it('leaves the flag off and makes no summary row for an ordinary intake', function () {
+    Queue::fake();
+
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
+
+    expect($this->appointment->fresh()->emergency_flag)->toBeFalse()
+        ->and(IntakeSummary::query()->count())->toBe(0);
+
+    Queue::assertNothingPushed();
+});
+
+// Only the four free-text answers are checked. Ticking fever, pregnant and recent surgery is not an emergency.
+it('does not flag the yes/no answers', function () {
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['fever' => true, 'pregnant' => true, 'recent_surgery' => true]));
+
+    expect($this->appointment->fresh()->emergency_flag)->toBeFalse();
+});
+
+it('clears the flag and the skipped row when an edit no longer has an emergency phrase', function () {
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain']));
+
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Mild cough']));
+
+    expect($this->appointment->fresh()->emergency_flag)->toBeFalse()
+        ->and(IntakeSummary::query()->count())->toBe(0);
+});
+
+it('keeps one skipped row when an emergency intake is saved again', function () {
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain']));
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain, worse now']));
+
+    expect(IntakeSummary::query()->count())->toBe(1)
+        ->and(IntakeSummary::query()->sole()->status)->toBe(SummaryStatus::Skipped)
+        ->and($this->appointment->fresh()->emergency_flag)->toBeTrue();
+});
+
+// An older AI summary describes the older answers. It must not stay next to an emergency, or keep its "reviewed" mark.
+it('replaces a ready, reviewed summary with an empty skipped one when the edit is an emergency', function () {
+    $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
+    $doctor = userWithRole(Role::Doctor);
+    $summary = IntakeSummary::factory()->for($intake)->create();
+    $summary->forceFill(['reviewed_by' => $doctor->id, 'reviewed_at' => now()])->save();
+
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['symptoms' => 'Cannot breathe well']));
+
+    $summary = $summary->fresh();
+
+    expect(IntakeSummary::query()->count())->toBe(1)
+        ->and($summary->status)->toBe(SummaryStatus::Skipped)
+        ->and($summary->summary)->toBeNull()
+        ->and($summary->model)->toBeNull()
+        ->and($summary->input_tokens)->toBeNull()
+        ->and($summary->reviewed_by)->toBeNull()
+        ->and($summary->reviewed_at)->toBeNull();
+});
+
+it('keeps a ready summary when an ordinary intake is edited', function () {
+    $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
+    IntakeSummary::factory()->for($intake)->create();
+
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Still coughing']));
+
+    expect(IntakeSummary::query()->sole()->status)->toBe(SummaryStatus::Ready);
+});
+
+// A refused edit is refused before the check, so the flag staff already saw is not cleared by a late "all fine" edit.
+it('keeps the flag when the patient tries to edit after check-in', function () {
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain']));
+    $this->appointment->update(['status' => 'checked_in', 'checked_in_at' => now()]);
+
+    expect(fn () => saveIntakeAs($this->patient, $this->appointment->fresh(), intakeAnswers(['reason' => 'Mild cough'])))
+        ->toThrow(AuthorizationException::class);
+
+    expect($this->appointment->fresh()->emergency_flag)->toBeTrue()
+        ->and(IntakeSummary::query()->sole()->status)->toBe(SummaryStatus::Skipped);
+});
+
+it('saves the answers of an emergency intake too', function () {
+    $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain']));
+
+    expect($intake->fresh()->answers['reason'])->toBe('Chest pain');
+});
+
 // Denied access
 
 it('refuses another patient and writes nothing', function () {
@@ -137,6 +243,16 @@ it('refuses another patient who tries to edit an existing intake, and the answer
         ->toThrow(AuthorizationException::class);
 
     expect($intake->fresh()->answers['reason'])->toBe('My own reason');
+});
+
+it('does not flag the appointment when a refused caller sends an emergency phrase', function () {
+    $stranger = User::factory()->patient()->create();
+
+    expect(fn () => saveIntakeAs($stranger, $this->appointment, intakeAnswers(['reason' => 'Chest pain'])))
+        ->toThrow(AuthorizationException::class);
+
+    expect($this->appointment->fresh()->emergency_flag)->toBeFalse()
+        ->and(IntakeSummary::query()->count())->toBe(0);
 });
 
 it('refuses staff, an admin and a doctor, even the appointment\'s own doctor', function (string $who) {

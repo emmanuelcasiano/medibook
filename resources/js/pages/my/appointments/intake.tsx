@@ -1,6 +1,8 @@
 import { Head } from '@inertiajs/react';
+import { Siren } from 'lucide-react';
 import IntakeAnswersView from '@/components/intake/intake-answers';
 import IntakeForm from '@/components/intake/intake-form';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 import { formatClinicDateTime } from '@/lib/clinic-time';
 import type {
     IntakeAppointment,
@@ -13,6 +15,8 @@ type Props = {
     /** null until the patient saves the form for the first time. */
     intake: SavedIntake | null;
     durations: IntakeDurationOption[];
+    /** True when the saved answers have an emergency phrase. Set by the server, never by this page. */
+    emergency: boolean;
     /** Computed on the server. React only shows or hides the form; SaveIntake checks the Policy again on submit. */
     can: { save: boolean };
 };
@@ -21,6 +25,7 @@ export default function MyAppointmentsIntake({
     appointment,
     intake,
     durations,
+    emergency,
     can,
 }: Props) {
     const { service, doctor, startsAt } = appointment;
@@ -43,6 +48,17 @@ export default function MyAppointmentsIntake({
                         {formatClinicDateTime(startsAt)}
                     </p>
                 </div>
+
+                {emergency && (
+                    <Alert variant="destructive">
+                        <Siren />
+                        {/* The title clamps to one line by default. This safety message must always show in full. */}
+                        <AlertTitle className="line-clamp-none">
+                            This may be an emergency. Call 911 or go to the
+                            nearest emergency room now.
+                        </AlertTitle>
+                    </Alert>
+                )}
 
                 {can.save ? (
                     <>
