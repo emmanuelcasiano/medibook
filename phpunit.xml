@@ -27,6 +27,10 @@
         <env name="DB_DATABASE" value="medibook_testing"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="MEDIBOOK_AI_ENABLED" value="false"/>
+        <env name="GEMINI_API_KEY" value=""/>
+        <env name="OPENAI_API_KEY" value=""/>
+        <env name="ANTHROPIC_API_KEY" value=""/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
