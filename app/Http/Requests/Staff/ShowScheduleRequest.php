@@ -18,7 +18,8 @@ final class ShowScheduleRequest extends FormRequest
     }
 
     /**
-     * The day to show, as a clinic date. It is optional: without it the page opens on today.
+     * The day to show, as a clinic date (optional: without it the page opens on today), and the booking whose panel
+     * is open (optional).
      *
      * @return array<string, array<mixed>>
      */
@@ -26,7 +27,17 @@ final class ShowScheduleRequest extends FormRequest
     {
         return [
             'date' => ['nullable', 'string', 'date_format:'.self::DATE_FORMAT],
+            // The booking whose side panel is open. A well-formed ULID that is not on the day just opens no panel.
+            'appointment' => ['nullable', 'string', 'ulid'],
         ];
+    }
+
+    /** The ULID of the booking whose panel is open, or null. Call it only after validation passed. */
+    public function selectedUlid(): ?string
+    {
+        $ulid = $this->query('appointment');
+
+        return is_string($ulid) && $ulid !== '' ? $ulid : null;
     }
 
     /** The chosen clinic day at 00:00 clinic time, or today when none was sent. Call it only after validation passed. */

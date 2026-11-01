@@ -1,7 +1,8 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
+import AppointmentPanel from '@/components/schedule/appointment-panel';
 import ScheduleDoctorList from '@/components/schedule/schedule-doctor-list';
 import ScheduleGrid from '@/components/schedule/schedule-grid';
 import {
@@ -13,10 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatClinicDate } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
-import type { DaySchedule } from '@/types';
+import type { DaySchedule, SelectedAppointment } from '@/types';
 
 type Props = {
     schedule: DaySchedule;
+    /** The booking whose side panel is open, or null. */
+    selected: SelectedAppointment | null;
 };
 
 const legendStatuses = Object.keys(statusLabels) as Array<
@@ -34,9 +37,31 @@ function isCompleteDate(value: string): boolean {
     );
 }
 
-export default function StaffSchedule({ schedule }: Props) {
+/** Give the focus back to the block that opened the panel, once the panel is closed. */
+function useReturnFocusOnClose(selectedUlid: string | null) {
+    const previous = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (previous.current !== null && selectedUlid === null) {
+            // The grid and the phone list both hold the booking, and only one of them is on screen.
+            const visible = Array.from(
+                document.querySelectorAll<HTMLElement>(
+                    `[data-appointment="${previous.current}"]`,
+                ),
+            ).find((element) => element.offsetParent !== null);
+
+            visible?.focus();
+        }
+
+        previous.current = selectedUlid;
+    }, [selectedUlid]);
+}
+
+export default function StaffSchedule({ schedule, selected }: Props) {
     const { auth } = usePage().props;
     const viewOnly = auth.user?.role === 'admin';
+
+    useReturnFocusOnClose(selected?.ulid ?? null);
 
     const appointments = schedule.doctors.flatMap(
         (doctor) => doctor.appointments,
@@ -164,10 +189,28 @@ export default function StaffSchedule({ schedule }: Props) {
                 </ul>
 
                 {schedule.doctors.length > 0 ? (
-                    <>
-                        <ScheduleGrid schedule={schedule} />
-                        <ScheduleDoctorList doctors={schedule.doctors} />
-                    </>
+                    // The panel sits beside the grid from `md` up and under the phone list below it.
+                    <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                        <div className="min-w-0 flex-1">
+                            <ScheduleGrid
+                                schedule={schedule}
+                                selectedUlid={selected?.ulid ?? null}
+                            />
+                            <ScheduleDoctorList
+                                doctors={schedule.doctors}
+                                date={schedule.date}
+                                selectedUlid={selected?.ulid ?? null}
+                            />
+                        </div>
+                        {selected && (
+                            <AppointmentPanel
+                                key={selected.ulid}
+                                schedule={schedule}
+                                selected={selected}
+                                viewOnly={viewOnly}
+                            />
+                        )}
+                    </div>
                 ) : (
                     <p className="rounded-xl border p-8 text-center text-sm text-muted-foreground">
                         There are no doctors to show.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Schedule;
 
+use App\Models\Appointment;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -24,4 +25,21 @@ final readonly class DaySchedule
         public int $endMinute,
         public Collection $columns,
     ) {}
+
+    /**
+     * A booking shown on this day, by its ULID. It looks only at what the day already holds, so an unknown ULID or
+     * one from another day finds nothing, and the lookup costs no query and says nothing about other bookings.
+     */
+    public function find(string $ulid): ?Appointment
+    {
+        foreach ($this->columns as $column) {
+            $appointment = $column->appointments->firstWhere('ulid', $ulid);
+
+            if ($appointment !== null) {
+                return $appointment;
+            }
+        }
+
+        return null;
+    }
 }

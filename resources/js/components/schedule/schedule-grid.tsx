@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, ScheduleAppointment } from '@/types';
@@ -8,6 +10,8 @@ const ROW_REM = 2;
 
 type Props = {
     schedule: DaySchedule;
+    /** The booking whose side panel is open, if any. */
+    selectedUlid: string | null;
 };
 
 /** A time of day from minutes after clinic midnight, as "9:00 am". */
@@ -22,7 +26,7 @@ function minuteLabel(minute: number): string {
  * The day grid for screens from `md` up: a column per doctor and a row per slot step. A booking is a block placed at
  * its start and as tall as its visit. On a phone the per-doctor list is shown instead.
  */
-export default function ScheduleGrid({ schedule }: Props) {
+export default function ScheduleGrid({ schedule, selectedUlid }: Props) {
     const { doctors, startMinute, endMinute, stepMinutes } = schedule;
     const rows = (endMinute - startMinute) / stepMinutes;
     const height = `${rows * ROW_REM}rem`;
@@ -95,6 +99,8 @@ export default function ScheduleGrid({ schedule }: Props) {
                             <Block
                                 key={appointment.ulid}
                                 appointment={appointment}
+                                date={schedule.date}
+                                selected={appointment.ulid === selectedUlid}
                                 startMinute={startMinute}
                                 stepMinutes={stepMinutes}
                             />
@@ -108,48 +114,71 @@ export default function ScheduleGrid({ schedule }: Props) {
 
 type BlockProps = {
     appointment: ScheduleAppointment;
+    /** The clinic day on the page, so the link stays on it. */
+    date: string;
+    selected: boolean;
     startMinute: number;
     stepMinutes: number;
 };
 
-function Block({ appointment, startMinute, stepMinutes }: BlockProps) {
+function Block({
+    appointment,
+    date,
+    selected,
+    startMinute,
+    stepMinutes,
+}: BlockProps) {
     const rowSpan = appointment.durationMinutes / stepMinutes;
     const short = rowSpan <= 1;
 
     return (
         <div
             role="listitem"
-            title={`${appointment.patientName} · ${appointment.serviceName} · ${appointment.statusLabel}`}
             className={cn(
-                'absolute inset-x-1 overflow-hidden rounded-md border px-2 py-1 text-xs leading-tight',
+                'absolute inset-x-1 overflow-hidden rounded-md border text-xs leading-tight',
                 statusStyles[appointment.status],
+                selected && 'ring-2 ring-ring',
             )}
             style={{
                 top: `${((appointment.offsetMinutes - startMinute) / stepMinutes) * ROW_REM + 0.0625}rem`,
                 height: `${rowSpan * ROW_REM - 0.125}rem`,
             }}
         >
-            <span className="sr-only">
-                {formatClinicTime(appointment.startsAt)} to{' '}
-                {formatClinicTime(appointment.endsAt)}.{' '}
-            </span>
-            {short ? (
-                <p className="truncate">
-                    <span className="font-medium">
-                        {appointment.patientName}
-                    </span>{' '}
-                    · {appointment.statusLabel}
-                </p>
-            ) : (
-                <>
-                    <p className="truncate font-medium">
-                        {appointment.patientName}
-                    </p>
+            {/* The whole block opens the side panel. A real link, so Tab and Enter work, and the address can be shared. */}
+            <Link
+                href={ScheduleController.index({
+                    query: { date, appointment: appointment.ulid },
+                })}
+                preserveScroll
+                preserveState
+                aria-current={selected ? 'true' : undefined}
+                data-appointment={appointment.ulid}
+                title={`${appointment.patientName} · ${appointment.serviceName} · ${appointment.statusLabel}`}
+                className="block size-full rounded-md px-2 py-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+            >
+                <span className="sr-only">
+                    {formatClinicTime(appointment.startsAt)} to{' '}
+                    {formatClinicTime(appointment.endsAt)}.{' '}
+                </span>
+                {short ? (
                     <p className="truncate">
-                        {appointment.serviceName} · {appointment.statusLabel}
+                        <span className="font-medium">
+                            {appointment.patientName}
+                        </span>{' '}
+                        · {appointment.statusLabel}
                     </p>
-                </>
-            )}
+                ) : (
+                    <>
+                        <p className="truncate font-medium">
+                            {appointment.patientName}
+                        </p>
+                        <p className="truncate">
+                            {appointment.serviceName} ·{' '}
+                            {appointment.statusLabel}
+                        </p>
+                    </>
+                )}
+            </Link>
         </div>
     );
 }
