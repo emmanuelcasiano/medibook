@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { ScheduleDoctor } from '@/types';
+import AppointmentFlags from './appointment-flags';
 
 type Props = {
     doctors: ScheduleDoctor[];
@@ -95,8 +96,14 @@ export default function ScheduleDoctorList({
                                             )}
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <span className="block truncate font-medium">
-                                                {appointment.patientName}
+                                            <span className="flex items-center gap-1.5">
+                                                <span className="truncate font-medium">
+                                                    {appointment.patientName}
+                                                </span>
+                                                <AppointmentFlags
+                                                    appointment={appointment}
+                                                    className="shrink-0"
+                                                />
                                             </span>
                                             <span className="block text-xs text-muted-foreground">
                                                 {appointment.serviceName}

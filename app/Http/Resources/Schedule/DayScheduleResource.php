@@ -6,17 +6,19 @@ namespace App\Http\Resources\Schedule;
 
 use App\Actions\Schedule\DaySchedule;
 use App\Actions\Schedule\DoctorColumn;
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The staff day schedule as the page receives it. Times of a booking are given twice: as UTC instants, and as
  * minutes from clinic midnight, so the grid can place a block without doing time zone math in the browser.
  *
- * Only the patient's name is sent: no email, birth date, intake or summary. Call `->resolve()` to get the plain
- * array for an Inertia prop.
+ * Only the patient's name is sent: no email, birth date, intake or summary. Staff (not admins) also get two booleans
+ * per booking, `intakeMissing` and `emergencyFlag`. Call `->resolve()` to get the plain array for an Inertia prop.
  *
  * @mixin DaySchedule
  */
@@ -36,6 +38,9 @@ final class DayScheduleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Asked once for the whole page. An admin gets a schedule with no intake or emergency keys at all.
+        $withIntakeStatus = Gate::allows('viewIntakeStatus', Appointment::class);
+
         return [
             'date' => $this->date->format('Y-m-d'),
             'previousDate' => $this->date->subDay()->format('Y-m-d'),
@@ -53,7 +58,7 @@ final class DayScheduleResource extends JsonResource
                     'isActive' => $column->doctor->user->is_active,
                     'isWorking' => $column->isWorking,
                     'appointments' => $column->appointments
-                        ->map(fn (Appointment $appointment): array => $this->appointment($appointment))
+                        ->map(fn (Appointment $appointment): array => $this->appointment($appointment, $withIntakeStatus))
                         ->values()
                         ->all(),
                 ])
@@ -63,11 +68,11 @@ final class DayScheduleResource extends JsonResource
     }
 
     /** @return array<string, mixed> */
-    private function appointment(Appointment $appointment): array
+    private function appointment(Appointment $appointment, bool $withIntakeStatus): array
     {
         $dayStart = $this->date->getTimestamp();
 
-        return [
+        $row = [
             'ulid' => $appointment->ulid,
             'startsAt' => $appointment->starts_at->toIso8601ZuluString(),
             'endsAt' => $appointment->ends_at->toIso8601ZuluString(),
@@ -78,5 +83,14 @@ final class DayScheduleResource extends JsonResource
             'status' => $appointment->status->value,
             'statusLabel' => $appointment->status->label(),
         ];
+
+        if ($withIntakeStatus) {
+            // Two yes/no facts, never the answers. The intake can be edited only until check-in, so a missing one is
+            // worth a warning only while the booking is still `booked`.
+            $row['intakeMissing'] = $appointment->status === AppointmentStatus::Booked && ! $appointment->intake_exists;
+            $row['emergencyFlag'] = $appointment->emergency_flag;
+        }
+
+        return $row;
     }
 }

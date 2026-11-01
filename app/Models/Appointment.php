@@ -38,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable|null $reminder_sent_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read bool $intake_exists Only there after `withExists('intake')`.
  */
 // `active_key` is not fillable: it is a generated column and MySQL refuses writes to it.
 // `status`, `emergency_flag` and the cancel/check-in columns are fillable because Actions call create()/update()

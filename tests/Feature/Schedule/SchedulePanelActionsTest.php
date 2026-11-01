@@ -102,7 +102,8 @@ describe('the selected prop', function () {
                 ->where('selected.can.checkIn', false)
                 ->where('selected.can.markNoShow', false));
 
-        expect($adminView->inertiaProps('schedule'))->toEqual($staffView->inertiaProps('schedule'));
+        // The same bookings, apart from the two intake and emergency keys that only staff get (see DayScheduleTest).
+        expect($adminView->inertiaProps('schedule'))->toEqual(withoutIntakeStatus($staffView->inertiaProps('schedule')));
     });
 
     it('opens no panel without an appointment in the address', function () {

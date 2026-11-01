@@ -7,6 +7,7 @@ import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import AppointmentFlags from '@/components/schedule/appointment-flags';
 import MoveSection from '@/components/schedule/move-section';
 import {
     Dialog,
@@ -155,6 +156,8 @@ export default function AppointmentPanel({
                     </Link>
                 </Button>
             </div>
+
+            <AppointmentFlags appointment={appointment} variant="text" />
 
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                 <dt className="text-muted-foreground">Time</dt>

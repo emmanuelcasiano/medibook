@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\Role;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\Intake;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\WorkingHour;
@@ -63,14 +64,14 @@ describe('who may open it', function () {
                 ->where('schedule.date', SCHED_DAY));
     });
 
-    it('shows an admin the same bookings as staff', function () {
+    it('shows an admin the same bookings as staff, without the intake and emergency keys', function () {
         $doctor = schedDoctor('Dr. Reyes');
         schedBooking($doctor, '2026-11-02 09:00', patientName: 'Ana Cruz');
 
         $staffView = $this->actingAs(schedStaff())->get(route('staff.home', ['date' => SCHED_DAY]))->assertOk();
         $adminView = $this->actingAs(userWithRole(Role::Admin))->get(route('staff.home', ['date' => SCHED_DAY]))->assertOk();
 
-        expect($adminView->inertiaProps('schedule'))->toEqual($staffView->inertiaProps('schedule'));
+        expect($adminView->inertiaProps('schedule'))->toEqual(withoutIntakeStatus($staffView->inertiaProps('schedule')));
     });
 
     it('answers 403 to a patient or a doctor, and sends no bookings', function (Role $role) {
@@ -326,8 +327,9 @@ describe('what the page may learn', function () {
             ->assertOk()
             ->assertDontSee('ana.private@example.test');
 
+        // `intakeMissing` and `emergencyFlag` are two yes/no facts for staff; see "the intake and emergency flags".
         expect(collect($response->inertiaProps('schedule.doctors.0.appointments.0'))->keys()->sort()->values()->all())->toBe([
-            'durationMinutes', 'endsAt', 'offsetMinutes', 'patientName', 'serviceName', 'startsAt', 'status', 'statusLabel', 'ulid',
+            'durationMinutes', 'emergencyFlag', 'endsAt', 'intakeMissing', 'offsetMinutes', 'patientName', 'serviceName', 'startsAt', 'status', 'statusLabel', 'ulid',
         ]);
     });
 
@@ -374,6 +376,102 @@ describe('what the page may learn', function () {
 
         foreach (['Dr. Santos', 'Dr. Lim'] as $name) {
             schedBooking(schedDoctor($name), '2026-11-02 09:00');
+        }
+
+        expect($queries())->toBe($few);
+    });
+});
+
+describe('the intake and emergency flags', function () {
+    /** The flags of the one booking on the page, for a staff member. */
+    $flagsFor = function (Appointment $booking): array {
+        $response = test()->actingAs(schedStaff())->get(route('staff.home', ['date' => SCHED_DAY]))->assertOk();
+        $row = collect($response->inertiaProps('schedule.doctors'))
+            ->flatMap(fn (array $doctor): array => $doctor['appointments'])
+            ->firstWhere('ulid', $booking->ulid);
+
+        return [$row['intakeMissing'], $row['emergencyFlag']];
+    };
+
+    it('tells staff a booked appointment has no intake yet, and not once it has one', function () use ($flagsFor) {
+        $doctor = schedDoctor('Dr. Reyes');
+        $empty = schedBooking($doctor, '2026-11-02 09:00');
+        $filled = schedBooking($doctor, '2026-11-02 10:00');
+        Intake::factory()->for($filled)->create();
+
+        expect($flagsFor($empty))->toBe([true, false])
+            ->and($flagsFor($filled))->toBe([false, false]);
+    });
+
+    it('stops warning about a missing intake once the booking is no longer booked', function (string $state) use ($flagsFor) {
+        // The intake can't be edited after check-in, so a warning would not help staff.
+        $booking = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00', $state);
+
+        expect($flagsFor($booking))->toBe([false, false]);
+    })->with(['checkedIn', 'completed', 'noShow']);
+
+    it('shows the emergency flag whatever the status', function (string $state) use ($flagsFor) {
+        $doctor = schedDoctor('Dr. Reyes');
+        $flagged = schedBooking($doctor, '2026-11-02 09:00', $state);
+        $flagged->forceFill(['emergency_flag' => true])->save();
+        $other = schedBooking($doctor, '2026-11-02 10:00', $state);
+        Intake::factory()->for($flagged)->create();
+        Intake::factory()->for($other)->create();
+
+        expect($flagsFor($flagged))->toBe([false, true])
+            ->and($flagsFor($other))->toBe([false, false]);
+    })->with(['booked', 'checkedIn', 'completed', 'noShow']);
+
+    it('can show both flags on one booking', function () use ($flagsFor) {
+        $booking = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00');
+        $booking->forceFill(['emergency_flag' => true])->save();
+
+        expect($flagsFor($booking))->toBe([true, true]);
+    });
+
+    it('sends an admin neither key, even for a flagged booking with no intake', function () {
+        $booking = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00');
+        $booking->forceFill(['emergency_flag' => true])->save();
+
+        $response = $this->actingAs(userWithRole(Role::Admin))
+            ->get(route('staff.home', ['date' => SCHED_DAY]))
+            ->assertOk();
+
+        expect(array_keys($response->inertiaProps('schedule.doctors.0.appointments.0')))
+            ->not->toContain('intakeMissing')
+            ->not->toContain('emergencyFlag');
+        // The keys are missing from the page source too, not only from the data above.
+        $response->assertDontSee('intakeMissing')->assertDontSee('emergencyFlag');
+    });
+
+    it('never sends the intake answers, only whether there is an intake', function () {
+        $booking = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00');
+        Intake::factory()->for($booking)->create(['answers' => ['reason' => 'Private reason XYZ-7731', 'symptoms' => 'Private symptoms XYZ-7731']]);
+
+        $this->actingAs(schedStaff())
+            ->get(route('staff.home', ['date' => SCHED_DAY, 'appointment' => $booking->ulid]))
+            ->assertOk()
+            ->assertDontSee('XYZ-7731')
+            ->assertDontSee('answers');
+    });
+
+    it('runs the same number of queries with intakes and flags as without', function () {
+        $queries = function (): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->actingAs(schedStaff())->get(route('staff.home', ['date' => SCHED_DAY]))->assertOk();
+
+            return count(DB::getQueryLog());
+        };
+
+        $doctor = schedDoctor('Dr. Reyes');
+        schedBooking($doctor, '2026-11-02 08:00');
+        $few = $queries();
+
+        foreach (['09:00', '10:00', '11:00'] as $time) {
+            $booking = schedBooking($doctor, "2026-11-02 $time");
+            Intake::factory()->for($booking)->create();
+            $booking->forceFill(['emergency_flag' => true])->save();
         }
 
         expect($queries())->toBe($few);

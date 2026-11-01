@@ -31,7 +31,8 @@ final class GetDaySchedule
      * - A fixed number of queries for the whole day (bookings, doctors, working hours and their eager loads), none
      *   per doctor or per booking.
      *
-     * Only the patient's name is loaded: staff and admins don't read health data (PROJECT.md section 3).
+     * Only the patient's name is loaded, plus whether an intake exists: staff and admins don't read health data
+     * (PROJECT.md section 3).
      *
      * @param  CarbonImmutable  $date  Any instant on the day. It is read as a clinic date.
      */
@@ -48,6 +49,9 @@ final class GetDaySchedule
             ->where('starts_at', '>=', $from)
             ->where('starts_at', '<', $until)
             ->with(['patient:id,name', 'service:id,name,duration_minutes'])
+            // Only whether an intake row exists (`intake_exists`), in the same query. The relation is not loaded, so
+            // the encrypted answers are never read here.
+            ->withExists('intake')
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();

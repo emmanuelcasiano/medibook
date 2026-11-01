@@ -3,6 +3,7 @@ import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleCon
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, ScheduleAppointment } from '@/types';
+import AppointmentFlags from './appointment-flags';
 import { statusStyles } from './status-styles';
 
 /** The height of one grid row (one slot step), in rem. */
@@ -161,16 +162,28 @@ function Block({
                     {formatClinicTime(appointment.endsAt)}.{' '}
                 </span>
                 {short ? (
-                    <p className="truncate">
-                        <span className="font-medium">
-                            {appointment.patientName}
-                        </span>{' '}
-                        · {appointment.statusLabel}
+                    <p className="flex items-center gap-1">
+                        <span className="truncate">
+                            <span className="font-medium">
+                                {appointment.patientName}
+                            </span>{' '}
+                            · {appointment.statusLabel}
+                        </span>
+                        <AppointmentFlags
+                            appointment={appointment}
+                            className="shrink-0"
+                        />
                     </p>
                 ) : (
                     <>
-                        <p className="truncate font-medium">
-                            {appointment.patientName}
+                        <p className="flex items-center gap-1">
+                            <span className="truncate font-medium">
+                                {appointment.patientName}
+                            </span>
+                            <AppointmentFlags
+                                appointment={appointment}
+                                className="shrink-0"
+                            />
                         </p>
                         <p className="truncate">
                             {appointment.serviceName} ·{' '}

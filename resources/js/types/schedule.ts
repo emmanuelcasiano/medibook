@@ -15,6 +15,12 @@ export type ScheduleAppointment = {
     /** Never `cancelled`: a cancelled booking frees the slot and is not shown. */
     status: Exclude<AppointmentStatus, 'cancelled'>;
     statusLabel: string;
+    // The next two are sent to staff only, never to an admin (the keys are missing, not false). They are yes/no facts
+    // and nothing more: no intake answers reach the schedule.
+    /** The booking is still `booked` and the patient has not filled in the intake form. */
+    intakeMissing?: boolean;
+    /** The intake form had an emergency word (set from Day 8). */
+    emergencyFlag?: boolean;
 };
 
 /** One column of the schedule. */
