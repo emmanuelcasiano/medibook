@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Intake;
 
 use App\Enums\SummaryStatus;
+use App\Jobs\SummarizeIntake;
 use App\Models\Appointment;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
@@ -27,7 +28,7 @@ final class SaveIntake
      * Every save also runs the emergency check (PROJECT.md F5), in PHP and before any AI. The appointment's
      * `emergency_flag` follows the latest answers: an emergency phrase sets it and skips the AI summary, and an edit
      * without one clears it. The flag, the summary row and the answers change in one transaction, so they can't
-     * disagree. The AI summary itself (Day 9) is not part of this Action yet.
+     * disagree. The AI summary itself is made later by the `SummarizeIntake` job, queued here after the commit.
      *
      * This Action checks the Policy itself (architecture.md section 3), so a caller that skips the controller can't
      * skip the check either.
@@ -79,10 +80,11 @@ final class SaveIntake
     /**
      * Set the flag and the summary row from the answers just saved. The caller holds the appointment row lock.
      *
-     * An emergency gets a `skipped` summary row with nothing in it, so the AI never sees the answers and an older
-     * summary of earlier answers can't stay next to a new emergency. Without an emergency, a `skipped` row left by an
-     * earlier emergency is removed: it would say "skipped" for answers that no longer match. A `skipped` row from
-     * another cause (cost cap, AI off) is made by the Day 9 job and is replaced by its next run.
+     * Every save replaces the old summary row, because an older summary describes older answers:
+     * - An emergency gets an empty `skipped` row and no job, so the AI never sees the answers.
+     * - Any other save gets an empty `pending` row and a `SummarizeIntake` job. The job is queued after the commit, so
+     *   the worker can't run before the new answers are saved. If the AI is off or the daily cap is reached, the job
+     *   turns the row into `skipped` (see GenerateIntakeSummary).
      */
     private function applyEmergencyCheck(Appointment $appointment, Intake $intake): void
     {
@@ -97,15 +99,22 @@ final class SaveIntake
 
         $appointment->update(['emergency_flag' => $isEmergency]);
 
-        if (! $isEmergency) {
-            $intake->summary()->where('status', SummaryStatus::Skipped)->delete();
+        if ($isEmergency) {
+            $this->replaceSummary($intake, SummaryStatus::Skipped);
 
             return;
         }
 
+        $this->replaceSummary($intake, SummaryStatus::Pending);
+
+        SummarizeIntake::dispatch($intake->id);
+    }
+
+    private function replaceSummary(Intake $intake, SummaryStatus $status): void
+    {
         $summary = IntakeSummary::query()->updateOrCreate(
             ['intake_id' => $intake->id],
-            ['status' => SummaryStatus::Skipped, 'summary' => null, 'model' => null, 'input_tokens' => null, 'output_tokens' => null, 'error' => null],
+            ['status' => $status, 'summary' => null, 'model' => null, 'input_tokens' => null, 'output_tokens' => null, 'error' => null],
         );
 
         // The review columns are guarded (only MarkSummaryReviewed sets them), so a replaced summary is un-reviewed here.

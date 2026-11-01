@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Actions\Intake\SaveIntake;
+use App\Ai\Agents\IntakeSummarizer;
 use App\Enums\Role;
 use App\Enums\SummaryStatus;
+use App\Jobs\SummarizeIntake;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Intake;
@@ -16,9 +18,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 
 // These tests call the Action directly. The form page and the route (HTTP status, redirect, validation messages) are in
-// IntakeFormTest. The Action checks IntakePolicy itself, and a denied call must write nothing. "Now" is Friday
-// 30 October 2026, 09:00 in Manila. The AI summary itself (Day 9) is not part of it yet, but the emergency check (step
-// 8.3) is: it sets the appointment's flag and the `skipped` summary row, and it never queues a job.
+// IntakeFormTest. The Action checks IntakePolicy itself, and a denied call must write nothing and queue nothing. "Now" is
+// Friday 30 October 2026, 09:00 in Manila. The emergency check sets the appointment's flag and the `skipped` summary row
+// and never queues a job. Any other save leaves a `pending` row and queues SummarizeIntake. The job itself is tested in
+// SummarizeIntakeTest.
 
 /**
  * A full set of valid answers, as the Form Request hands them to the Action.
@@ -142,15 +145,31 @@ it('flags the appointment and skips the summary when a free-text answer has an e
     Queue::assertNothingPushed();
 })->with(['reason', 'symptoms', 'allergies', 'medicines']);
 
-it('leaves the flag off and makes no summary row for an ordinary intake', function () {
-    Queue::fake();
+it('leaves the flag off, makes a pending summary row and queues the job for an ordinary intake', function () {
+    Queue::fake([SummarizeIntake::class]);
 
-    saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
+    $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
+
+    $summary = IntakeSummary::query()->sole();
 
     expect($this->appointment->fresh()->emergency_flag)->toBeFalse()
-        ->and(IntakeSummary::query()->count())->toBe(0);
+        ->and($summary->intake_id)->toBe($intake->id)
+        ->and($summary->status)->toBe(SummaryStatus::Pending);
 
-    Queue::assertNothingPushed();
+    Queue::assertPushed(SummarizeIntake::class, 1);
+    Queue::assertPushed(SummarizeIntake::class, fn (SummarizeIntake $job): bool => $job->intakeId === $intake->id);
+});
+
+// The Day 8 "done when": an emergency word makes no AI call. Here the queue is real (sync in tests), so a job that was
+// wrongly queued would run at once and reach the fake agent.
+it('never prompts the AI for an emergency intake', function () {
+    config(['medibook.ai.enabled' => true]);
+    IntakeSummarizer::fake()->preventStrayPrompts();
+
+    saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain']));
+
+    IntakeSummarizer::assertNeverPrompted();
+    expect(IntakeSummary::query()->sole()->status)->toBe(SummaryStatus::Skipped);
 });
 
 // Only the four free-text answers are checked. Ticking fever, pregnant and recent surgery is not an emergency.
@@ -160,13 +179,17 @@ it('does not flag the yes/no answers', function () {
     expect($this->appointment->fresh()->emergency_flag)->toBeFalse();
 });
 
-it('clears the flag and the skipped row when an edit no longer has an emergency phrase', function () {
+it('clears the flag and swaps the skipped row for a pending one when an edit no longer has an emergency phrase', function () {
+    Queue::fake([SummarizeIntake::class]);
     saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Chest pain']));
+    Queue::assertNothingPushed();
 
     saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Mild cough']));
 
     expect($this->appointment->fresh()->emergency_flag)->toBeFalse()
-        ->and(IntakeSummary::query()->count())->toBe(0);
+        ->and(IntakeSummary::query()->sole()->status)->toBe(SummaryStatus::Pending);
+
+    Queue::assertPushed(SummarizeIntake::class, 1);
 });
 
 it('keeps one skipped row when an emergency intake is saved again', function () {
@@ -182,6 +205,7 @@ it('keeps one skipped row when an emergency intake is saved again', function () 
 it('replaces a ready, reviewed summary with an empty skipped one when the edit is an emergency', function () {
     $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
     $doctor = userWithRole(Role::Doctor);
+    IntakeSummary::query()->delete(); // the pending row of the first save, to stand in for a finished summary
     $summary = IntakeSummary::factory()->for($intake)->create();
     $summary->forceFill(['reviewed_by' => $doctor->id, 'reviewed_at' => now()])->save();
 
@@ -198,13 +222,27 @@ it('replaces a ready, reviewed summary with an empty skipped one when the edit i
         ->and($summary->reviewed_at)->toBeNull();
 });
 
-it('keeps a ready summary when an ordinary intake is edited', function () {
+// PROJECT.md F6: an edit makes a new summary and the old one is replaced, with its "reviewed" mark.
+it('replaces a ready, reviewed summary with a pending one and queues a new job when an ordinary intake is edited', function () {
+    Queue::fake([SummarizeIntake::class]);
     $intake = saveIntakeAs($this->patient, $this->appointment, intakeAnswers());
-    IntakeSummary::factory()->for($intake)->create();
+    $doctor = userWithRole(Role::Doctor);
+    IntakeSummary::query()->delete(); // the pending row of the first save, to stand in for a finished summary
+    $old = IntakeSummary::factory()->for($intake)->create();
+    $old->forceFill(['reviewed_by' => $doctor->id, 'reviewed_at' => now()])->save();
 
     saveIntakeAs($this->patient, $this->appointment, intakeAnswers(['reason' => 'Still coughing']));
 
-    expect(IntakeSummary::query()->sole()->status)->toBe(SummaryStatus::Ready);
+    $summary = IntakeSummary::query()->sole();
+
+    expect($summary->status)->toBe(SummaryStatus::Pending)
+        ->and($summary->summary)->toBeNull()
+        ->and($summary->model)->toBeNull()
+        ->and($summary->input_tokens)->toBeNull()
+        ->and($summary->reviewed_by)->toBeNull()
+        ->and($summary->reviewed_at)->toBeNull();
+
+    Queue::assertPushed(SummarizeIntake::class, 2);
 });
 
 // A refused edit is refused before the check, so the flag staff already saw is not cleared by a late "all fine" edit.
@@ -227,12 +265,16 @@ it('saves the answers of an emergency intake too', function () {
 
 // Denied access
 
-it('refuses another patient and writes nothing', function () {
+it('refuses another patient, writes nothing and queues nothing', function () {
+    Queue::fake();
     $stranger = User::factory()->patient()->create();
 
     expect(fn () => saveIntakeAs($stranger, $this->appointment, intakeAnswers()))->toThrow(AuthorizationException::class);
 
-    expect(Intake::query()->count())->toBe(0);
+    expect(Intake::query()->count())->toBe(0)
+        ->and(IntakeSummary::query()->count())->toBe(0);
+
+    Queue::assertNothingPushed();
 });
 
 it('refuses another patient who tries to edit an existing intake, and the answers stay as they were', function () {
