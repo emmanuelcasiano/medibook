@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { Siren } from 'lucide-react';
 import IntakeAnswersView from '@/components/intake/intake-answers';
 import IntakeForm from '@/components/intake/intake-form';
+import PageHeader from '@/components/page-header';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { formatClinicDateTime } from '@/lib/clinic-time';
 import type {
@@ -35,19 +36,21 @@ export default function MyAppointmentsIntake({
             <Head title="Intake form" />
 
             <div className="max-w-2xl space-y-6 p-4">
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Intake form
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        Your doctor reads this before your visit. Short, plain
-                        answers are fine.
-                    </p>
-                    <p className="text-sm">
-                        {service.name} with {doctor.name} ·{' '}
-                        {formatClinicDateTime(startsAt)}
-                    </p>
-                </div>
+                <PageHeader
+                    title="Intake form"
+                    description={
+                        <>
+                            <p>
+                                Your doctor reads this before your visit. Short,
+                                plain answers are fine.
+                            </p>
+                            <p className="text-foreground">
+                                {service.name} with {doctor.name} ·{' '}
+                                {formatClinicDateTime(startsAt)}
+                            </p>
+                        </>
+                    }
+                />
 
                 {emergency && (
                     <Alert variant="destructive">

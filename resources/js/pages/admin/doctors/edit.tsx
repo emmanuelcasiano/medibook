@@ -3,7 +3,7 @@ import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorControl
 import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import DoctorForm from '@/components/admin/doctor-form';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import type { AdminDoctorFormValues, AdminDoctorServiceOption } from '@/types';
 
 type Props = {
@@ -17,7 +17,7 @@ export default function AdminDoctorsEdit({ doctor, services }: Props) {
             <Head title={`Edit ${doctor.name}`} />
 
             <div className="max-w-4xl space-y-6 p-4">
-                <Heading
+                <PageHeader
                     title={doctor.name}
                     description="Change the specialty, the short bio and the services this doctor offers. Name and email are edited with the user account."
                 />

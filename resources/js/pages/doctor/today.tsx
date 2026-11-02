@@ -1,10 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
 import { CalendarDays, ChevronRight } from 'lucide-react';
 import DoctorAppointmentController from '@/actions/App/Http/Controllers/Doctor/AppointmentController';
+import PageHeader from '@/components/page-header';
+import StatusBadge from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { formatClinicDate, formatClinicTime } from '@/lib/clinic-time';
 import { home as doctorHome } from '@/routes/doctor';
-import type { AppointmentStatus, TodayAppointment } from '@/types';
+import type { TodayAppointment } from '@/types';
 
 type Props = {
     /** Today in the clinic time zone, 'Y-m-d'. */
@@ -13,40 +15,29 @@ type Props = {
     appointments: TodayAppointment[];
 };
 
-const statusVariants: Record<
-    AppointmentStatus,
-    'default' | 'secondary' | 'outline' | 'destructive'
-> = {
-    booked: 'default',
-    checked_in: 'secondary',
-    completed: 'outline',
-    cancelled: 'destructive',
-    no_show: 'destructive',
-};
-
 export default function DoctorToday({ date, appointments }: Props) {
     return (
         <>
             <Head title="Today" />
 
             <div className="space-y-6 p-4">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Today
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {formatClinicDate(date)}. All times are Manila time.
-                    </p>
-                    <p
-                        aria-live="polite"
-                        className="text-sm text-muted-foreground"
-                    >
-                        {appointments.length}{' '}
-                        {appointments.length === 1
-                            ? 'appointment'
-                            : 'appointments'}
-                    </p>
-                </div>
+                <PageHeader
+                    title="Today"
+                    description={
+                        <>
+                            <p>
+                                {formatClinicDate(date)}. All times are Manila
+                                time.
+                            </p>
+                            <p aria-live="polite">
+                                {appointments.length}{' '}
+                                {appointments.length === 1
+                                    ? 'appointment'
+                                    : 'appointments'}
+                            </p>
+                        </>
+                    }
+                />
 
                 {appointments.length > 0 ? (
                     <ul className="space-y-3">
@@ -56,7 +47,7 @@ export default function DoctorToday({ date, appointments }: Props) {
                                     href={DoctorAppointmentController.show(
                                         appointment.ulid,
                                     )}
-                                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border p-4 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card p-4 outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring"
                                 >
                                     <span className="w-20 shrink-0 font-semibold tabular-nums">
                                         {formatClinicTime(appointment.startsAt)}
@@ -70,13 +61,10 @@ export default function DoctorToday({ date, appointments }: Props) {
                                         </span>
                                     </span>
                                     {/* Both are written out, so neither depends on color alone. */}
-                                    <Badge
-                                        variant={
-                                            statusVariants[appointment.status]
-                                        }
-                                    >
-                                        {appointment.statusLabel}
-                                    </Badge>
+                                    <StatusBadge
+                                        status={appointment.status}
+                                        label={appointment.statusLabel}
+                                    />
                                     <Badge variant="outline">
                                         {appointment.summaryLabel}
                                     </Badge>
@@ -89,7 +77,7 @@ export default function DoctorToday({ date, appointments }: Props) {
                         ))}
                     </ul>
                 ) : (
-                    <div className="flex flex-col items-center gap-3 rounded-xl border p-8 text-center">
+                    <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
                         <CalendarDays
                             aria-hidden
                             className="size-7 text-muted-foreground"

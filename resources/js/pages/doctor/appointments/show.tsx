@@ -6,11 +6,10 @@ import IntakeAnswersCard from '@/components/doctor/intake-answers-card';
 import SummaryCard from '@/components/doctor/summary-card';
 import VisitNoteCard from '@/components/doctor/visit-note-card';
 import { Alert, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/status-badge';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import { home as doctorHome } from '@/routes/doctor';
 import type {
-    AppointmentStatus,
     DoctorAppointment,
     DoctorIntake,
     IntakeSummary,
@@ -27,17 +26,6 @@ type Props = {
     visitNote: VisitNote | null;
     /** False for a booking that has not started, a cancellation and a no-show. The server checks again on save. */
     canSaveVisitNote: boolean;
-};
-
-const statusVariants: Record<
-    AppointmentStatus,
-    'default' | 'secondary' | 'outline' | 'destructive'
-> = {
-    booked: 'default',
-    checked_in: 'secondary',
-    completed: 'outline',
-    cancelled: 'destructive',
-    no_show: 'destructive',
 };
 
 export default function DoctorAppointmentShow({
@@ -65,7 +53,7 @@ export default function DoctorAppointmentShow({
 
                 <section
                     aria-labelledby="patient-heading"
-                    className="space-y-3 rounded-xl border p-5"
+                    className="space-y-3 rounded-xl border bg-card p-5"
                 >
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <h1
@@ -82,9 +70,10 @@ export default function DoctorAppointmentShow({
                             </span>
                         )}
                         {/* Written out, so the status never depends on color alone. */}
-                        <Badge variant={statusVariants[appointment.status]}>
-                            {appointment.statusLabel}
-                        </Badge>
+                        <StatusBadge
+                            status={appointment.status}
+                            label={appointment.statusLabel}
+                        />
                     </div>
                     <p className="text-sm">
                         {appointment.serviceName} ·{' '}

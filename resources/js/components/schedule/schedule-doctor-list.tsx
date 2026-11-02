@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ChevronDown } from 'lucide-react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
-import { Badge } from '@/components/ui/badge';
+import StatusBadge from '@/components/status-badge';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { ScheduleDoctor } from '@/types';
@@ -39,7 +39,7 @@ export default function ScheduleDoctorList({
                             ? true
                             : undefined
                     }
-                    className="group rounded-xl border"
+                    className="group rounded-xl border bg-card"
                 >
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl p-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                         <span>
@@ -109,9 +109,10 @@ export default function ScheduleDoctorList({
                                                 {appointment.serviceName}
                                             </span>
                                         </span>
-                                        <Badge variant="outline">
-                                            {appointment.statusLabel}
-                                        </Badge>
+                                        <StatusBadge
+                                            status={appointment.status}
+                                            label={appointment.statusLabel}
+                                        />
                                     </Link>
                                 </li>
                             ))}

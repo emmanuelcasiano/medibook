@@ -15,7 +15,7 @@ export default function IntakeAnswersCard({ intake }: Props) {
         return (
             <section
                 aria-labelledby="intake-answers-heading"
-                className="space-y-3 rounded-xl border p-5"
+                className="space-y-3 rounded-xl border bg-card p-5"
             >
                 <h2
                     id="intake-answers-heading"
@@ -54,7 +54,7 @@ export default function IntakeAnswersCard({ intake }: Props) {
     return (
         <section
             aria-labelledby="intake-answers-heading"
-            className="space-y-4 rounded-xl border p-5"
+            className="space-y-4 rounded-xl border bg-card p-5"
         >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2

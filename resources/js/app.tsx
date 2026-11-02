@@ -7,7 +7,7 @@ import AuthLayout from '@/layouts/auth-layout';
 import BookingLayout from '@/layouts/booking-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'MediBook';
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -35,7 +35,7 @@ void createInertiaApp({
         );
     },
     progress: {
-        color: '#4B5563',
+        color: '#0E6B66',
     },
 });
 

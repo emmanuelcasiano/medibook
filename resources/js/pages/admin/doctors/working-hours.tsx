@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import WorkingHoursForm from '@/components/admin/working-hours-form';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import type { AdminWorkingHoursDoctor, AdminWorkingHourRange } from '@/types';
 
 type Props = {
@@ -15,7 +15,7 @@ export default function AdminDoctorsWorkingHours({ doctor, ranges }: Props) {
             <Head title={`Working hours of ${doctor.name}`} />
 
             <div className="max-w-4xl space-y-6 p-4">
-                <Heading
+                <PageHeader
                     title={`Working hours: ${doctor.name}`}
                     description="Set the times this doctor sees patients on each weekday. Patients can book only inside these times."
                 />

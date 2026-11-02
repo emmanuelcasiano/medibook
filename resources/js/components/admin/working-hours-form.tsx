@@ -117,7 +117,7 @@ export default function WorkingHoursForm({ doctor, ranges }: Props) {
                     return (
                         <fieldset
                             key={day.weekday}
-                            className="grid gap-3 rounded-xl border p-4 md:grid-cols-[10rem_1fr]"
+                            className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[10rem_1fr]"
                         >
                             <legend className="sr-only">{day.name}</legend>
 

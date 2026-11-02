@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import ServiceController from '@/actions/App/Http/Controllers/Booking/ServiceController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import BookingSteps from '@/components/booking/booking-steps';
+import PageHeader from '@/components/page-header';
 import type { BookableDoctor, BookableService } from '@/types';
 
 type Props = {
@@ -11,7 +12,7 @@ type Props = {
 };
 
 const optionClass =
-    'flex items-center justify-between gap-3 rounded-xl border bg-card p-4 outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50';
+    'flex items-center justify-between gap-3 rounded-xl border bg-card p-4 outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring';
 
 export default function BookingDoctors({ service, doctors }: Props) {
     return (
@@ -21,23 +22,23 @@ export default function BookingDoctors({ service, doctors }: Props) {
             <div className="space-y-6">
                 <BookingSteps current={2} />
 
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Who would you like to see?
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {service.name} · {service.durationMinutes} min{' '}
-                        <Link
-                            href={ServiceController.index()}
-                            className="text-foreground underline underline-offset-4"
-                        >
-                            Change service
-                        </Link>
-                    </p>
-                </div>
+                <PageHeader
+                    title="Who would you like to see?"
+                    description={
+                        <p>
+                            {service.name} · {service.durationMinutes} min{' '}
+                            <Link
+                                href={ServiceController.index()}
+                                className="text-foreground underline underline-offset-4"
+                            >
+                                Change service
+                            </Link>
+                        </p>
+                    }
+                />
 
                 {doctors.length === 0 ? (
-                    <p className="rounded-xl border p-6 text-sm text-muted-foreground">
+                    <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
                         No doctor offers this service right now. Please pick
                         another service.
                     </p>

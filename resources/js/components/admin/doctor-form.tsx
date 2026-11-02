@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import type { AdminDoctorFormValues, AdminDoctorServiceOption } from '@/types';
 
 type Props = {
@@ -70,7 +71,7 @@ export default function DoctorForm({ doctor, services }: Props) {
 
                     <div className="grid gap-2">
                         <Label htmlFor="bio">Short bio</Label>
-                        <textarea
+                        <Textarea
                             id="bio"
                             name="bio"
                             rows={4}
@@ -80,7 +81,7 @@ export default function DoctorForm({ doctor, services }: Props) {
                                 form.setData('bio', event.target.value)
                             }
                             aria-invalid={form.errors.bio ? true : undefined}
-                            className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                            className="min-h-24"
                         />
                         <p className="text-sm text-muted-foreground">
                             Shown to patients when they pick a doctor.
@@ -105,7 +106,7 @@ export default function DoctorForm({ doctor, services }: Props) {
                             page first.
                         </p>
                     ) : (
-                        <ul className="divide-y rounded-xl border">
+                        <ul className="divide-y rounded-xl border bg-card">
                             {services.map((service) => {
                                 const inputId = `service-${service.id}`;
 

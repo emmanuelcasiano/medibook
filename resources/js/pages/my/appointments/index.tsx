@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { CalendarDays, Plus } from 'lucide-react';
 import AppointmentCard from '@/components/appointments/appointment-card';
+import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { services as bookingServices } from '@/routes/booking';
 import { home as myHome } from '@/routes/my';
@@ -29,16 +30,11 @@ export default function MyAppointments({
             <Head title="My appointments" />
 
             <div className="space-y-8 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            My appointments
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            All times are Manila time. You can cancel for free
-                            up to {cancelHours} hours before a visit.
-                        </p>
-                    </div>
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <PageHeader
+                        title="My appointments"
+                        description={`All times are Manila time. You can cancel for free up to ${cancelHours} hours before a visit.`}
+                    />
                     <div className="space-y-1 sm:text-right">
                         {canBook ? (
                             <Button asChild>
@@ -95,7 +91,7 @@ export default function MyAppointments({
                             ))}
                         </ul>
                     ) : (
-                        <div className="flex flex-col items-center gap-3 rounded-xl border p-8 text-center">
+                        <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
                             <CalendarDays
                                 aria-hidden
                                 className="size-7 text-muted-foreground"
@@ -130,7 +126,7 @@ export default function MyAppointments({
                             ))}
                         </ul>
                     ) : (
-                        <p className="rounded-xl border p-6 text-center text-sm text-muted-foreground">
+                        <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
                             No past visits yet.
                         </p>
                     )}

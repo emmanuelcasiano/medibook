@@ -4,6 +4,7 @@ import BookingController from '@/actions/App/Http/Controllers/Booking/BookingCon
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
+import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
@@ -31,15 +32,10 @@ export default function BookingConfirm({
             <div className="space-y-6">
                 <BookingSteps current={4} />
 
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Check and confirm
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        All times are Manila time. Nothing is booked until you
-                        press Confirm.
-                    </p>
-                </div>
+                <PageHeader
+                    title="Check and confirm"
+                    description="All times are Manila time. Nothing is booked until you press Confirm."
+                />
 
                 <Form
                     {...BookingController.store.form(service)}
@@ -83,7 +79,7 @@ export default function BookingConfirm({
 
                             <section
                                 aria-labelledby="visit-heading"
-                                className="rounded-xl border"
+                                className="rounded-xl border bg-card"
                             >
                                 <div className="space-y-1 p-5">
                                     <h2

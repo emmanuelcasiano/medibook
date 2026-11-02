@@ -7,6 +7,7 @@ import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
 import DayPicker from '@/components/booking/day-picker';
 import SlotGrid from '@/components/booking/slot-grid';
+import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { formatClinicDate, formatClinicTime } from '@/lib/clinic-time';
 import type {
@@ -61,24 +62,24 @@ export default function BookingSlots({
             <div className="space-y-6">
                 <BookingSteps current={3} />
 
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Pick a day and time
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {service.name} · {service.durationMinutes} min ·{' '}
-                        {doctorLabel}{' '}
-                        <Link
-                            href={DoctorController.index(service)}
-                            className="text-foreground underline underline-offset-4"
-                        >
-                            Change doctor
-                        </Link>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        All times are Manila time.
-                    </p>
-                </div>
+                <PageHeader
+                    title="Pick a day and time"
+                    description={
+                        <>
+                            <p>
+                                {service.name} · {service.durationMinutes} min ·{' '}
+                                {doctorLabel}{' '}
+                                <Link
+                                    href={DoctorController.index(service)}
+                                    className="text-foreground underline underline-offset-4"
+                                >
+                                    Change doctor
+                                </Link>
+                            </p>
+                            <p>All times are Manila time.</p>
+                        </>
+                    }
+                />
 
                 {/* Shown when the date in the address was not a day of the booking window. */}
                 <div role="alert">
@@ -131,7 +132,7 @@ export default function BookingSlots({
                         </h2>
 
                         {slots.length === 0 ? (
-                            <p className="rounded-xl border p-6 text-sm text-muted-foreground">
+                            <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
                                 No open times on this day. Pick another day from
                                 the calendar.
                             </p>

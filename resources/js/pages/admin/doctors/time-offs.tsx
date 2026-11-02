@@ -2,7 +2,7 @@ import { Form, Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import TimeOffForm from '@/components/admin/time-off-form';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatClinicDateTime } from '@/lib/clinic-time';
@@ -23,7 +23,7 @@ export default function AdminDoctorsTimeOffs({ doctor, timeOffs }: Props) {
             <Head title={`Time off of ${doctor.name}`} />
 
             <div className="max-w-4xl space-y-8 p-4">
-                <Heading
+                <PageHeader
                     title={`Time off: ${doctor.name}`}
                     description="Days or hours when this doctor can't see patients, such as a conference or a holiday. These times are removed from the slots patients can book."
                 />
@@ -34,11 +34,11 @@ export default function AdminDoctorsTimeOffs({ doctor, timeOffs }: Props) {
                     </h3>
 
                     {timeOffs.data.length === 0 ? (
-                        <p className="rounded-xl border p-4 text-sm text-muted-foreground">
+                        <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
                             No time off planned.
                         </p>
                     ) : (
-                        <div className="overflow-x-auto rounded-xl border">
+                        <div className="overflow-x-auto rounded-xl border bg-card">
                             <table className="w-full text-sm">
                                 <caption className="sr-only">
                                     Upcoming time off of {doctor.name}

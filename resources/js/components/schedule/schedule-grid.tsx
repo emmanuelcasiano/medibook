@@ -51,7 +51,7 @@ export default function ScheduleGrid({ schedule, selectedUlid }: Props) {
             role="region"
             aria-label="Day schedule grid"
             tabIndex={0}
-            className="hidden overflow-x-auto rounded-xl border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:block"
+            className="hidden overflow-x-auto rounded-xl border bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:block"
         >
             <div
                 className="grid min-w-[44rem]"

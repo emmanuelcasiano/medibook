@@ -5,6 +5,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { formatClinicDateTime } from '@/lib/clinic-time';
 import type { VisitNote } from '@/types';
 
@@ -26,7 +27,7 @@ export default function VisitNoteCard({
     return (
         <section
             aria-labelledby="visit-note-heading"
-            className="space-y-4 rounded-xl border p-5"
+            className="space-y-4 rounded-xl border bg-card p-5"
         >
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2
@@ -69,7 +70,7 @@ function NoteForm({
                 <>
                     <div className="grid gap-2">
                         <Label htmlFor="visit-note-body">Note</Label>
-                        <textarea
+                        <Textarea
                             id="visit-note-body"
                             name="body"
                             rows={8}
@@ -82,7 +83,7 @@ function NoteForm({
                                     ? 'visit-note-body-error'
                                     : undefined
                             }
-                            className="min-h-40 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                            className="min-h-40"
                         />
                         <div id="visit-note-body-error" role="alert">
                             <InputError message={errors.body} />

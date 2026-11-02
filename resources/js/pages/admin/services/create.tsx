@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import ServiceForm from '@/components/admin/service-form';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 
 export default function AdminServicesCreate() {
     return (
@@ -9,7 +9,7 @@ export default function AdminServicesCreate() {
             <Head title="Add service" />
 
             <div className="max-w-xl space-y-6 p-4">
-                <Heading
+                <PageHeader
                     title="Add service"
                     description="Length sets the slot size. The buffer is the gap kept free after each visit."
                 />
