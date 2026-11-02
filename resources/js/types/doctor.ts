@@ -41,6 +41,13 @@ export type DoctorIntake = SavedIntake & {
     durationLabel: string | null;
 };
 
+/** The doctor's own private note. Health text: show it as plain text only. */
+export type VisitNote = {
+    body: string;
+    /** ISO 8601 UTC. */
+    updatedAt: string;
+};
+
 export type SummaryStatus = 'pending' | 'ready' | 'failed' | 'skipped';
 
 /** The AI draft's text. AI text: show it as plain text only. */

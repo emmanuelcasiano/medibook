@@ -10,6 +10,7 @@ use App\Http\Requests\Doctor\ReviewSummaryRequest;
 use App\Http\Resources\Doctor\AppointmentDetailResource;
 use App\Http\Resources\Doctor\IntakeDetailResource;
 use App\Http\Resources\Doctor\IntakeSummaryResource;
+use App\Http\Resources\Doctor\VisitNoteResource;
 use App\Models\Appointment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -25,8 +26,8 @@ final class AppointmentController extends Controller
      *
      * Three checks, from the outside in. The appointment Policy refuses every other doctor, staff, admin and patient
      * (403). Then the intake Policy and the summary Policy, because the answers and the draft are health data and
-     * have their own rules (staff and admins never get them). The intake and summary props are built only after their
-     * check has passed. The birth date is never sent: only the age in years.
+     * have their own rules (staff and admins never get them). The intake, summary and note props are built only after
+     * their check has passed. The birth date is never sent: only the age in years.
      */
     public function show(Appointment $appointment): Response
     {
@@ -39,10 +40,19 @@ final class AppointmentController extends Controller
             'service:id,name',
             'intake',
             'intake.summary',
+            'visitNotes',
         ]);
 
         $intake = $appointment->intake;
         $summary = $intake?->summary;
+
+        // The doctor's private note. Only the appointment's own doctor gets here (the route is for doctors and the
+        // appointment Policy refused every other one), and the note Policy is checked before its text is built.
+        $note = $appointment->visitNotes->first();
+
+        if ($note !== null) {
+            Gate::authorize('view', $note);
+        }
 
         if ($intake !== null) {
             // Give the Policies the appointment we already have, so they do not load their own copy.
@@ -56,6 +66,9 @@ final class AppointmentController extends Controller
             'appointment' => (new AppointmentDetailResource($appointment))->resolve(),
             'intake' => $intake === null ? null : (new IntakeDetailResource($intake))->resolve(),
             'summary' => $summary === null ? null : (new IntakeSummaryResource($summary))->resolve(),
+            'visitNote' => $note === null ? null : (new VisitNoteResource($note))->resolve(),
+            // Only for showing the form. The Policy settled who; this is the state. SaveVisitNote checks it again on submit.
+            'canSaveVisitNote' => $appointment->status->allowsVisitNote(),
         ]);
     }
 

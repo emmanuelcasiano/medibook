@@ -11,6 +11,7 @@ use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
 use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
 use App\Http\Controllers\Doctor\TodayController;
+use App\Http\Controllers\Doctor\VisitNoteController;
 use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
@@ -76,6 +77,8 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::get('/', [TodayController::class, 'index'])->name('home');
         Route::get('appointments/{appointment}', [DoctorAppointmentController::class, 'show'])->name('appointments.show');
         Route::post('appointments/{appointment}/summary/review', [DoctorAppointmentController::class, 'review'])->middleware('throttle:doctor-actions')->name('appointments.summary.review');
+        // One note per appointment, so there is one URL and PUT: the first save creates it and later saves edit it.
+        Route::put('appointments/{appointment}/visit-note', [VisitNoteController::class, 'update'])->middleware('throttle:doctor-actions')->name('appointments.visit-note.update');
     });
 
     Route::middleware('role:patient')->group(function () {

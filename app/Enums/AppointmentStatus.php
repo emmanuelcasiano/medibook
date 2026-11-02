@@ -28,6 +28,20 @@ enum AppointmentStatus: string
         return in_array($this, self::active(), true);
     }
 
+    /**
+     * Whether the doctor may write or edit the visit note. A note is about a visit that took place, so it starts when
+     * the patient is checked in and stays open after the visit is finished (the doctor often writes it up afterwards).
+     * A booking that has not started, a cancellation and a no-show have no visit to write about. This is the one place
+     * the rule is set: the Action enforces it and the page uses it to show or hide the form.
+     */
+    public function allowsVisitNote(): bool
+    {
+        return match ($this) {
+            self::CheckedIn, self::Completed => true,
+            self::Booked, self::Cancelled, self::NoShow => false,
+        };
+    }
+
     public function label(): string
     {
         return match ($this) {
