@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Doctor;
 
+use App\Actions\Doctor\CompleteAppointment;
 use App\Actions\Doctor\MarkSummaryReviewed;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Doctor\ReviewSummaryRequest;
@@ -13,6 +14,7 @@ use App\Http\Resources\Doctor\IntakeSummaryResource;
 use App\Http\Resources\Doctor\VisitNoteResource;
 use App\Models\Appointment;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -84,6 +86,21 @@ final class AppointmentController extends Controller
         $markReviewed->handle($request->user(), $appointment, $request->validated('version'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('The summary is marked as reviewed.')]);
+
+        return to_route('doctor.appointments.show', $appointment);
+    }
+
+    /**
+     * "Finish visit". No input: the doctor comes from the session and the new status is fixed by the Action. The
+     * appointment Policy runs here, and again inside the Action.
+     */
+    public function complete(Request $request, Appointment $appointment, CompleteAppointment $completeAppointment): RedirectResponse
+    {
+        Gate::authorize('complete', $appointment);
+
+        $completeAppointment->handle($request->user(), $appointment);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('The visit is finished.')]);
 
         return to_route('doctor.appointments.show', $appointment);
     }
