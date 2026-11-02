@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Siren } from 'lucide-react';
 import IntakeAnswersCard from '@/components/doctor/intake-answers-card';
 import SummaryCard from '@/components/doctor/summary-card';
+import VisitNoteCard from '@/components/doctor/visit-note-card';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
@@ -11,6 +12,7 @@ import type {
     DoctorAppointment,
     DoctorIntake,
     IntakeSummary,
+    VisitNote,
 } from '@/types';
 
 type Props = {
@@ -19,6 +21,8 @@ type Props = {
     intake: DoctorIntake | null;
     /** null when there is no intake, or an intake with no summary row. */
     summary: IntakeSummary | null;
+    /** null until the doctor saves the first note. Only ever the signed-in doctor's own. */
+    visitNote: VisitNote | null;
 };
 
 const statusVariants: Record<
@@ -36,6 +40,7 @@ export default function DoctorAppointmentShow({
     appointment,
     intake,
     summary,
+    visitNote,
 }: Props) {
     const { patientFirstName, patientAge } = appointment;
 
@@ -103,6 +108,11 @@ export default function DoctorAppointmentShow({
                         emergency={appointment.emergency}
                     />
                 </div>
+
+                <VisitNoteCard
+                    appointmentUlid={appointment.ulid}
+                    note={visitNote}
+                />
             </div>
         </>
     );
