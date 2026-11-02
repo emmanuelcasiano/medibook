@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Doctor;
 
+use App\Enums\SummaryStatus;
 use App\Models\IntakeSummary;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,6 +26,8 @@ final class IntakeSummaryResource extends JsonResource
      *     summary: array{chiefComplaint: string, keyPoints: list<string>, allergiesAndMeds: string, questionsForDoctor: list<string>}|null,
      *     model: string|null,
      *     reviewedAt: string|null,
+     *     version: string,
+     *     can: array{review: bool},
      * }
      */
     public function toArray(Request $request): array
@@ -43,6 +46,11 @@ final class IntakeSummaryResource extends JsonResource
             ],
             'model' => $this->model,
             'reviewedAt' => $this->reviewed_at?->toIso8601ZuluString(),
+            // Sent back by "Mark reviewed", so the review is of the draft the doctor read (see IntakeSummary::version()).
+            'version' => $this->version(),
+            // Only for showing the button. The resource is built after `viewSummary` has passed, so the role part is
+            // settled; what is left is the state. MarkSummaryReviewed checks both again on submit.
+            'can' => ['review' => $this->status === SummaryStatus::Ready && $this->reviewed_at === null],
         ];
     }
 }

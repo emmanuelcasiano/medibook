@@ -53,6 +53,10 @@ class AppServiceProvider extends ServiceProvider
         // Front-desk buttons (check in, no-show, and later cancel and move). A busy desk can do one a few seconds,
         // so the cap is higher than for patients: 60 a minute per staff member, and still far too few for a loop.
         RateLimiter::for('staff-actions', fn (Request $request): Limit => Limit::perMinute(60)->by((string) (Auth::id() ?? $request->ip())));
+
+        // Doctor buttons that write under a row lock ("Mark reviewed", and later visit notes and "Finish visit"). A
+        // doctor works through a few patients an hour, so 30 a minute is far above real use and too few for a loop.
+        RateLimiter::for('doctor-actions', fn (Request $request): Limit => Limit::perMinute(30)->by((string) (Auth::id() ?? $request->ip())));
     }
 
     /**

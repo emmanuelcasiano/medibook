@@ -97,6 +97,7 @@ export default function DoctorAppointmentShow({
                 <div className="grid items-start gap-6 lg:grid-cols-2">
                     <IntakeAnswersCard intake={intake} />
                     <SummaryCard
+                        appointmentUlid={appointment.ulid}
                         summary={summary}
                         hasIntake={intake !== null}
                         emergency={appointment.emergency}

@@ -45,6 +45,16 @@ class IntakeSummary extends Model
         ];
     }
 
+    /**
+     * A token for "this exact draft". "Mark reviewed" sends it back, so a review can't land on a draft the doctor has
+     * not read: an edited intake gives a new row or new text, and the token changes with it. The review columns are
+     * not part of it, so reviewing does not change it. Keyed with the app key, so it is not a bare hash of health text.
+     */
+    public function version(): string
+    {
+        return hash_hmac('sha256', $this->id.'|'.$this->status->value.'|'.json_encode($this->summary), (string) config('app.key'));
+    }
+
     /** @return BelongsTo<Intake, $this> */
     public function intake(): BelongsTo
     {

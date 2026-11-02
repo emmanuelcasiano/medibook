@@ -14,8 +14,9 @@ use Inertia\Testing\AssertableInertia as Assert;
 // The doctor's appointment page (step 10.2): first name and age, the raw intake, and the AI draft next to it. The page
 // takes no input, so there is no validation test: the appointment comes from the URL and the Policy decides. Who may
 // open it is in the "denied access" group. The full role matrix of IntakePolicy is in HealthDataPoliciesTest; here
-// each role is tried once through the route, to prove the controller calls the Policy. "Mark reviewed", visit notes and
-// "Finish visit" are steps 10.3 to 10.5, and the `intake.viewed` audit write is step 11.3.
+// each role is tried once through the route, to prove the controller calls the Policy. "Mark reviewed" is tested in
+// MarkSummaryReviewedTest (step 10.3). Visit notes and "Finish visit" are steps 10.4 and 10.5, and the `intake.viewed`
+// audit write is step 11.3.
 // The AI label ("AI draft. The doctor must review.") is React, so it is checked in the browser, not here.
 // "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
 
@@ -55,7 +56,7 @@ describe('the page', function () {
             // The column holds UTC and the model writes a date as it is, so convert a clinic time first.
             'submitted_at' => CarbonImmutable::parse('2026-11-01 18:00', 'Asia/Manila')->utc(),
         ]);
-        IntakeSummary::factory()->for($intake)->create([
+        $summary = IntakeSummary::factory()->for($intake)->create([
             'summary' => [
                 'chief_complaint' => 'Itchy rash on the arm',
                 'key_points' => ['Started on Friday', 'Has a fever'],
@@ -106,6 +107,8 @@ describe('the page', function () {
                     ],
                     'model' => 'claude-haiku-5-5',
                     'reviewedAt' => null,
+                    'version' => $summary->version(),
+                    'can' => ['review' => true],
                 ]));
     });
 
