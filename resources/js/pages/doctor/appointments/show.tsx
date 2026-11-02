@@ -1,5 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Siren } from 'lucide-react';
+import { useRef } from 'react';
+import FinishVisitForm from '@/components/doctor/finish-visit-form';
 import IntakeAnswersCard from '@/components/doctor/intake-answers-card';
 import SummaryCard from '@/components/doctor/summary-card';
 import VisitNoteCard from '@/components/doctor/visit-note-card';
@@ -46,6 +48,7 @@ export default function DoctorAppointmentShow({
     canSaveVisitNote,
 }: Props) {
     const { patientFirstName, patientAge } = appointment;
+    const headingRef = useRef<HTMLHeadingElement>(null);
 
     return (
         <>
@@ -67,7 +70,9 @@ export default function DoctorAppointmentShow({
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                         <h1
                             id="patient-heading"
-                            className="text-2xl font-semibold tracking-tight"
+                            ref={headingRef}
+                            tabIndex={-1}
+                            className="rounded-sm text-2xl font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             {patientFirstName}
                         </h1>
@@ -89,6 +94,14 @@ export default function DoctorAppointmentShow({
                     <p className="text-sm text-muted-foreground">
                         All times are Manila time.
                     </p>
+                    {appointment.can.complete && (
+                        <FinishVisitForm
+                            appointmentUlid={appointment.ulid}
+                            // The button is gone once the visit is finished, so focus would drop to the top of the
+                            // page. The patient heading is the place to go instead.
+                            onFinished={() => headingRef.current?.focus()}
+                        />
+                    )}
                 </section>
 
                 {appointment.emergency && (

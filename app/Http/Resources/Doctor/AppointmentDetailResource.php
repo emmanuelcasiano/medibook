@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Doctor;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * The header of the doctor's appointment page, as the page receives it. The caller must load `patient` (with
@@ -29,6 +31,7 @@ final class AppointmentDetailResource extends JsonResource
      *     patientAge: int|null,
      *     serviceName: string,
      *     emergency: bool,
+     *     can: array{complete: bool},
      * }
      */
     public function toArray(Request $request): array
@@ -44,6 +47,11 @@ final class AppointmentDetailResource extends JsonResource
             'serviceName' => $this->service->name,
             // A yes/no only, never the words that matched. It explains why the AI summary was skipped.
             'emergency' => $this->emergency_flag,
+            // Only for showing the button: the Policy settled who, this is the state (a visit that took place and is
+            // not over). CompleteAppointment checks both again on submit.
+            'can' => [
+                'complete' => $this->status === AppointmentStatus::CheckedIn && Gate::allows('complete', $this->resource),
+            ],
         ];
     }
 }

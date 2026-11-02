@@ -81,6 +81,8 @@ describe('the page', function () {
                     'patientAge' => 36,
                     'serviceName' => 'Skin check',
                     'emergency' => false,
+                    // A booking that has not been checked in can not be finished yet.
+                    'can' => ['complete' => false],
                 ])
                 ->where('intake', [
                     'answers' => [

@@ -33,6 +33,8 @@ export type DoctorAppointment = {
     serviceName: string;
     /** True when the intake had an emergency phrase. A yes/no only, never the words. */
     emergency: boolean;
+    /** Computed on the server. The Policy and the Action check again on submit. */
+    can: { complete: boolean };
 };
 
 /** The intake the doctor reads: the saved answers plus the "how long" choice in words. Health text. */
