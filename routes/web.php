@@ -9,6 +9,8 @@ use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Booking\DoctorController as BookingDoctorController;
 use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
+use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
+use App\Http\Controllers\Doctor\TodayController;
 use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
@@ -68,10 +70,11 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::post('appointments/{appointment}/move', [StaffAppointmentController::class, 'move'])->middleware('throttle:staff-actions')->name('appointments.move');
     });
 
-    // The doctor screen comes on Day 10. Until then its group has one landing page, so the role gate is real and
-    // testable now.
+    // The doctor's own patients only: the Today list is scoped to the signed-in doctor, and `{appointment}` (a ULID)
+    // goes through the Policy, which refuses an appointment of another doctor.
     Route::middleware('role:doctor')->prefix('doctor')->name('doctor.')->group(function () {
-        Route::inertia('/', 'role-home', ['title' => 'Today', 'note' => 'The doctor view is built on Day 10.'])->name('home');
+        Route::get('/', [TodayController::class, 'index'])->name('home');
+        Route::get('appointments/{appointment}', [DoctorAppointmentController::class, 'show'])->name('appointments.show');
     });
 
     Route::middleware('role:patient')->group(function () {
