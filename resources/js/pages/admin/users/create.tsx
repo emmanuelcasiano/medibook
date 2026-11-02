@@ -1,12 +1,13 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Spinner } from '@/components/ui/spinner';
 import type { Role, RoleOption } from '@/types';
 
@@ -22,7 +23,7 @@ export default function AdminUsersCreate({ roles }: Props) {
             <Head title="Add user" />
 
             <div className="max-w-xl space-y-6 p-4">
-                <Heading
+                <PageHeader
                     title="Add user"
                     description="The account starts verified. Share the password with the person safely. They must turn on two-factor authentication at first login."
                 />
@@ -61,7 +62,7 @@ export default function AdminUsersCreate({ roles }: Props) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="role">Role</Label>
-                                <select
+                                <NativeSelect
                                     id="role"
                                     name="role"
                                     required
@@ -72,7 +73,6 @@ export default function AdminUsersCreate({ roles }: Props) {
                                     aria-invalid={
                                         errors.role ? true : undefined
                                     }
-                                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                                 >
                                     <option value="" disabled>
                                         Choose a role
@@ -85,7 +85,7 @@ export default function AdminUsersCreate({ roles }: Props) {
                                             {option.label}
                                         </option>
                                     ))}
-                                </select>
+                                </NativeSelect>
                                 <InputError message={errors.role} />
                             </div>
 

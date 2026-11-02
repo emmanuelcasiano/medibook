@@ -2,6 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
+import PageHeader from '@/components/page-header';
 import AppointmentPanel from '@/components/schedule/appointment-panel';
 import ScheduleDoctorList from '@/components/schedule/schedule-doctor-list';
 import ScheduleGrid from '@/components/schedule/schedule-grid';
@@ -88,32 +89,36 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
             <Head title="Day schedule" />
 
             <div className="space-y-6 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1">
-                        <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
-                            Day schedule
-                            {viewOnly && (
-                                <Badge variant="outline">View only</Badge>
-                            )}
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            {formatClinicDate(schedule.date)}. All times are
-                            Manila time.
-                        </p>
-                        {/* Read out when the day changes. */}
-                        <p
-                            aria-live="polite"
-                            className="text-sm text-muted-foreground"
-                        >
-                            {appointments.length}{' '}
-                            {appointments.length === 1
-                                ? 'appointment'
-                                : 'appointments'}{' '}
-                            · {count('booked')} booked · {count('checked_in')}{' '}
-                            checked in · {count('completed')} completed ·{' '}
-                            {count('no_show')} no-show
-                        </p>
-                    </div>
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                    <PageHeader
+                        title={
+                            <>
+                                Day schedule
+                                {viewOnly && (
+                                    <Badge variant="outline">View only</Badge>
+                                )}
+                            </>
+                        }
+                        description={
+                            <>
+                                <p>
+                                    {formatClinicDate(schedule.date)}. All times
+                                    are Manila time.
+                                </p>
+                                {/* Read out when the day changes. */}
+                                <p aria-live="polite">
+                                    {appointments.length}{' '}
+                                    {appointments.length === 1
+                                        ? 'appointment'
+                                        : 'appointments'}{' '}
+                                    · {count('booked')} booked ·{' '}
+                                    {count('checked_in')} checked in ·{' '}
+                                    {count('completed')} completed ·{' '}
+                                    {count('no_show')} no-show
+                                </p>
+                            </>
+                        }
+                    />
 
                     <nav
                         aria-label="Choose a day"
@@ -207,7 +212,7 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                         )}
                     </div>
                 ) : (
-                    <p className="rounded-xl border p-8 text-center text-sm text-muted-foreground">
+                    <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
                         There are no doctors to show.
                     </p>
                 )}

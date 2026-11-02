@@ -1,27 +1,17 @@
 import { Link } from '@inertiajs/react';
 import { Check, Info } from 'lucide-react';
 import IntakeController from '@/actions/App/Http/Controllers/Patient/IntakeController';
+import StatusBadge from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
-import type { AppointmentStatus, MyAppointment } from '@/types';
+import type { MyAppointment } from '@/types';
 import CancelAppointmentDialog from './cancel-appointment-dialog';
 
 type Props = {
     appointment: MyAppointment;
     /** Show the cancel button or the "too late" hint. Only an upcoming appointment can be cancelled. */
     upcoming: boolean;
-};
-
-const badgeVariants: Record<
-    AppointmentStatus,
-    'default' | 'secondary' | 'outline' | 'destructive'
-> = {
-    booked: 'default',
-    checked_in: 'secondary',
-    completed: 'outline',
-    cancelled: 'destructive',
-    no_show: 'destructive',
 };
 
 /** One appointment. The status is always written out, so it never depends on color alone. */
@@ -41,16 +31,17 @@ export default function AppointmentCard({ appointment, upcoming }: Props) {
         : 'Fill intake';
 
     return (
-        <li className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between">
+        <li className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-semibold">
                         {formatClinicDateTime(startsAt)} to{' '}
                         {formatClinicTime(endsAt)}
                     </h3>
-                    <Badge variant={badgeVariants[status]}>
-                        {appointment.statusLabel}
-                    </Badge>
+                    <StatusBadge
+                        status={status}
+                        label={appointment.statusLabel}
+                    />
                 </div>
                 <p>
                     {service.name} · {service.durationMinutes} min

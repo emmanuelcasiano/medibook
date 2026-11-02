@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import ServiceForm from '@/components/admin/service-form';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import type { AdminServiceFormValues } from '@/types';
 
 type Props = {
@@ -14,7 +14,7 @@ export default function AdminServicesEdit({ service }: Props) {
             <Head title={`Edit ${service.name}`} />
 
             <div className="max-w-xl space-y-6 p-4">
-                <Heading
+                <PageHeader
                     title="Edit service"
                     description="A new length or buffer applies to bookings made from now on. Existing bookings keep their times."
                 />

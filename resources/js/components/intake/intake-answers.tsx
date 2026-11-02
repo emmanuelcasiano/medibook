@@ -33,7 +33,7 @@ export default function IntakeAnswersView({ answers, durations }: Props) {
     return (
         <section
             aria-labelledby="intake-answers-heading"
-            className="space-y-4 rounded-xl border p-5"
+            className="space-y-4 rounded-xl border bg-card p-5"
         >
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2

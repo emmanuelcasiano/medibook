@@ -98,7 +98,7 @@ export default function DayPicker({ days, selectedDate, hrefFor }: Props) {
                                     }
                                     className={cn(
                                         cell,
-                                        'border font-medium outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                        'border font-medium outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring',
                                         isSelected &&
                                             'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
                                     )}

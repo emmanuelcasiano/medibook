@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
 import DoctorController from '@/actions/App/Http/Controllers/Booking/DoctorController';
 import BookingSteps from '@/components/booking/booking-steps';
+import PageHeader from '@/components/page-header';
 import type { BookableService } from '@/types';
 
 type Props = {
@@ -16,18 +17,13 @@ export default function BookingServices({ services }: Props) {
             <div className="space-y-6">
                 <BookingSteps current={1} />
 
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        What would you like to be seen for?
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        No account is needed to look. You log in or register
-                        just before you confirm.
-                    </p>
-                </div>
+                <PageHeader
+                    title="What would you like to be seen for?"
+                    description="No account is needed to look. You log in or register just before you confirm."
+                />
 
                 {services.length === 0 ? (
-                    <p className="rounded-xl border p-6 text-sm text-muted-foreground">
+                    <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
                         No services are open for booking right now. Please check
                         back later.
                     </p>
@@ -37,7 +33,7 @@ export default function BookingServices({ services }: Props) {
                             <li key={service.slug}>
                                 <Link
                                     href={DoctorController.index(service)}
-                                    className="flex h-full items-center justify-between gap-3 rounded-xl border bg-card p-4 outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                    className="flex h-full items-center justify-between gap-3 rounded-xl border bg-card p-4 outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring"
                                 >
                                     <span className="space-y-1">
                                         <span className="block font-medium">

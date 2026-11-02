@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AdminDoctorListItem, Paginated } from '@/types';
@@ -17,12 +17,12 @@ export default function AdminDoctorsIndex({ doctors }: Props) {
             <Head title="Doctors" />
 
             <div className="space-y-6 p-4">
-                <Heading
+                <PageHeader
                     title="Doctors"
                     description="Set each doctor's specialty, bio, services, working hours and time off. A new doctor is added on the Users page."
                 />
 
-                <div className="overflow-x-auto rounded-xl border">
+                <div className="overflow-x-auto rounded-xl border bg-card">
                     <table className="w-full text-sm">
                         <caption className="sr-only">
                             All doctors of the clinic

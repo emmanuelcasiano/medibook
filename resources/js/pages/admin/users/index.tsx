@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AdminUserListItem, Paginated } from '@/types';
@@ -15,17 +15,17 @@ export default function AdminUsersIndex({ users }: Props) {
             <Head title="Users" />
 
             <div className="space-y-6 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <Heading
-                        title="Users"
-                        description="Create staff, doctor and admin accounts, or deactivate an account. Patients register themselves."
-                    />
-                    <Button asChild>
-                        <Link href={UserController.create()}>Add user</Link>
-                    </Button>
-                </div>
+                <PageHeader
+                    title="Users"
+                    description="Create staff, doctor and admin accounts, or deactivate an account. Patients register themselves."
+                    actions={
+                        <Button asChild>
+                            <Link href={UserController.create()}>Add user</Link>
+                        </Button>
+                    }
+                />
 
-                <div className="overflow-x-auto rounded-xl border">
+                <div className="overflow-x-auto rounded-xl border bg-card">
                     <table className="w-full text-sm">
                         <caption className="sr-only">All user accounts</caption>
                         <thead className="bg-muted/50 text-left">

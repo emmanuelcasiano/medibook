@@ -5,10 +5,10 @@ import StaffAppointmentController from '@/actions/App/Http/Controllers/Staff/App
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppointmentFlags from '@/components/schedule/appointment-flags';
 import MoveSection from '@/components/schedule/move-section';
+import StatusBadge from '@/components/status-badge';
 import {
     Dialog,
     DialogClose,
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import type {
     DaySchedule,
@@ -129,11 +130,14 @@ export default function AppointmentPanel({
     return (
         <aside
             aria-labelledby="appointment-panel-heading"
-            className="space-y-5 rounded-xl border p-4 md:w-80 md:shrink-0"
+            className="space-y-5 rounded-xl border bg-card p-4 md:w-80 md:shrink-0"
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-2">
-                    <Badge variant="outline">{appointment.statusLabel}</Badge>
+                    <StatusBadge
+                        status={appointment.status}
+                        label={appointment.statusLabel}
+                    />
                     <h2
                         id="appointment-panel-heading"
                         ref={headingRef}
@@ -289,7 +293,7 @@ function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor={reasonId}>Reason</Label>
-                                <textarea
+                                <Textarea
                                     id={reasonId}
                                     name="reason"
                                     rows={3}
@@ -303,7 +307,7 @@ function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
                                             ? `${reasonId}-error`
                                             : undefined
                                     }
-                                    className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                                    className="min-h-20"
                                 />
                                 <InputError
                                     id={`${reasonId}-error`}

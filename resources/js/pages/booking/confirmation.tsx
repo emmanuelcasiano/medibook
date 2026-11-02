@@ -34,7 +34,7 @@ export default function BookingConfirmation({ appointment }: Props) {
 
                 <section
                     aria-labelledby="booked-visit-heading"
-                    className="rounded-xl border"
+                    className="rounded-xl border bg-card"
                 >
                     <div className="space-y-1 p-5">
                         <h2

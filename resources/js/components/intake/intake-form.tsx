@@ -5,7 +5,9 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { home as myHome } from '@/routes/my';
 import type { IntakeAnswers, IntakeDurationOption } from '@/types';
 
@@ -23,9 +25,6 @@ const checklist: { name: keyof Checklist; label: string }[] = [
     { name: 'pregnant', label: 'I am pregnant, or I might be' },
     { name: 'recent_surgery', label: 'I have had surgery recently' },
 ];
-
-const fieldClass =
-    'w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
 
 export default function IntakeForm({
     appointmentUlid,
@@ -48,7 +47,7 @@ export default function IntakeForm({
                 <>
                     <div className="grid gap-2">
                         <Label htmlFor="reason">Reason for your visit</Label>
-                        <textarea
+                        <Textarea
                             id="reason"
                             name="reason"
                             rows={3}
@@ -59,14 +58,13 @@ export default function IntakeForm({
                             aria-describedby={
                                 errors.reason ? 'reason-error' : undefined
                             }
-                            className={fieldClass}
                         />
                         <InputError id="reason-error" message={errors.reason} />
                     </div>
 
                     <div className="grid gap-2">
                         <Label htmlFor="symptoms">Your symptoms</Label>
-                        <textarea
+                        <Textarea
                             id="symptoms"
                             name="symptoms"
                             rows={4}
@@ -76,7 +74,6 @@ export default function IntakeForm({
                             aria-describedby={
                                 errors.symptoms ? 'symptoms-error' : undefined
                             }
-                            className={fieldClass}
                         />
                         <InputError
                             id="symptoms-error"
@@ -88,7 +85,7 @@ export default function IntakeForm({
                         <Label htmlFor="duration">
                             How long have you had this?
                         </Label>
-                        <select
+                        <NativeSelect
                             id="duration"
                             name="duration"
                             defaultValue={answers?.duration ?? ''}
@@ -96,7 +93,6 @@ export default function IntakeForm({
                             aria-describedby={
                                 errors.duration ? 'duration-error' : undefined
                             }
-                            className={`h-9 ${fieldClass}`}
                         >
                             <option value="">Choose one</option>
                             {durations.map((option) => (
@@ -104,7 +100,7 @@ export default function IntakeForm({
                                     {option.label}
                                 </option>
                             ))}
-                        </select>
+                        </NativeSelect>
                         <InputError
                             id="duration-error"
                             message={errors.duration}
@@ -113,7 +109,7 @@ export default function IntakeForm({
 
                     <div className="grid gap-2">
                         <Label htmlFor="allergies">Allergies</Label>
-                        <textarea
+                        <Textarea
                             id="allergies"
                             name="allergies"
                             rows={2}
@@ -123,7 +119,6 @@ export default function IntakeForm({
                             aria-describedby={
                                 errors.allergies ? 'allergies-error' : undefined
                             }
-                            className={fieldClass}
                         />
                         <InputError
                             id="allergies-error"
@@ -135,7 +130,7 @@ export default function IntakeForm({
                         <Label htmlFor="medicines">
                             Medicines you take now
                         </Label>
-                        <textarea
+                        <Textarea
                             id="medicines"
                             name="medicines"
                             rows={2}
@@ -145,7 +140,6 @@ export default function IntakeForm({
                             aria-describedby={
                                 errors.medicines ? 'medicines-error' : undefined
                             }
-                            className={fieldClass}
                         />
                         <InputError
                             id="medicines-error"

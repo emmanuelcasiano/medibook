@@ -7,6 +7,7 @@ import SlotGrid from '@/components/booking/slot-grid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDateTime, isCompleteDate } from '@/lib/clinic-time';
 import type {
@@ -24,9 +25,6 @@ type Props = {
     /** `undefined` until the server has sent it, `null` when the user may not move this booking. */
     move: MoveOptions | null | undefined;
 };
-
-const fieldClasses =
-    'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none';
 
 /**
  * The "Move" part of the staff side panel: pick a doctor and a day, then one of that day's free times. The doctors and
@@ -124,14 +122,13 @@ export default function MoveSection({
                                     <Label htmlFor={doctorFieldId}>
                                         Doctor
                                     </Label>
-                                    <select
+                                    <NativeSelect
                                         id={doctorFieldId}
                                         value={doctorId}
                                         onChange={(event) => {
                                             setDoctorId(event.target.value);
                                             setStartsAt(null);
                                         }}
-                                        className={fieldClasses}
                                     >
                                         {/* Until the list arrives, the current doctor is the only choice. */}
                                         {(
@@ -149,7 +146,7 @@ export default function MoveSection({
                                                 {option.name}
                                             </option>
                                         ))}
-                                    </select>
+                                    </NativeSelect>
                                 </div>
 
                                 <div className="grid gap-2">

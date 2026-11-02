@@ -29,7 +29,7 @@ export default function SlotGrid({
                             aria-pressed={isSelected}
                             onClick={() => onSelect(slot.startsAt)}
                             className={cn(
-                                'min-h-11 w-full rounded-md border px-2 text-sm font-medium outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                'min-h-11 w-full rounded-md border px-2 text-sm font-medium outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring',
                                 isSelected &&
                                     'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
                             )}

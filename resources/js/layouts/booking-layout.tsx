@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import AppLogoMark from '@/components/app-logo-mark';
 import { Button } from '@/components/ui/button';
 import { dashboard, home, login, register } from '@/routes';
 import { home as myHome } from '@/routes/my';
@@ -30,8 +30,8 @@ export default function BookingLayout({
                         href={home()}
                         className="flex items-center gap-2 rounded-md font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
-                        <AppLogoIcon className="size-6 fill-current" />
-                        <span>{name}</span>
+                        <AppLogoMark className="size-8" />
+                        <span className="text-lg tracking-tight">{name}</span>
                     </Link>
 
                     <nav

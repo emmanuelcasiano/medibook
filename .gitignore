@@ -44,6 +44,9 @@ yarn-error.log
 /opencode.json
 /opencode.jsonc
 
+# Browser test output from the Playwright MCP (page snapshots, screenshots, console logs)
+/.playwright-mcp
+
 # Personal study notes (not pushed)
 /notes
 

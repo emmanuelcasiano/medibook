@@ -1,7 +1,7 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import AlertError from '@/components/alert-error';
-import Heading from '@/components/heading';
+import PageHeader from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AdminServiceListItem, Paginated } from '@/types';
@@ -18,17 +18,17 @@ export default function AdminServicesIndex({ services }: Props) {
             <Head title="Services" />
 
             <div className="space-y-6 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <Heading
-                        title="Services"
-                        description="Length sets the slot size. The buffer is the gap kept free after each visit."
-                    />
-                    <Button asChild>
-                        <Link href={ServiceController.create()}>
-                            Add service
-                        </Link>
-                    </Button>
-                </div>
+                <PageHeader
+                    title="Services"
+                    description="Length sets the slot size. The buffer is the gap kept free after each visit."
+                    actions={
+                        <Button asChild>
+                            <Link href={ServiceController.create()}>
+                                Add service
+                            </Link>
+                        </Button>
+                    }
+                />
 
                 {/* Shown when a delete is refused, for example because the service has appointments. */}
                 <div role="alert">
@@ -40,7 +40,7 @@ export default function AdminServicesIndex({ services }: Props) {
                     )}
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border">
+                <div className="overflow-x-auto rounded-xl border bg-card">
                     <table className="w-full text-sm">
                         <caption className="sr-only">
                             All services of the clinic

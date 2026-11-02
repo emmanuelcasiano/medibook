@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import type { AdminServiceFormValues } from '@/types';
 
 type Props = {
@@ -44,14 +45,14 @@ export default function ServiceForm({
 
                     <div className="grid gap-2">
                         <Label htmlFor="description">Description</Label>
-                        <textarea
+                        <Textarea
                             id="description"
                             name="description"
                             rows={3}
                             maxLength={1000}
                             defaultValue={service?.description ?? ''}
                             aria-invalid={errors.description ? true : undefined}
-                            className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                            className="min-h-20"
                         />
                         <InputError message={errors.description} />
                     </div>
