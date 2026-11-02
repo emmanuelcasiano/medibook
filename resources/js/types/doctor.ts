@@ -57,6 +57,10 @@ export type IntakeSummary = {
     statusLabel: string;
     summary: SummaryDraft | null;
     model: string | null;
-    /** ISO 8601 UTC. null until the doctor marks it reviewed (step 10.3). */
+    /** ISO 8601 UTC. null until the doctor marks it reviewed. */
     reviewedAt: string | null;
+    /** Token of this exact draft. "Mark reviewed" sends it back, so a draft that changed since is refused. */
+    version: string;
+    /** Computed on the server. The Policy and the Action check again on submit. */
+    can: { review: boolean };
 };

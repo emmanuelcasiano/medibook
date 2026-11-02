@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
     Route::middleware('role:doctor')->prefix('doctor')->name('doctor.')->group(function () {
         Route::get('/', [TodayController::class, 'index'])->name('home');
         Route::get('appointments/{appointment}', [DoctorAppointmentController::class, 'show'])->name('appointments.show');
+        Route::post('appointments/{appointment}/summary/review', [DoctorAppointmentController::class, 'review'])->middleware('throttle:doctor-actions')->name('appointments.summary.review');
     });
 
     Route::middleware('role:patient')->group(function () {

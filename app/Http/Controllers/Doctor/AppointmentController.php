@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Doctor;
 
+use App\Actions\Doctor\MarkSummaryReviewed;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Doctor\ReviewSummaryRequest;
 use App\Http\Resources\Doctor\AppointmentDetailResource;
 use App\Http\Resources\Doctor\IntakeDetailResource;
 use App\Http\Resources\Doctor\IntakeSummaryResource;
 use App\Models\Appointment;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -54,5 +57,21 @@ final class AppointmentController extends Controller
             'intake' => $intake === null ? null : (new IntakeDetailResource($intake))->resolve(),
             'summary' => $summary === null ? null : (new IntakeSummaryResource($summary))->resolve(),
         ]);
+    }
+
+    /**
+     * "Mark reviewed" on the AI draft. The doctor and the time come from the server. The only input is the token of
+     * the draft that was on the page. The appointment Policy runs here, and the Action runs the intake Policy, the
+     * ready-summary rule and the token check.
+     */
+    public function review(ReviewSummaryRequest $request, Appointment $appointment, MarkSummaryReviewed $markReviewed): RedirectResponse
+    {
+        Gate::authorize('view', $appointment);
+
+        $markReviewed->handle($request->user(), $appointment, $request->validated('version'));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('The summary is marked as reviewed.')]);
+
+        return to_route('doctor.appointments.show', $appointment);
     }
 }

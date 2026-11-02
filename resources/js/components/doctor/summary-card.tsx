@@ -1,11 +1,18 @@
+import { Form } from '@inertiajs/react';
 import { AlertTriangle, Check, Info, Sparkles } from 'lucide-react';
+import { useRef } from 'react';
 import type { ReactNode } from 'react';
+import DoctorAppointmentController from '@/actions/App/Http/Controllers/Doctor/AppointmentController';
+import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDateTime } from '@/lib/clinic-time';
 import type { IntakeSummary, SummaryDraft } from '@/types';
 
 type Props = {
+    /** The appointment the summary belongs to. The "Mark reviewed" button posts to it. */
+    appointmentUlid: string;
     /** null when there is no intake, or an intake with no summary row. */
     summary: IntakeSummary | null;
     /** Whether the patient filled in the form at all. */
@@ -14,8 +21,20 @@ type Props = {
     emergency: boolean;
 };
 
+type BodyProps = Props & {
+    /** Called after "Mark reviewed" worked, once the button is gone. */
+    onReviewed: () => void;
+};
+
 /** The AI draft next to the raw answers. AI text is rendered as text only, never as HTML. */
-export default function SummaryCard({ summary, hasIntake, emergency }: Props) {
+export default function SummaryCard({
+    appointmentUlid,
+    summary,
+    hasIntake,
+    emergency,
+}: Props) {
+    const headingRef = useRef<HTMLHeadingElement>(null);
+
     return (
         <section
             aria-labelledby="ai-summary-heading"
@@ -24,7 +43,9 @@ export default function SummaryCard({ summary, hasIntake, emergency }: Props) {
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2
                     id="ai-summary-heading"
-                    className="flex items-center gap-2 text-lg font-semibold"
+                    ref={headingRef}
+                    tabIndex={-1}
+                    className="flex items-center gap-2 rounded-sm text-lg font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     <Sparkles aria-hidden className="size-4" />
                     AI summary
@@ -37,15 +58,25 @@ export default function SummaryCard({ summary, hasIntake, emergency }: Props) {
             </div>
 
             <SummaryBody
+                appointmentUlid={appointmentUlid}
                 summary={summary}
                 hasIntake={hasIntake}
                 emergency={emergency}
+                // The button is gone once the review is saved, so focus would drop to the top of the page. The
+                // card heading is the place to go instead (the staff panel does the same).
+                onReviewed={() => headingRef.current?.focus()}
             />
         </section>
     );
 }
 
-function SummaryBody({ summary, hasIntake, emergency }: Props) {
+function SummaryBody({
+    appointmentUlid,
+    summary,
+    hasIntake,
+    emergency,
+    onReviewed,
+}: BodyProps) {
     if (!hasIntake) {
         return (
             <State
@@ -110,6 +141,45 @@ function SummaryBody({ summary, hasIntake, emergency }: Props) {
                     </Badge>
                 )}
             </div>
+
+            {summary.can.review && (
+                <Form
+                    {...DoctorAppointmentController.review.form(
+                        appointmentUlid,
+                    )}
+                    options={{ preserveScroll: true }}
+                    onSuccess={onReviewed}
+                    className="space-y-2"
+                >
+                    {({ errors, processing }) => (
+                        <>
+                            {/* The draft the doctor is reading. The server refuses the review if it has changed. */}
+                            <input
+                                type="hidden"
+                                name="version"
+                                value={summary.version}
+                            />
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                                data-test="mark-reviewed-button"
+                            >
+                                {processing ? (
+                                    <Spinner />
+                                ) : (
+                                    <Check aria-hidden />
+                                )}
+                                Mark reviewed
+                            </Button>
+                            <div role="alert">
+                                <InputError
+                                    message={errors.summary ?? errors.version}
+                                />
+                            </div>
+                        </>
+                    )}
+                </Form>
+            )}
         </div>
     );
 }
