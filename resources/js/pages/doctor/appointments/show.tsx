@@ -23,6 +23,8 @@ type Props = {
     summary: IntakeSummary | null;
     /** null until the doctor saves the first note. Only ever the signed-in doctor's own. */
     visitNote: VisitNote | null;
+    /** False for a booking that has not started, a cancellation and a no-show. The server checks again on save. */
+    canSaveVisitNote: boolean;
 };
 
 const statusVariants: Record<
@@ -41,6 +43,7 @@ export default function DoctorAppointmentShow({
     intake,
     summary,
     visitNote,
+    canSaveVisitNote,
 }: Props) {
     const { patientFirstName, patientAge } = appointment;
 
@@ -112,6 +115,7 @@ export default function DoctorAppointmentShow({
                 <VisitNoteCard
                     appointmentUlid={appointment.ulid}
                     note={visitNote}
+                    canSave={canSaveVisitNote}
                 />
             </div>
         </>

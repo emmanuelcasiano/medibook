@@ -67,6 +67,8 @@ final class AppointmentController extends Controller
             'intake' => $intake === null ? null : (new IntakeDetailResource($intake))->resolve(),
             'summary' => $summary === null ? null : (new IntakeSummaryResource($summary))->resolve(),
             'visitNote' => $note === null ? null : (new VisitNoteResource($note))->resolve(),
+            // Only for showing the form. The Policy settled who; this is the state. SaveVisitNote checks it again on submit.
+            'canSaveVisitNote' => $appointment->status->allowsVisitNote(),
         ]);
     }
 

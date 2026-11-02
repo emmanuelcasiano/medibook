@@ -13,10 +13,16 @@ type Props = {
     appointmentUlid: string;
     /** null until the doctor saves the first note. */
     note: VisitNote | null;
+    /** False until the patient is checked in, and for a cancellation or a no-show. */
+    canSave: boolean;
 };
 
 /** The doctor's private note for this visit. Nobody else can read or write it. */
-export default function VisitNoteCard({ appointmentUlid, note }: Props) {
+export default function VisitNoteCard({
+    appointmentUlid,
+    note,
+    canSave,
+}: Props) {
     return (
         <section
             aria-labelledby="visit-note-heading"
@@ -35,59 +41,102 @@ export default function VisitNoteCard({ appointmentUlid, note }: Props) {
                 </span>
             </div>
 
-            {/* `key` gives the form a fresh start after a save, so the text shown is the text the server kept. */}
-            <Form
-                key={note?.updatedAt ?? 'new'}
-                {...VisitNoteController.update.form(appointmentUlid)}
-                options={{ preserveScroll: true }}
-                className="space-y-3"
-            >
-                {({ errors, processing }) => (
-                    <>
-                        <div className="grid gap-2">
-                            <Label htmlFor="visit-note-body">Note</Label>
-                            <textarea
-                                id="visit-note-body"
-                                name="body"
-                                rows={8}
-                                required
-                                maxLength={10000}
-                                defaultValue={note?.body ?? ''}
-                                aria-invalid={errors.body ? true : undefined}
-                                aria-describedby={
-                                    errors.body
-                                        ? 'visit-note-body-error'
-                                        : undefined
-                                }
-                                className="min-h-40 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                            />
-                            <div id="visit-note-body-error" role="alert">
-                                <InputError message={errors.body} />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <Button
-                                type="submit"
-                                disabled={processing}
-                                data-test="save-visit-note-button"
-                            >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <Save aria-hidden />
-                                )}
-                                Save note
-                            </Button>
-                            {note !== null && (
-                                <span className="text-sm text-muted-foreground">
-                                    Saved {formatClinicDateTime(note.updatedAt)}
-                                </span>
-                            )}
-                        </div>
-                    </>
-                )}
-            </Form>
+            {canSave ? (
+                <NoteForm appointmentUlid={appointmentUlid} note={note} />
+            ) : (
+                <ReadOnlyNote note={note} />
+            )}
         </section>
+    );
+}
+
+function NoteForm({
+    appointmentUlid,
+    note,
+}: {
+    appointmentUlid: string;
+    note: VisitNote | null;
+}) {
+    return (
+        // No `key` on the form: a new key after each save would rebuild it and drop the keyboard focus from the Save
+        // button. The textarea keeps what the doctor typed, which is the text the server saved.
+        <Form
+            {...VisitNoteController.update.form(appointmentUlid)}
+            options={{ preserveScroll: true }}
+            className="space-y-3"
+        >
+            {({ errors, processing }) => (
+                <>
+                    <div className="grid gap-2">
+                        <Label htmlFor="visit-note-body">Note</Label>
+                        <textarea
+                            id="visit-note-body"
+                            name="body"
+                            rows={8}
+                            required
+                            maxLength={10000}
+                            defaultValue={note?.body ?? ''}
+                            aria-invalid={errors.body ? true : undefined}
+                            aria-describedby={
+                                errors.body
+                                    ? 'visit-note-body-error'
+                                    : undefined
+                            }
+                            className="min-h-40 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                        />
+                        <div id="visit-note-body-error" role="alert">
+                            <InputError message={errors.body} />
+                        </div>
+                    </div>
+
+                    {/* A refusal about the appointment itself (for example, it was cancelled while the page was open). */}
+                    <div role="alert">
+                        <InputError message={errors.appointment} />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            data-test="save-visit-note-button"
+                        >
+                            {processing ? <Spinner /> : <Save aria-hidden />}
+                            Save note
+                        </Button>
+                        {note !== null && (
+                            <span className="text-sm text-muted-foreground">
+                                Saved {formatClinicDateTime(note.updatedAt)}
+                            </span>
+                        )}
+                    </div>
+                </>
+            )}
+        </Form>
+    );
+}
+
+/** Shown when the appointment does not take a note. A note saved earlier is still there to read. */
+function ReadOnlyNote({ note }: { note: VisitNote | null }) {
+    if (note === null) {
+        return (
+            <p
+                className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground"
+                data-test="visit-note-unavailable"
+            >
+                You can write a note once the patient is checked in. A cancelled
+                booking or a no-show has no visit to write about.
+            </p>
+        );
+    }
+
+    return (
+        <div className="space-y-2">
+            {/* Plain text only: React escapes it, and `whitespace-pre-wrap` keeps the doctor's line breaks. */}
+            <p className="text-sm whitespace-pre-wrap">{note.body}</p>
+            <p className="text-sm text-muted-foreground">
+                Saved {formatClinicDateTime(note.updatedAt)}. A note can be
+                edited only on a checked-in or completed appointment.
+            </p>
+        </div>
     );
 }

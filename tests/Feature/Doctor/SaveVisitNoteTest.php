@@ -10,8 +10,10 @@ use App\Models\User;
 use App\Models\VisitNote;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 
 // Visit notes (step 10.4): one private, encrypted note per appointment, written and read by its own doctor only. The
@@ -25,12 +27,13 @@ beforeEach(function () {
     $this->doctorUser = userWithRole(Role::Doctor);
     $this->doctor = Doctor::query()->where('user_id', $this->doctorUser->id)->firstOrFail();
 
-    // A booking for the signed-in doctor, or for $doctor. A doctor can't have two bookings at the same time, so pass
-    // another $at when a test needs a second one.
-    $this->booking = fn (?Doctor $doctor = null, string $at = '10:00'): Appointment => Appointment::factory()
+    // An appointment for the signed-in doctor, or for $doctor. It is checked in, because only a visit that took place
+    // takes a note ($state is any AppointmentFactory state). A doctor can't have two bookings at the same time, so
+    // pass another $at when a test needs a second one.
+    $this->booking = fn (?Doctor $doctor = null, string $at = '10:00', string $state = 'checkedIn'): Appointment => Appointment::factory()
         ->for($doctor ?? $this->doctor)
         ->for(User::factory()->patient()->create(), 'patient')
-        ->booked()
+        ->{$state}()
         ->create(['starts_at' => CarbonImmutable::parse("2026-11-02 {$at}", 'Asia/Manila')->utc()]);
 
     $this->save = fn (Appointment $appointment, array $body = ['body' => 'Rash on the left arm.'], ?User $as = null) => $this->actingAs($as ?? $this->doctorUser)
@@ -98,6 +101,82 @@ describe('saving a note', function () {
         $note = VisitNote::query()->sole();
         expect($note->appointment_id)->toBe($appointment->id)
             ->and($note->doctor_id)->toBe($this->doctor->id);
+    });
+});
+
+describe('which appointments take a note', function () {
+    it('takes a note once the patient is checked in, and after the visit is finished', function (string $state) {
+        ($this->save)(($this->booking)(state: $state))->assertRedirect()->assertSessionHasNoErrors();
+
+        expect(VisitNote::query()->count())->toBe(1);
+    })->with(['checked in' => 'checkedIn', 'completed' => 'completed']);
+
+    it('refuses a booking that has not started, a cancellation and a no-show, says why, and saves nothing', function (string $state, string $message) {
+        ($this->save)(($this->booking)(state: $state))->assertSessionHasErrors(['appointment' => $message]);
+
+        expect(VisitNote::query()->count())->toBe(0);
+    })->with([
+        // A booking will take a note after check-in. A cancellation or a no-show never will, so it is not told to wait.
+        'booked' => ['booked', 'A note can be written once the patient is checked in.'],
+        'cancelled' => ['cancelled', "A note can't be written on a cancelled appointment."],
+        'no-show' => ['noShow', "A note can't be written on a no-show appointment."],
+    ]);
+
+    it('refuses an edit once the appointment no longer takes a note, and keeps the old text', function () {
+        $appointment = ($this->booking)();
+        ($this->save)($appointment, ['body' => 'Written during the visit.']);
+        $appointment->update(['status' => 'no_show']);
+
+        ($this->save)($appointment, ['body' => 'Changed later.'])->assertSessionHasErrors('appointment');
+
+        expect(VisitNote::query()->sole()->body)->toBe('Written during the visit.');
+    });
+
+    it('reads the status again when the model in hand is old (a cancel at the same moment)', function () {
+        $appointment = ($this->booking)();
+        // Staff cancel the booking after the doctor's page loaded: the model the caller holds still says "checked in".
+        Appointment::query()->whereKey($appointment->id)->update(['status' => 'cancelled']);
+
+        expect(fn () => app(SaveVisitNote::class)->handle($this->doctorUser, $appointment, 'Too late.'))
+            ->toThrow(ValidationException::class);
+        expect(VisitNote::query()->count())->toBe(0);
+    });
+
+    it('tells the page whether the form is open, and still sends a note saved earlier', function () {
+        $open = ($this->booking)();
+        $closed = ($this->booking)(at: '14:00', state: 'booked');
+        VisitNote::factory()->for($closed)->create(['body' => 'Prepared earlier.']);
+
+        ($this->open)($open)->assertInertia(fn (Assert $page) => $page->where('canSaveVisitNote', true)->etc());
+        ($this->open)($closed)->assertInertia(fn (Assert $page) => $page
+            ->where('canSaveVisitNote', false)
+            ->where('visitNote.body', 'Prepared earlier.')
+            ->etc());
+    });
+});
+
+describe('the unique key', function () {
+    it('lets the database refuse a second note for the same appointment, even past the model', function () {
+        $appointment = ($this->booking)();
+        VisitNote::factory()->for($appointment)->create();
+
+        // A raw insert skips the Action, the model and its cast: this is the last line of defense on its own.
+        expect(fn () => DB::table('visit_notes')->insert([
+            'appointment_id' => $appointment->id,
+            'doctor_id' => $appointment->doctor_id,
+            'body' => 'A second note.',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]))->toThrow(UniqueConstraintViolationException::class);
+
+        expect(VisitNote::query()->count())->toBe(1);
+    });
+
+    it('still lets each appointment have its own note', function () {
+        VisitNote::factory()->for(($this->booking)())->create();
+        VisitNote::factory()->for(($this->booking)(at: '14:00'))->create();
+
+        expect(VisitNote::query()->count())->toBe(2);
     });
 });
 
