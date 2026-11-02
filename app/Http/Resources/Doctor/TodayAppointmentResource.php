@@ -9,7 +9,6 @@ use App\Models\Appointment;
 use App\Models\IntakeSummary;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Str;
 
 /**
  * One row of the doctor's "Today" list, as the page receives it. The caller must load `patient`, `service` and
@@ -45,9 +44,7 @@ final class TodayAppointmentResource extends JsonResource
             'endsAt' => $this->ends_at->toIso8601ZuluString(),
             'status' => $this->status->value,
             'statusLabel' => $this->status->label(),
-            // `squish` turns any run of whitespace (tab, non-breaking space, ...) into one plain space first, so the
-            // surname can't slip through behind a separator that `before(' ')` would not see.
-            'patientFirstName' => (string) Str::of($this->patient->name)->squish()->before(' '),
+            'patientFirstName' => $this->patient->firstName(),
             'serviceName' => $this->service->name,
             'intakeFilled' => $this->intake !== null,
             'summaryStatus' => $summary?->status->value,

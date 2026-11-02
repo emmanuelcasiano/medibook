@@ -239,7 +239,7 @@ describe('opening an appointment', function () {
         $this->actingAs($this->doctorUser)
             ->get(route('doctor.appointments.show', $appointment))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('role-home'));
+            ->assertInertia(fn (Assert $page) => $page->component('doctor/appointments/show'));
     });
 
     it('answers 403 when a doctor opens another doctor\'s appointment', function () {
