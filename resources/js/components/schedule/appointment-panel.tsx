@@ -1,5 +1,5 @@
 import { Form, Link } from '@inertiajs/react';
-import { Check, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import StaffAppointmentController from '@/actions/App/Http/Controllers/Staff/AppointmentController';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
@@ -7,6 +7,7 @@ import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import AppointmentFlags from '@/components/schedule/appointment-flags';
+import CheckInButton from '@/components/schedule/check-in-button';
 import MoveSection from '@/components/schedule/move-section';
 import StatusBadge from '@/components/status-badge';
 import {
@@ -177,40 +178,11 @@ export default function AppointmentPanel({
 
             <section aria-label="Actions" className="space-y-3">
                 {selected.can.checkIn && (
-                    <Form
-                        {...StaffAppointmentController.checkIn.form(
-                            appointment.ulid,
-                        )}
-                        options={{ preserveScroll: true }}
-                        onSuccess={focusHeading}
-                        className="space-y-2"
-                    >
-                        {({ errors, processing }) => (
-                            <>
-                                <Button
-                                    type="submit"
-                                    className="w-full"
-                                    disabled={processing}
-                                    data-test="check-in-button"
-                                >
-                                    {processing ? (
-                                        <Spinner />
-                                    ) : (
-                                        <Check aria-hidden />
-                                    )}
-                                    Check in
-                                </Button>
-                                <div role="alert">
-                                    {errors.appointment && (
-                                        <AlertError
-                                            errors={[errors.appointment]}
-                                            title="The patient was not checked in."
-                                        />
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </Form>
+                    <CheckInButton
+                        appointment={appointment}
+                        variant="panel"
+                        onCheckedIn={focusHeading}
+                    />
                 )}
 
                 {selected.can.markNoShow && (
