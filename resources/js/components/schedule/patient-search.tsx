@@ -1,14 +1,13 @@
-import { Form, Link } from '@inertiajs/react';
-import { Check, PanelRightOpen, Search } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { PanelRightOpen, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import StaffAppointmentController from '@/actions/App/Http/Controllers/Staff/AppointmentController';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import AppointmentFlags from '@/components/schedule/appointment-flags';
+import CheckInButton from '@/components/schedule/check-in-button';
 import StatusBadge from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDate, formatClinicTime } from '@/lib/clinic-time';
 import {
     findPatients,
@@ -60,8 +59,9 @@ function shouldFocusSearch(event: KeyboardEvent): boolean {
 
 /**
  * Find a patient on the day shown, from the bookings the page already holds. What is typed never leaves the browser:
- * nothing is sent, stored or logged. Each result has one button: Check in for staff on a booked patient whose intake is
- * filled in, Open (the side panel) for every other case. The server checks the Policy again on a check-in.
+ * nothing is sent, stored or logged. Each result has one button: Check in for staff on a booked patient (it asks first
+ * when the intake is missing), Open (the side panel) for every other case. The server checks the Policy again on a
+ * check-in.
  */
 export default function PatientSearch({
     schedule,
@@ -216,10 +216,8 @@ function PatientResult({
     const { appointment, doctor } = match;
     const time = formatClinicTime(appointment.startsAt);
     // Hiding the button for an admin is only a hint: the Policy and the Action refuse them again on the server.
-    const canCheckIn =
-        !viewOnly &&
-        appointment.status === 'booked' &&
-        !appointment.intakeMissing;
+    // A booking with no intake still gets the button: it opens a dialog that asks first.
+    const canCheckIn = !viewOnly && appointment.status === 'booked';
 
     return (
         <li
@@ -276,41 +274,11 @@ function PatientResult({
                 )}
 
                 {canCheckIn ? (
-                    <Form
-                        {...StaffAppointmentController.checkIn.form(
-                            appointment.ulid,
-                        )}
-                        options={{ preserveScroll: true }}
-                        onSuccess={onCheckedIn}
-                        className="w-full md:w-auto"
-                    >
-                        {({ errors, processing }) => (
-                            <div className="space-y-1">
-                                <Button
-                                    type="submit"
-                                    className="w-full md:w-auto"
-                                    disabled={processing}
-                                    aria-label={`Check in ${appointment.patientName} at ${time}`}
-                                    data-test="search-check-in-button"
-                                    data-search-action=""
-                                >
-                                    {processing ? (
-                                        <Spinner />
-                                    ) : (
-                                        <Check aria-hidden />
-                                    )}
-                                    Check in
-                                </Button>
-                                <div role="alert">
-                                    {errors.appointment && (
-                                        <p className="text-xs text-destructive">
-                                            {errors.appointment}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </Form>
+                    <CheckInButton
+                        appointment={appointment}
+                        variant="row"
+                        onCheckedIn={onCheckedIn}
+                    />
                 ) : (
                     <Button
                         asChild
