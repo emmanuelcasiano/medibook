@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import PageHeader from '@/components/page-header';
 import AppointmentPanel from '@/components/schedule/appointment-panel';
+import ArrivalsList from '@/components/schedule/arrivals-list';
 import DoctorFilter, {
     chosenDoctors,
     isOffToday,
@@ -15,11 +16,13 @@ import {
     statusLabels,
     statusStyles,
 } from '@/components/schedule/status-styles';
+import ViewToggle from '@/components/schedule/view-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useScheduleView } from '@/hooks/use-schedule-view';
 import { formatClinicDate, isCompleteDate } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, MoveOptions, SelectedAppointment } from '@/types';
@@ -67,6 +70,9 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
 
     // From `2xl` up the panel sits beside the grid. Below it, the panel slides over the grid, so it never squeezes it.
     const panelBesideGrid = useMediaQuery('(min-width: 96rem)');
+
+    // Grid, arrivals list, or (phone) one list per doctor. Staff open the list, an admin the grid.
+    const { view, choose, options } = useScheduleView(viewOnly);
 
     // Which doctors to show is UI state, not server data. The day links keep the page state (`preserveState`), so
     // the chips survive a change of day. A chosen doctor who is not in today's list is ignored, not an empty grid.
@@ -212,6 +218,11 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                                 Today
                             </Link>
                         </Button>
+                        <ViewToggle
+                            view={view}
+                            options={options}
+                            onChange={choose}
+                        />
                     </nav>
                 </div>
 
@@ -223,7 +234,10 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
 
                 <ul
                     aria-label="What the colors mean"
-                    className="hidden flex-wrap gap-x-4 gap-y-1 text-xs md:flex"
+                    className={cn(
+                        'hidden flex-wrap gap-x-4 gap-y-1 text-xs',
+                        view === 'grid' && 'md:flex',
+                    )}
                 >
                     {legendStatuses.map((status) => (
                         <li key={status} className="flex items-center gap-1.5">
@@ -246,23 +260,36 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                                 doctors={schedule.doctors}
                                 chosenIds={activeIds}
                                 onChange={setChosenIds}
-                                offCount={offCount}
+                                // Only the grid hides doctors who are off today, so only the grid needs the toggle.
+                                offCount={view === 'grid' ? offCount : 0}
                                 showOff={showOff}
                                 onShowOffChange={setShowOff}
                             />
-                            <ScheduleGrid
-                                schedule={schedule}
-                                doctors={gridDoctors}
-                                selectedUlid={selected?.ulid ?? null}
-                                panelOverlaps={
-                                    selected !== null && !panelBesideGrid
-                                }
-                            />
-                            <ScheduleDoctorList
-                                doctors={chosen}
-                                date={schedule.date}
-                                selectedUlid={selected?.ulid ?? null}
-                            />
+                            {view === 'grid' && (
+                                <ScheduleGrid
+                                    schedule={schedule}
+                                    doctors={gridDoctors}
+                                    selectedUlid={selected?.ulid ?? null}
+                                    panelOverlaps={
+                                        selected !== null && !panelBesideGrid
+                                    }
+                                />
+                            )}
+                            {view === 'list' && (
+                                <ArrivalsList
+                                    schedule={schedule}
+                                    doctors={chosen}
+                                    viewOnly={viewOnly}
+                                    selectedUlid={selected?.ulid ?? null}
+                                />
+                            )}
+                            {view === 'doctor' && (
+                                <ScheduleDoctorList
+                                    doctors={chosen}
+                                    date={schedule.date}
+                                    selectedUlid={selected?.ulid ?? null}
+                                />
+                            )}
                         </div>
                         {selected && panelBesideGrid && (
                             <AppointmentPanel
