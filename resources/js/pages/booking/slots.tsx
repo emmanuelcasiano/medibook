@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import DoctorController from '@/actions/App/Http/Controllers/Booking/DoctorController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import BookingController from '@/actions/App/Http/Controllers/Booking/BookingController';
@@ -55,6 +55,31 @@ export default function BookingSlots({
 
     const doctorLabel = doctor === null ? 'Any available doctor' : doctor.name;
 
+    // After a day is picked, bring its times into view. On a phone they sit below the week strip; on a wide screen
+    // they are already beside it, so nothing moves.
+    const timesRef = useRef<HTMLElement>(null);
+    const scrollToTimes = () => {
+        const times = timesRef.current;
+
+        if (times === null) {
+            return;
+        }
+
+        const { top } = times.getBoundingClientRect();
+
+        if (top >= 0 && top < window.innerHeight * 0.6) {
+            return;
+        }
+
+        times.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)')
+                .matches
+                ? 'auto'
+                : 'smooth',
+            block: 'start',
+        });
+    };
+
     return (
         <>
             <Head title={`Choose a time for ${service.name}`} />
@@ -103,38 +128,40 @@ export default function BookingSlots({
                     )}
                 </div>
 
-                <div className="grid gap-8 md:grid-cols-[minmax(0,22rem)_1fr]">
+                <div className="grid items-start gap-4 md:grid-cols-[minmax(0,27rem)_1fr] md:gap-6">
                     <section
                         aria-labelledby="days-heading"
-                        className="space-y-3"
+                        className="space-y-3 rounded-xl border bg-card p-4"
                     >
-                        <h2 id="days-heading" className="font-medium">
+                        <h2 id="days-heading" className="font-semibold">
                             Day
                         </h2>
                         <DayPicker
                             days={days}
                             selectedDate={selectedDate}
                             hrefFor={hrefFor}
+                            onPicked={scrollToTimes}
                         />
                         {/* The same fact as each day's label for screen readers, in words for everyone else. */}
                         <p className="text-sm text-muted-foreground">
-                            Days with a border have open times. Faded days are
-                            closed or fully booked.
+                            Dashed days say "None": they are closed or fully
+                            booked.
                         </p>
                     </section>
 
                     <section
+                        ref={timesRef}
                         aria-labelledby="times-heading"
-                        className="space-y-3"
+                        className="scroll-mt-4 space-y-3 rounded-xl border bg-card p-4"
                     >
-                        <h2 id="times-heading" className="font-medium">
+                        <h2 id="times-heading" className="font-semibold">
                             Open times on {formatClinicDate(selectedDate)}
                         </h2>
 
                         {slots.length === 0 ? (
-                            <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+                            <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
                                 No open times on this day. Pick another day from
-                                the calendar.
+                                the week above.
                             </p>
                         ) : (
                             <SlotGrid
@@ -148,7 +175,7 @@ export default function BookingSlots({
 
                         <p
                             aria-live="polite"
-                            className="rounded-xl border bg-muted/50 p-4 text-sm"
+                            className="rounded-lg bg-muted/60 p-4 text-sm"
                         >
                             {selectedSlot === null
                                 ? 'Pick a time to see your visit here.'

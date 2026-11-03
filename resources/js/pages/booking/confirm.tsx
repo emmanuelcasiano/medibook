@@ -1,13 +1,13 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { ClipboardList } from 'lucide-react';
 import BookingController from '@/actions/App/Http/Controllers/Booking/BookingController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
+import BookingSummary from '@/components/booking/booking-summary';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import type { BookingDraft } from '@/types';
 
 type Props = BookingDraft;
@@ -19,6 +19,7 @@ export default function BookingConfirm({
     endsAt,
     cancelUntil,
 }: Props) {
+    const { errors } = usePage().props;
     const doctorLabel = doctor === null ? 'Any available doctor' : doctor.name;
     const backHref =
         doctor === null
@@ -37,115 +38,104 @@ export default function BookingConfirm({
                     description="All times are Manila time. Nothing is booked until you press Confirm."
                 />
 
-                <Form
-                    {...BookingController.store.form(service)}
-                    className="space-y-6"
-                >
-                    {({ errors, processing }) => (
-                        <>
-                            {/* Patient limits and a doctor who stopped taking bookings come back here. A time that is
-                                gone sends the patient back to the time picker instead. */}
-                            <div role="alert">
-                                {(errors.starts_at ||
-                                    errors.doctor_id ||
-                                    errors.service_id) && (
-                                    <AlertError
-                                        errors={[
-                                            errors.starts_at,
-                                            errors.doctor_id,
-                                            errors.service_id,
-                                        ].flatMap((error) =>
-                                            typeof error === 'string'
-                                                ? [error]
-                                                : [],
-                                        )}
-                                        title="This booking can't be made."
-                                    />
-                                )}
-                            </div>
+                {/* Patient limits, a doctor who stopped taking bookings and a time that was just taken come back
+                    here. It sits above the summary so a phone shows it before anything else. */}
+                <div role="alert">
+                    {(errors.starts_at ||
+                        errors.doctor_id ||
+                        errors.service_id) && (
+                        <AlertError
+                            errors={[
+                                errors.starts_at,
+                                errors.doctor_id,
+                                errors.service_id,
+                            ].flatMap((error) =>
+                                typeof error === 'string' ? [error] : [],
+                            )}
+                            title="This booking can't be made."
+                        />
+                    )}
+                </div>
 
-                            <input
-                                type="hidden"
-                                name="starts_at"
-                                value={startsAt}
-                            />
-                            {doctor !== null && (
+                {/* The summary comes first in the page, so a phone reads it above the form. From `lg` it moves to the
+                    right and stays in view while the form is read. */}
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+                    <BookingSummary
+                        heading="Your booking"
+                        service={service}
+                        doctorName={doctorLabel}
+                        doctorSpecialty={doctor?.specialty}
+                        startsAt={startsAt}
+                        endsAt={endsAt}
+                        cancelUntil={cancelUntil}
+                        className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1"
+                    />
+
+                    <Form
+                        {...BookingController.store.form(service)}
+                        className="space-y-6 lg:col-start-1 lg:row-start-1"
+                    >
+                        {({ processing }) => (
+                            <>
                                 <input
                                     type="hidden"
-                                    name="doctor_id"
-                                    value={doctor.id}
+                                    name="starts_at"
+                                    value={startsAt}
                                 />
-                            )}
+                                {doctor !== null && (
+                                    <input
+                                        type="hidden"
+                                        name="doctor_id"
+                                        value={doctor.id}
+                                    />
+                                )}
 
-                            <section
-                                aria-labelledby="visit-heading"
-                                className="rounded-xl border bg-card"
-                            >
-                                <div className="space-y-1 p-5">
-                                    <h2
-                                        id="visit-heading"
-                                        className="text-lg font-semibold"
-                                    >
-                                        {formatClinicDateTime(startsAt)} to{' '}
-                                        {formatClinicTime(endsAt)}
-                                    </h2>
-                                    <p>
-                                        {service.name} ·{' '}
-                                        {service.durationMinutes} min
+                                {doctor === null && (
+                                    <p className="text-sm text-muted-foreground">
+                                        We pick a doctor who is free at this
+                                        time and show you who it is after you
+                                        confirm.
                                     </p>
-                                    <p className="text-muted-foreground">
-                                        {doctorLabel}
-                                        {doctor !== null &&
-                                            ` · ${doctor.specialty}`}
-                                    </p>
-                                    {doctor === null && (
-                                        <p className="text-sm text-muted-foreground">
-                                            We pick a doctor who is free at this
-                                            time and show you who it is after
-                                            you confirm.
-                                        </p>
-                                    )}
-                                </div>
-                                <p className="rounded-b-xl border-t bg-muted/50 px-5 py-3 text-sm text-muted-foreground">
-                                    Free to cancel until{' '}
-                                    <strong className="text-foreground">
-                                        {formatClinicDateTime(cancelUntil)}
-                                    </strong>
-                                    .
+                                )}
+
+                                <p className="flex items-start gap-3 rounded-xl border border-info-line bg-info-soft p-4 text-sm text-info-ink">
+                                    <ClipboardList
+                                        aria-hidden
+                                        className="mt-0.5 size-4 shrink-0"
+                                    />
+                                    <span>
+                                        After you confirm, you can fill in a
+                                        short intake form so your doctor can
+                                        read it before your visit.
+                                    </span>
                                 </p>
-                            </section>
 
-                            <p className="flex items-start gap-2 rounded-xl border bg-muted/50 p-4 text-sm">
-                                <ClipboardList
-                                    aria-hidden
-                                    className="mt-0.5 size-4 shrink-0"
-                                />
-                                <span>
-                                    After you confirm, you can fill in a short
-                                    intake form so your doctor can read it
-                                    before your visit.
-                                </span>
-                            </p>
-
-                            <div className="flex flex-wrap gap-3">
-                                <Button
-                                    type="submit"
-                                    size="lg"
-                                    disabled={processing}
-                                    data-test="confirm-booking-button"
-                                >
-                                    {processing && <Spinner />}
-                                    Confirm booking
-                                </Button>
-                                <Button asChild variant="outline" size="lg">
-                                    <Link href={backHref}>
-                                        Pick another time
-                                    </Link>
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </Form>
+                                <div className="flex flex-wrap gap-3">
+                                    <Button
+                                        type="submit"
+                                        size="lg"
+                                        className="w-full sm:w-auto"
+                                        disabled={processing}
+                                        data-test="confirm-booking-button"
+                                    >
+                                        {processing && <Spinner />}
+                                        Confirm booking
+                                    </Button>
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="lg"
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <Link href={backHref}>
+                                            Pick another time
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </Form>
+                </div>
             </div>
         </>
     );

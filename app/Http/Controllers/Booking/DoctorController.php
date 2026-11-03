@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Booking\BookableDoctorResource;
 use App\Http\Resources\Booking\BookableServiceResource;
 use App\Models\Service;
-use App\Models\User;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -27,9 +26,7 @@ final class DoctorController extends Controller
         $doctors = $service->doctors()
             ->bookable()
             ->with('user')
-            // The name lives on the user, so sort with a subquery instead of loading every doctor to sort in PHP.
-            ->orderBy(User::query()->select('name')->whereColumn('users.id', 'doctors.user_id'))
-            ->orderBy('doctors.id')
+            ->orderedByName()
             ->get();
 
         return Inertia::render('booking/doctors', [

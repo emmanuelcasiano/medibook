@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { BookingSlot } from '@/types';
@@ -10,7 +11,10 @@ type Props = {
     className?: string;
 };
 
-/** The free start times of one day. Each time is a real button, so the keyboard works without extra code. */
+/**
+ * The free start times of one day. Each time is a real button, so the keyboard works without extra code. The times
+ * are in a mono font so the columns line up, and the picked one is solid teal with a check, not only a color.
+ */
 export default function SlotGrid({
     slots,
     selected,
@@ -29,12 +33,18 @@ export default function SlotGrid({
                             aria-pressed={isSelected}
                             onClick={() => onSelect(slot.startsAt)}
                             className={cn(
-                                'min-h-11 w-full rounded-md border px-2 text-sm font-medium outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring',
+                                'relative min-h-11 w-full rounded-lg border border-input bg-card px-2 font-mono text-sm outline-none hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring',
                                 isSelected &&
-                                    'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                                    'border-primary bg-primary font-semibold text-primary-foreground hover:bg-primary/90',
                             )}
                         >
                             {formatClinicTime(slot.startsAt)}
+                            {isSelected && (
+                                <Check
+                                    aria-hidden
+                                    className="absolute top-1 right-1 size-3"
+                                />
+                            )}
                         </button>
                     </li>
                 );
