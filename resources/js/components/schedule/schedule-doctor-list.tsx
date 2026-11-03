@@ -28,9 +28,10 @@ function rank(doctor: ScheduleDoctor): number {
 }
 
 /**
- * The schedule for phones: one list per doctor in time order, instead of the grid. A native `<details>` opens
- * and closes with the keyboard (Enter or Space on the summary) and needs no script. Unlike the grid, it keeps the
- * doctors who are off today: last and closed, with an "Off today" label.
+ * The "By doctor" view for phones: one list per doctor in time order, instead of the grid. The page shows it only
+ * when that view is chosen. A native `<details>` opens and closes with the keyboard (Enter or Space on the summary)
+ * and needs no script. Unlike the grid, it keeps the doctors who are off today: last and closed, with an "Off today"
+ * label.
  */
 export default function ScheduleDoctorList({
     doctors,
@@ -41,7 +42,7 @@ export default function ScheduleDoctorList({
     const ordered = [...doctors].sort((a, b) => rank(a) - rank(b));
 
     return (
-        <div className="space-y-3 md:hidden">
+        <div className="space-y-3">
             {ordered.map((doctor) => (
                 <details
                     key={doctor.id}
