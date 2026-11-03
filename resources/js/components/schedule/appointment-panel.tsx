@@ -21,9 +21,11 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
+import { cn } from '@/lib/utils';
 import type {
     DaySchedule,
     MoveOptions,
@@ -39,6 +41,11 @@ type Props = {
     move: MoveOptions | null | undefined;
     /** An admin may look at the schedule but not change it. */
     viewOnly: boolean;
+    /**
+     * The panel is the content of a slide-over `Sheet` (below the `2xl` breakpoint). The sheet then brings the card,
+     * the close button and the focus trap, and the heading becomes the sheet's title.
+     */
+    inSheet?: boolean;
 };
 
 /** The longest delay `setTimeout` accepts (about 24.8 days). A longer one fires at once. */
@@ -100,6 +107,7 @@ export default function AppointmentPanel({
     selected,
     move,
     viewOnly,
+    inSheet = false,
 }: Props) {
     const found = findAppointment(schedule, selected.ulid);
     const headingRef = useRef<HTMLHeadingElement>(null);
@@ -128,43 +136,66 @@ export default function AppointmentPanel({
     // page. The panel heading is the place to go instead.
     const focusHeading = () => headingRef.current?.focus();
 
-    return (
-        <aside
-            aria-labelledby="appointment-panel-heading"
-            className="space-y-5 rounded-xl border bg-card p-4 md:w-80 md:shrink-0"
+    const hasFlags = appointment.emergencyFlag || appointment.intakeMissing;
+
+    const heading = (
+        <h2
+            // The sheet labels itself with its title, so the id would only get in the way there.
+            id={inSheet ? undefined : 'appointment-panel-heading'}
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-lg font-semibold wrap-break-word outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-            <div className="flex items-start justify-between gap-3">
+            {appointment.patientName}
+        </h2>
+    );
+
+    // One card, in sections: who and what status, when and with whom, flags, then the buttons.
+    const Wrapper = inSheet ? 'div' : 'aside';
+
+    return (
+        <Wrapper
+            aria-labelledby={inSheet ? undefined : 'appointment-panel-heading'}
+            className={cn(
+                'divide-y',
+                !inSheet && 'rounded-xl border bg-card md:w-80 md:shrink-0',
+            )}
+        >
+            <div
+                className={cn(
+                    'flex items-start justify-between gap-3 p-4',
+                    // Room for the sheet's own close button.
+                    inSheet && 'pr-12',
+                )}
+            >
                 <div className="min-w-0 space-y-2">
                     <StatusBadge
                         status={appointment.status}
                         label={appointment.statusLabel}
                     />
-                    <h2
-                        id="appointment-panel-heading"
-                        ref={headingRef}
-                        tabIndex={-1}
-                        className="text-lg font-semibold break-words outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                        {appointment.patientName}
-                    </h2>
+                    {inSheet ? (
+                        <SheetTitle asChild>{heading}</SheetTitle>
+                    ) : (
+                        heading
+                    )}
                 </div>
-                <Button asChild variant="ghost" size="icon">
-                    <Link
-                        href={ScheduleController.index({
-                            query: { date: schedule.date },
-                        })}
-                        preserveScroll
-                        preserveState
-                        aria-label="Close the appointment panel"
-                    >
-                        <X aria-hidden />
-                    </Link>
-                </Button>
+                {!inSheet && (
+                    <Button asChild variant="ghost" size="icon">
+                        <Link
+                            href={ScheduleController.index({
+                                query: { date: schedule.date },
+                            })}
+                            preserveScroll
+                            preserveState
+                            aria-label="Close the appointment panel"
+                        >
+                            <X aria-hidden />
+                        </Link>
+                    </Button>
+                )}
             </div>
 
-            <AppointmentFlags appointment={appointment} variant="text" />
-
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 p-4 text-sm">
                 <dt className="text-muted-foreground">Time</dt>
                 <dd>
                     {formatClinicDateTime(appointment.startsAt)} to{' '}
@@ -176,7 +207,16 @@ export default function AppointmentPanel({
                 <dd>{appointment.serviceName}</dd>
             </dl>
 
-            <section aria-label="Actions" className="space-y-3">
+            {hasFlags && (
+                <div className="p-4">
+                    <AppointmentFlags
+                        appointment={appointment}
+                        variant="text"
+                    />
+                </div>
+            )}
+
+            <section aria-label="Actions" className="space-y-3 p-4">
                 {selected.can.checkIn && (
                     <CheckInButton
                         appointment={appointment}
@@ -214,7 +254,7 @@ export default function AppointmentPanel({
                     </p>
                 )}
             </section>
-        </aside>
+        </Wrapper>
     );
 }
 
@@ -233,7 +273,7 @@ function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
             <DialogTrigger asChild>
                 <Button
                     type="button"
-                    variant="outline"
+                    variant="destructive-outline"
                     className="w-full"
                     data-test="cancel-button"
                 >

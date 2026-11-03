@@ -14,6 +14,9 @@ export const statusStyles: Record<ScheduleStatus, string> = {
     no_show: 'border-violet-line bg-violet-soft text-violet-ink',
 };
 
+/** The block whose side panel is open: a dark border and a ring of the same color, so it stands out on every status. */
+export const selectedStyle = 'border-foreground ring-1 ring-foreground';
+
 export const statusLabels: Record<ScheduleStatus, string> = {
     booked: 'Booked',
     checked_in: 'Checked in',

@@ -2,12 +2,15 @@ import { Link } from '@inertiajs/react';
 import { ChevronDown } from 'lucide-react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import StatusBadge from '@/components/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { ScheduleDoctor } from '@/types';
 import AppointmentFlags from './appointment-flags';
+import { isOffToday } from './doctor-filter';
 
 type Props = {
+    /** The doctors to list, already narrowed by the chips. */
     doctors: ScheduleDoctor[];
     /** The clinic day on the page ('Y-m-d'), so a row's link stays on it. */
     date: string;
@@ -15,45 +18,55 @@ type Props = {
     selectedUlid: string | null;
 };
 
+/** Doctors with bookings first, then doctors who work but have none, then doctors who are off today. */
+function rank(doctor: ScheduleDoctor): number {
+    if (doctor.appointments.length > 0) {
+        return 0;
+    }
+
+    return isOffToday(doctor) ? 2 : 1;
+}
+
 /**
  * The schedule for phones: one list per doctor in time order, instead of the grid. A native `<details>` opens
- * and closes with the keyboard (Enter or Space on the summary) and needs no script.
+ * and closes with the keyboard (Enter or Space on the summary) and needs no script. Unlike the grid, it keeps the
+ * doctors who are off today: last and closed, with an "Off today" label.
  */
 export default function ScheduleDoctorList({
     doctors,
     date,
     selectedUlid,
 }: Props) {
+    // `sort` is stable, so doctors of the same rank keep the server's order.
+    const ordered = [...doctors].sort((a, b) => rank(a) - rank(b));
+
     return (
         <div className="space-y-3 md:hidden">
-            {doctors.map((doctor, index) => (
+            {ordered.map((doctor) => (
                 <details
                     key={doctor.id}
-                    // The first doctor opens by default. So does the doctor whose booking is selected, or the
-                    // selected row would be hidden.
-                    open={
-                        index === 0 ||
-                        doctor.appointments.some(
-                            (appointment) => appointment.ulid === selectedUlid,
-                        )
-                            ? true
-                            : undefined
-                    }
+                    // A doctor with bookings opens by default, which also keeps a selected row from being hidden.
+                    open={doctor.appointments.length > 0 ? true : undefined}
                     className="group rounded-xl border bg-card"
                 >
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl p-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                         <span>
-                            <span className="block font-medium">
+                            <span className="flex items-center gap-2 font-medium">
                                 {doctor.name}
+                                {isOffToday(doctor) && (
+                                    <Badge variant="outline">Off today</Badge>
+                                )}
                             </span>
                             <span className="block text-xs text-muted-foreground">
                                 {doctor.specialty} ·{' '}
                                 {doctor.appointments.length}{' '}
                                 {doctor.appointments.length === 1
-                                    ? 'appointment'
-                                    : 'appointments'}
+                                    ? 'booking'
+                                    : 'bookings'}
                                 {!doctor.isActive && ' · Deactivated'}
-                                {!doctor.isWorking && ' · Not working today'}
+                                {!doctor.isWorking &&
+                                    !isOffToday(doctor) &&
+                                    ' · Not working today'}
                             </span>
                         </span>
                         <ChevronDown
@@ -72,7 +85,7 @@ export default function ScheduleDoctorList({
                                             'bg-muted',
                                     )}
                                 >
-                                    {/* The whole row opens the side panel, which shows under the list on a phone. */}
+                                    {/* The whole row opens the side panel, which slides over the list. */}
                                     <Link
                                         href={ScheduleController.index({
                                             query: {

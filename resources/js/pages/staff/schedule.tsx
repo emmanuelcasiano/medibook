@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import PageHeader from '@/components/page-header';
 import AppointmentPanel from '@/components/schedule/appointment-panel';
+import DoctorFilter, {
+    chosenDoctors,
+    isOffToday,
+} from '@/components/schedule/doctor-filter';
 import PatientSearch from '@/components/schedule/patient-search';
 import ScheduleDoctorList from '@/components/schedule/schedule-doctor-list';
 import ScheduleGrid from '@/components/schedule/schedule-grid';
@@ -14,6 +18,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { formatClinicDate, isCompleteDate } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, MoveOptions, SelectedAppointment } from '@/types';
@@ -59,6 +65,34 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
 
     useReturnFocusOnClose(selected?.ulid ?? null);
 
+    // From `2xl` up the panel sits beside the grid. Below it, the panel slides over the grid, so it never squeezes it.
+    const panelBesideGrid = useMediaQuery('(min-width: 96rem)');
+
+    // Which doctors to show is UI state, not server data. The day links keep the page state (`preserveState`), so
+    // the chips survive a change of day. A chosen doctor who is not in today's list is ignored, not an empty grid.
+    const [chosenIds, setChosenIds] = useState<number[]>([]);
+    const [showOff, setShowOff] = useState(false);
+
+    const activeIds = chosenIds.filter((id) =>
+        schedule.doctors.some((doctor) => doctor.id === id),
+    );
+    const chosen = chosenDoctors(schedule.doctors, activeIds);
+    const offCount = schedule.doctors.filter(isOffToday).length;
+    // The grid hides doctors who are off today (no hours, no bookings) unless asked, or unless chosen by name. The
+    // phone list keeps them, last and closed.
+    const gridDoctors =
+        activeIds.length > 0 || showOff
+            ? chosen
+            : chosen.filter((doctor) => !isOffToday(doctor));
+
+    function closePanel() {
+        router.get(
+            ScheduleController.index.url({ query: { date: schedule.date } }),
+            {},
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
     const appointments = schedule.doctors.flatMap(
         (doctor) => doctor.appointments,
     );
@@ -81,7 +115,11 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
         router.get(
             ScheduleController.index.url({ query: { date: value } }),
             {},
-            { preserveScroll: true, onFinish: () => setDraft(null) },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onFinish: () => setDraft(null),
+            },
         );
     }
 
@@ -131,6 +169,7 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                                     query: { date: schedule.previousDate },
                                 })}
                                 preserveScroll
+                                preserveState
                                 aria-label="Previous day"
                             >
                                 <ChevronLeft aria-hidden />
@@ -159,13 +198,19 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                                     query: { date: schedule.nextDate },
                                 })}
                                 preserveScroll
+                                preserveState
                                 aria-label="Next day"
                             >
                                 <ChevronRight aria-hidden />
                             </Link>
                         </Button>
                         <Button asChild variant="secondary">
-                            <Link href={ScheduleController.index()}>Today</Link>
+                            <Link
+                                href={ScheduleController.index()}
+                                preserveState
+                            >
+                                Today
+                            </Link>
                         </Button>
                     </nav>
                 </div>
@@ -195,20 +240,31 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                 </ul>
 
                 {schedule.doctors.length > 0 ? (
-                    // The panel sits beside the grid from `md` up and under the phone list below it.
-                    <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                        <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-6 2xl:flex-row 2xl:items-start">
+                        <div className="min-w-0 flex-1 space-y-4">
+                            <DoctorFilter
+                                doctors={schedule.doctors}
+                                chosenIds={activeIds}
+                                onChange={setChosenIds}
+                                offCount={offCount}
+                                showOff={showOff}
+                                onShowOffChange={setShowOff}
+                            />
                             <ScheduleGrid
                                 schedule={schedule}
+                                doctors={gridDoctors}
                                 selectedUlid={selected?.ulid ?? null}
+                                panelOverlaps={
+                                    selected !== null && !panelBesideGrid
+                                }
                             />
                             <ScheduleDoctorList
-                                doctors={schedule.doctors}
+                                doctors={chosen}
                                 date={schedule.date}
                                 selectedUlid={selected?.ulid ?? null}
                             />
                         </div>
-                        {selected && (
+                        {selected && panelBesideGrid && (
                             <AppointmentPanel
                                 key={selected.ulid}
                                 schedule={schedule}
@@ -224,6 +280,34 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                     </p>
                 )}
             </div>
+
+            {/* Below `2xl` the panel is a slide-over: the sheet traps the focus, closes on Esc and a click outside. */}
+            {selected && !panelBesideGrid && (
+                <Sheet
+                    open
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            closePanel();
+                        }
+                    }}
+                >
+                    <SheetContent
+                        // The panel's own heading takes the focus, so the sheet must not pick a button.
+                        onOpenAutoFocus={(event) => event.preventDefault()}
+                        aria-describedby={undefined}
+                        className="w-full gap-0 overflow-y-auto sm:max-w-sm"
+                    >
+                        <AppointmentPanel
+                            key={selected.ulid}
+                            schedule={schedule}
+                            selected={selected}
+                            move={move}
+                            viewOnly={viewOnly}
+                            inSheet
+                        />
+                    </SheetContent>
+                </Sheet>
+            )}
         </>
     );
 }
