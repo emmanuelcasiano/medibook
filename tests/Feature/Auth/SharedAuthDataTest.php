@@ -11,7 +11,7 @@ it('does not send secrets or the birth date to the browser', function (Role $rol
     $user->forceFill(['birth_date' => '1990-04-12'])->save();
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
+        ->get(route($role->homeRoute()))
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.user.id', $user->id)
             ->where('auth.user.role', $role->value)
