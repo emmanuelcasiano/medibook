@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import PageHeader from '@/components/page-header';
 import AppointmentPanel from '@/components/schedule/appointment-panel';
+import PatientSearch from '@/components/schedule/patient-search';
 import ScheduleDoctorList from '@/components/schedule/schedule-doctor-list';
 import ScheduleGrid from '@/components/schedule/schedule-grid';
 import {
@@ -168,6 +169,12 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                         </Button>
                     </nav>
                 </div>
+
+                <PatientSearch
+                    schedule={schedule}
+                    viewOnly={viewOnly}
+                    selectedUlid={selected?.ulid ?? null}
+                />
 
                 <ul
                     aria-label="What the colors mean"
