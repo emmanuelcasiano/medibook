@@ -1,3 +1,4 @@
+import { roleLabels } from '@/components/role-badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/use-initials';
 import type { User } from '@/types';
@@ -5,9 +6,11 @@ import type { User } from '@/types';
 export function UserInfo({
     user,
     showEmail = false,
+    showRole = false,
 }: {
     user: User;
     showEmail?: boolean;
+    showRole?: boolean;
 }) {
     const getInitials = useInitials();
 
@@ -24,6 +27,11 @@ export function UserInfo({
                 {showEmail && (
                     <span className="truncate text-xs text-muted-foreground">
                         {user.email}
+                    </span>
+                )}
+                {showRole && (
+                    <span className="truncate text-xs text-muted-foreground">
+                        {roleLabels[user.role]}
                     </span>
                 )}
             </div>

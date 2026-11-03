@@ -39,7 +39,7 @@ it('still lets an active user log in', function () {
 
 it('signs out a user who is deactivated while logged in', function (Role $role) {
     $user = userWithRole($role);
-    $this->actingAs($user)->get(route('dashboard'))->assertOk();
+    $this->actingAs($user)->get(route($role->homeRoute()))->assertOk();
 
     $user->forceFill(['is_active' => false])->save();
 

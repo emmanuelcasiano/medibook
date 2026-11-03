@@ -16,6 +16,7 @@ use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\ScheduleController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -34,7 +35,10 @@ Route::middleware('throttle:booking-pages')->prefix('book')->name('booking.')->g
 // Every app route needs a signed-in, verified user. `two-factor` sends staff, doctors and admins to the 2FA
 // setup page until it is on. `role:` closes a whole group to other roles; Policies check each action inside it.
 Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    // There is no dashboard page: each role has its own work screen. The name stays, because Fortify's `home` and
+    // the links after login, register and verify point here. The middleware above runs first, so a user who must
+    // set up 2FA goes to the security page before this redirect.
+    Route::get('dashboard', fn (Request $request) => redirect()->route($request->user()->role->homeRoute()))->name('dashboard');
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 
-// A route each privileged role uses, plus the dashboard that every role can open.
+// A route each privileged role uses. `/dashboard` is checked too, because it redirects to one of them.
 dataset('privileged_roles', [
     'staff' => [Role::Staff, 'staff.home'],
     'doctor' => [Role::Doctor, 'doctor.home'],
@@ -27,7 +27,7 @@ it('does not ask patients for 2FA', function () {
 
     expect($patient->two_factor_confirmed_at)->toBeNull();
 
-    $this->actingAs($patient)->get(route('dashboard'))->assertOk();
+    $this->actingAs($patient)->get(route('dashboard'))->assertRedirect(route('my.home'));
     $this->actingAs($patient)->get(route('my.home'))->assertOk();
 });
 

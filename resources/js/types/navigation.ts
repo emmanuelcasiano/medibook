@@ -11,4 +11,12 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    /** A path that keeps the item active on deeper pages, when its own `href` is not the start of them. */
+    activePrefix?: string;
+};
+
+/** A labelled block of menu items in the sidebar. */
+export type NavGroup = {
+    label: string;
+    items: NavItem[];
 };
