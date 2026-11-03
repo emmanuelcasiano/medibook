@@ -18,6 +18,25 @@ const clinicDay = new Intl.DateTimeFormat('en-PH', {
     month: 'long',
 });
 
+// The same words for an instant (an ISO 8601 UTC string), read in clinic time.
+const clinicInstantDay = new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+});
+
+// A day of the week strip: "Mon" and "2 Nov".
+const clinicShortWeekday = new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'UTC',
+    weekday: 'short',
+});
+
+const clinicShortMonth = new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'UTC',
+    month: 'short',
+});
+
 const clinicMonth = new Intl.DateTimeFormat('en-PH', {
     timeZone: 'UTC',
     month: 'long',
@@ -43,14 +62,24 @@ export function formatClinicDate(date: string): string {
     return clinicDay.format(clinicDateAsUtc(date));
 }
 
+/** The day of an ISO 8601 UTC string, in clinic time, as "Monday 2 November". */
+export function formatClinicInstantDay(iso: string): string {
+    return clinicInstantDay.format(new Date(iso));
+}
+
+/** A clinic date from the server ('Y-m-d') as "Mon". */
+export function formatClinicShortWeekday(date: string): string {
+    return clinicShortWeekday.format(clinicDateAsUtc(date));
+}
+
+/** A clinic date from the server ('Y-m-d') as "Nov". */
+export function formatClinicShortMonth(date: string): string {
+    return clinicShortMonth.format(clinicDateAsUtc(date));
+}
+
 /** A clinic date from the server ('Y-m-d') as "November 2026". */
 export function formatClinicMonth(date: string): string {
     return clinicMonth.format(clinicDateAsUtc(date));
-}
-
-/** The weekday of a clinic date, 0 (Sunday) to 6 (Saturday). */
-export function clinicWeekday(date: string): number {
-    return clinicDateAsUtc(date).getUTCDay();
 }
 
 /** The day of the month of a clinic date ('Y-m-d'). */

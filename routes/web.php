@@ -16,10 +16,11 @@ use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\ScheduleController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 // Public booking: anyone can look at services, doctors and free times. Login or registration is asked only at the
 // confirm step (further down, behind `auth`). These pages only read, so there is no Policy. `scopeBindings` loads `{doctor}` through the

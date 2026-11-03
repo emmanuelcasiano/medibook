@@ -41,6 +41,20 @@ class Doctor extends Model
         $query->whereHas('user', fn (Builder $user) => $user->where('is_active', true));
     }
 
+    /**
+     * By the doctor's name, then by id. The name lives on the user, so this sorts with a subquery instead of
+     * loading every doctor to sort in PHP.
+     *
+     * @param  Builder<Doctor>  $query
+     */
+    #[Scope]
+    protected function orderedByName(Builder $query): void
+    {
+        $query
+            ->orderBy(User::query()->select('name')->whereColumn('users.id', 'doctors.user_id'))
+            ->orderBy('doctors.id');
+    }
+
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
