@@ -23,7 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { useScheduleView } from '@/hooks/use-schedule-view';
 import { formatClinicDate, isCompleteDate } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
@@ -69,9 +68,6 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
     const viewOnly = auth.user?.role === 'admin';
 
     useReturnFocusOnClose(selected?.ulid ?? null);
-
-    // From `2xl` up the panel sits beside the grid. Below it, the panel slides over the grid, so it never squeezes it.
-    const panelBesideGrid = useMediaQuery('(min-width: 96rem)');
 
     // Grid, arrivals list, or (phone) one list per doctor. Staff open the list, an admin the grid.
     const { view, choose, options } = useScheduleView(viewOnly);
@@ -260,51 +256,38 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                 </ul>
 
                 {schedule.doctors.length > 0 ? (
-                    <div className="flex flex-col gap-6 2xl:flex-row 2xl:items-start">
-                        <div className="min-w-0 flex-1 space-y-4">
-                            <DoctorFilter
-                                doctors={schedule.doctors}
-                                chosenIds={activeIds}
-                                onChange={setChosenIds}
-                                // Only the grid hides doctors who are off today, so only the grid needs the toggle.
-                                offCount={view === 'grid' ? offCount : 0}
-                                showOff={showOff}
-                                onShowOffChange={setShowOff}
-                            />
-                            {view === 'grid' && (
-                                <ScheduleGrid
-                                    schedule={schedule}
-                                    doctors={gridDoctors}
-                                    selectedUlid={selected?.ulid ?? null}
-                                    panelOverlaps={
-                                        selected !== null && !panelBesideGrid
-                                    }
-                                />
-                            )}
-                            {view === 'list' && (
-                                <ArrivalsList
-                                    schedule={schedule}
-                                    doctors={chosen}
-                                    viewOnly={viewOnly}
-                                    selectedUlid={selected?.ulid ?? null}
-                                />
-                            )}
-                            {view === 'doctor' && (
-                                <ScheduleDoctorList
-                                    doctors={chosen}
-                                    date={schedule.date}
-                                    isToday={schedule.date === schedule.today}
-                                    selectedUlid={selected?.ulid ?? null}
-                                />
-                            )}
-                        </div>
-                        {selected && panelBesideGrid && (
-                            <AppointmentPanel
-                                key={selected.ulid}
+                    <div className="min-w-0 space-y-4">
+                        <DoctorFilter
+                            doctors={schedule.doctors}
+                            chosenIds={activeIds}
+                            onChange={setChosenIds}
+                            // Only the grid hides doctors who are off today, so only the grid needs the toggle.
+                            offCount={view === 'grid' ? offCount : 0}
+                            showOff={showOff}
+                            onShowOffChange={setShowOff}
+                        />
+                        {view === 'grid' && (
+                            <ScheduleGrid
                                 schedule={schedule}
-                                selected={selected}
-                                move={move}
+                                doctors={gridDoctors}
+                                selectedUlid={selected?.ulid ?? null}
+                                panelOverlaps={selected !== null}
+                            />
+                        )}
+                        {view === 'list' && (
+                            <ArrivalsList
+                                schedule={schedule}
+                                doctors={chosen}
                                 viewOnly={viewOnly}
+                                selectedUlid={selected?.ulid ?? null}
+                            />
+                        )}
+                        {view === 'doctor' && (
+                            <ScheduleDoctorList
+                                doctors={chosen}
+                                date={schedule.date}
+                                isToday={schedule.date === schedule.today}
+                                selectedUlid={selected?.ulid ?? null}
                             />
                         )}
                     </div>
@@ -315,8 +298,8 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                 )}
             </div>
 
-            {/* Below `2xl` the panel is a slide-over: the sheet traps the focus, closes on Esc and a click outside. */}
-            {selected && !panelBesideGrid && (
+            {/* On every screen width the panel is a slide-over: the sheet traps the focus, closes on Esc and a click outside. */}
+            {selected && (
                 <Sheet
                     open
                     onOpenChange={(open) => {
@@ -337,7 +320,6 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                             selected={selected}
                             move={move}
                             viewOnly={viewOnly}
-                            inSheet
                         />
                     </SheetContent>
                 </Sheet>
