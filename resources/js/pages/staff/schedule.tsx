@@ -17,6 +17,7 @@ import {
     statusStyles,
 } from '@/components/schedule/status-styles';
 import ViewToggle from '@/components/schedule/view-toggle';
+import WaitingStrip from '@/components/schedule/waiting-strip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -225,6 +226,8 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                         />
                     </nav>
                 </div>
+
+                <WaitingStrip schedule={schedule} />
 
                 <PatientSearch
                     schedule={schedule}

@@ -329,7 +329,7 @@ describe('what the page may learn', function () {
 
         // `intakeMissing` and `emergencyFlag` are two yes/no facts for staff; see "the intake and emergency flags".
         expect(collect($response->inertiaProps('schedule.doctors.0.appointments.0'))->keys()->sort()->values()->all())->toBe([
-            'durationMinutes', 'emergencyFlag', 'endsAt', 'intakeMissing', 'offsetMinutes', 'patientName', 'serviceName', 'startsAt', 'status', 'statusLabel', 'ulid',
+            'checkedInAt', 'durationMinutes', 'emergencyFlag', 'endsAt', 'intakeMissing', 'offsetMinutes', 'patientName', 'serviceName', 'startsAt', 'status', 'statusLabel', 'ulid',
         ]);
     });
 
@@ -380,6 +380,51 @@ describe('what the page may learn', function () {
 
         expect($queries())->toBe($few);
     });
+});
+
+describe('the check-in time', function () {
+    // The waiting strip counts a wait from it. A moment in time is not health data, so an admin gets it too.
+    it('sends when a checked-in patient arrived, and null for a booking that has not been checked in', function () {
+        $doctor = schedDoctor('Dr. Reyes');
+        $waiting = schedBooking($doctor, '2026-11-02 09:00', 'checkedIn');
+        $waiting->forceFill(['checked_in_at' => CarbonImmutable::parse('2026-11-02 08:52:30', 'Asia/Manila')->utc()])->save();
+        $booked = schedBooking($doctor, '2026-11-02 10:00');
+
+        $this->actingAs(schedStaff())
+            ->get(route('staff.home', ['date' => SCHED_DAY]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('schedule.doctors.0.appointments.0.ulid', $waiting->ulid)
+                ->where('schedule.doctors.0.appointments.0.checkedInAt', '2026-11-02T00:52:30Z')
+                ->where('schedule.doctors.0.appointments.1.ulid', $booked->ulid)
+                ->where('schedule.doctors.0.appointments.1.checkedInAt', null));
+    });
+
+    it('sends an admin the check-in time too, while the intake and emergency flags stay missing', function () {
+        $waiting = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00', 'checkedIn');
+        $waiting->forceFill(['checked_in_at' => CarbonImmutable::parse('2026-11-02 08:52:30', 'Asia/Manila')->utc()])->save();
+
+        $response = $this->actingAs(userWithRole(Role::Admin))
+            ->get(route('staff.home', ['date' => SCHED_DAY]))
+            ->assertOk();
+
+        $row = $response->inertiaProps('schedule.doctors.0.appointments.0');
+
+        expect($row['checkedInAt'])->toBe('2026-11-02T00:52:30Z')
+            ->and(array_keys($row))->not->toContain('intakeMissing')->not->toContain('emergencyFlag');
+    });
+
+    it('sends the time to nobody who may not open the schedule', function (Role $role) {
+        $waiting = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00', 'checkedIn');
+        $waiting->forceFill(['checked_in_at' => CarbonImmutable::parse('2026-11-02 08:52:30', 'Asia/Manila')->utc()])->save();
+
+        $this->actingAs(userWithRole($role))
+            ->get(route('staff.home', ['date' => SCHED_DAY]))
+            ->assertForbidden()
+            ->assertDontSee('2026-11-02T00:52:30Z');
+    })->with([
+        'patient' => Role::Patient,
+        'doctor' => Role::Doctor,
+    ]);
 });
 
 describe('the intake and emergency flags', function () {
