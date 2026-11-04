@@ -12,6 +12,12 @@ export const DUE_WINDOW_MINUTES = 30;
  */
 export const LONG_WAIT_MINUTES = 20;
 
+/**
+ * How long after its start a booking that is still `booked` counts as late. A first guess to confirm with the front
+ * desk. It is the only place the number lives.
+ */
+export const LATE_AFTER_MINUTES = 15;
+
 const MINUTE = 60_000;
 
 /**
@@ -20,6 +26,48 @@ const MINUTE = 60_000;
  */
 export function waitMinutes(checkedInAt: string, now: number): number {
     return Math.max(0, Math.floor((now - Date.parse(checkedInAt)) / MINUTE));
+}
+
+/** "Just now" under a minute, then "18 min", then "1 h 5 min". */
+export function formatWait(minutes: number): string {
+    if (minutes < 1) {
+        return 'Just now';
+    }
+
+    if (minutes < 60) {
+        return `${minutes} min`;
+    }
+
+    return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+}
+
+/**
+ * How many minutes late a booking is, or `null` when it is not late. Late is a display state and never stored: it
+ * needs a booking that is still `booked`, a start at least `LATE_AFTER_MINUTES` ago, and today (the browser clock
+ * means nothing on another day). `now` is `null` until the browser clock is known, and then nothing is late.
+ */
+export function lateMinutes(
+    appointment: ScheduleAppointment,
+    now: number | null,
+    isToday: boolean,
+): number | null {
+    if (!isToday || now === null || appointment.status !== 'booked') {
+        return null;
+    }
+
+    const minutes = Math.floor(
+        (now - Date.parse(appointment.startsAt)) / MINUTE,
+    );
+
+    return minutes >= LATE_AFTER_MINUTES ? minutes : null;
+}
+
+export function isLate(
+    appointment: ScheduleAppointment,
+    now: number | null,
+    isToday: boolean,
+): boolean {
+    return lateMinutes(appointment, now, isToday) !== null;
 }
 
 /** One booking in the arrivals list, with the name of the doctor whose column it came from. */

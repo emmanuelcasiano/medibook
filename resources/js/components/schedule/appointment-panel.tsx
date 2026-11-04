@@ -8,7 +8,9 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import AppointmentFlags from '@/components/schedule/appointment-flags';
 import CheckInButton from '@/components/schedule/check-in-button';
+import LateLabel from '@/components/schedule/late-label';
 import MoveSection from '@/components/schedule/move-section';
+import NoShowDialog from '@/components/schedule/no-show-dialog';
 import StatusBadge from '@/components/status-badge';
 import {
     Dialog,
@@ -24,7 +26,9 @@ import { Label } from '@/components/ui/label';
 import { SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { useNow } from '@/hooks/use-now';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
+import { lateMinutes } from '@/lib/schedule-time';
 import { cn } from '@/lib/utils';
 import type {
     DaySchedule,
@@ -115,6 +119,7 @@ export default function AppointmentPanel({
         found?.appointment.startsAt ?? '',
         selected.hasStarted,
     );
+    const now = useNow();
 
     // Move to the panel when it opens, so a keyboard or screen reader user lands on what they asked for.
     useEffect(() => {
@@ -136,7 +141,13 @@ export default function AppointmentPanel({
     // page. The panel heading is the place to go instead.
     const focusHeading = () => headingRef.current?.focus();
 
-    const hasFlags = appointment.emergencyFlag || appointment.intakeMissing;
+    const late = lateMinutes(
+        appointment,
+        now,
+        schedule.date === schedule.today,
+    );
+    const hasFlags =
+        appointment.emergencyFlag || appointment.intakeMissing || late !== null;
 
     const heading = (
         <h2
@@ -208,7 +219,8 @@ export default function AppointmentPanel({
             </dl>
 
             {hasFlags && (
-                <div className="p-4">
+                <div className="space-y-1.5 p-4">
+                    {late !== null && <LateLabel minutes={late} />}
                     <AppointmentFlags
                         appointment={appointment}
                         variant="text"
@@ -229,6 +241,7 @@ export default function AppointmentPanel({
                     <NoShowDialog
                         appointment={appointment}
                         started={started}
+                        variant="panel"
                         onDone={focusHeading}
                     />
                 )}
@@ -357,113 +370,5 @@ function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
                 </Form>
             </DialogContent>
         </Dialog>
-    );
-}
-
-type NoShowDialogProps = {
-    appointment: ScheduleAppointment;
-    started: boolean;
-    /** Called after the no-show is saved, because the button that opened the dialog is gone by then. */
-    onDone: () => void;
-};
-
-/**
- * The no-show button and its confirmation. A no-show frees the slot and can't be undone from here, so it asks first.
- * Until the start time the button is off, and a line says when it turns on.
- */
-function NoShowDialog({ appointment, started, onDone }: NoShowDialogProps) {
-    const saved = useRef(false);
-    const hintId = `no-show-hint-${appointment.ulid}`;
-
-    // Normally the dialog hands focus back to its button. After a successful no-show that button is gone, so the
-    // panel heading takes the focus instead.
-    function returnFocus(event: Event) {
-        if (!saved.current) {
-            return;
-        }
-
-        event.preventDefault();
-        onDone();
-    }
-
-    return (
-        <div className="space-y-1">
-            <Dialog>
-                <DialogTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full"
-                        disabled={!started}
-                        aria-describedby={started ? undefined : hintId}
-                        data-test="no-show-button"
-                    >
-                        Mark no-show
-                    </Button>
-                </DialogTrigger>
-
-                <DialogContent onCloseAutoFocus={returnFocus}>
-                    <Form
-                        {...StaffAppointmentController.noShow.form(
-                            appointment.ulid,
-                        )}
-                        options={{ preserveScroll: true }}
-                        onSuccess={() => {
-                            saved.current = true;
-                        }}
-                        className="space-y-4"
-                    >
-                        {({ errors, processing }) => (
-                            <>
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        Mark as a no-show?
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        {appointment.patientName} did not arrive
-                                        for{' '}
-                                        {formatClinicTime(appointment.startsAt)}
-                                        . The time becomes free for other
-                                        patients.
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <div role="alert">
-                                    {errors.appointment && (
-                                        <AlertError
-                                            errors={[errors.appointment]}
-                                            title="This was not saved."
-                                        />
-                                    )}
-                                </div>
-
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button type="button" variant="outline">
-                                            Go back
-                                        </Button>
-                                    </DialogClose>
-                                    <Button
-                                        type="submit"
-                                        variant="destructive"
-                                        disabled={processing}
-                                        data-test="confirm-no-show-button"
-                                    >
-                                        {processing && <Spinner />}
-                                        Mark no-show
-                                    </Button>
-                                </DialogFooter>
-                            </>
-                        )}
-                    </Form>
-                </DialogContent>
-            </Dialog>
-
-            {!started && (
-                <p id={hintId} className="text-xs text-muted-foreground">
-                    Available from {formatClinicTime(appointment.startsAt)}.
-                </p>
-            )}
-        </div>
     );
 }

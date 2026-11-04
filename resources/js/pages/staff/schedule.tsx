@@ -5,6 +5,7 @@ import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleCon
 import PageHeader from '@/components/page-header';
 import AppointmentPanel from '@/components/schedule/appointment-panel';
 import ArrivalsList from '@/components/schedule/arrivals-list';
+import AttentionBanner from '@/components/schedule/attention-banner';
 import DoctorFilter, {
     chosenDoctors,
     isOffToday,
@@ -227,6 +228,8 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                     </nav>
                 </div>
 
+                <AttentionBanner schedule={schedule} />
+
                 <WaitingStrip schedule={schedule} />
 
                 <PatientSearch
@@ -290,6 +293,7 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                                 <ScheduleDoctorList
                                     doctors={chosen}
                                     date={schedule.date}
+                                    isToday={schedule.date === schedule.today}
                                     selectedUlid={selected?.ulid ?? null}
                                 />
                             )}

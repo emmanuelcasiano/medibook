@@ -1,10 +1,13 @@
 import { Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
+import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
+import { formatWait, lateMinutes } from '@/lib/schedule-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, ScheduleAppointment, ScheduleDoctor } from '@/types';
 import AppointmentFlags from './appointment-flags';
+import LateLabel from './late-label';
 import { selectedStyle, statusStyles } from './status-styles';
 
 /** The height of one grid row (one slot step), in rem. */
@@ -106,6 +109,8 @@ export default function ScheduleGrid({
 
     const isToday = schedule.date === schedule.today;
     const nowMinute = useClinicMinute(isToday);
+    // The browser clock in milliseconds, for which bookings are late. `null` until the browser has one (see `useNow`).
+    const now = useNow();
     const showNow =
         nowMinute !== null && nowMinute >= startMinute && nowMinute < endMinute;
     const nowTop = showNow
@@ -270,6 +275,11 @@ export default function ScheduleGrid({
                                     appointment={appointment}
                                     date={schedule.date}
                                     selected={appointment.ulid === selectedUlid}
+                                    late={lateMinutes(
+                                        appointment,
+                                        now,
+                                        isToday,
+                                    )}
                                     startMinute={startMinute}
                                     stepMinutes={stepMinutes}
                                 />
@@ -295,6 +305,8 @@ type BlockProps = {
     /** The clinic day on the page, so the link stays on it. */
     date: string;
     selected: boolean;
+    /** Minutes late, or `null` when the booking is not late. */
+    late: number | null;
     startMinute: number;
     stepMinutes: number;
 };
@@ -303,6 +315,7 @@ function Block({
     appointment,
     date,
     selected,
+    late,
     startMinute,
     stepMinutes,
 }: BlockProps) {
@@ -331,7 +344,7 @@ function Block({
                 preserveState
                 aria-current={selected ? 'true' : undefined}
                 data-appointment={appointment.ulid}
-                title={`${appointment.patientName} · ${appointment.serviceName} · ${appointment.statusLabel}`}
+                title={`${appointment.patientName} · ${appointment.serviceName} · ${appointment.statusLabel}${late === null ? '' : ` · Late ${formatWait(late)}`}`}
                 className="block size-full rounded-md px-2 py-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
             >
                 <span className="sr-only">
@@ -350,6 +363,7 @@ function Block({
                             appointment={appointment}
                             className="shrink-0"
                         />
+                        {late !== null && <LateLabel />}
                     </p>
                 ) : (
                     <>
@@ -361,6 +375,7 @@ function Block({
                                 appointment={appointment}
                                 className="shrink-0"
                             />
+                            {late !== null && <LateLabel />}
                         </p>
                         <p className="truncate">
                             {appointment.serviceName} ·{' '}

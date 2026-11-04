@@ -4,11 +4,13 @@ import { useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import AppointmentFlags from '@/components/schedule/appointment-flags';
 import CheckInButton from '@/components/schedule/check-in-button';
+import LateLabel from '@/components/schedule/late-label';
+import NoShowDialog from '@/components/schedule/no-show-dialog';
 import StatusBadge from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
-import { groupArrivals } from '@/lib/schedule-time';
+import { groupArrivals, lateMinutes } from '@/lib/schedule-time';
 import type { ArrivalGroup, ArrivalRow } from '@/lib/schedule-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, ScheduleDoctor } from '@/types';
@@ -120,6 +122,8 @@ export default function ArrivalsList({
                     // Today's list always shows Waiting, even empty: "nobody is waiting" is an answer the desk needs.
                     showWhenEmpty={isToday && group.key === 'waiting'}
                     date={schedule.date}
+                    now={now}
+                    isToday={isToday}
                     viewOnly={viewOnly}
                     selectedUlid={selectedUlid}
                     open={
@@ -138,6 +142,9 @@ type GroupProps = {
     group: ArrivalGroup;
     showWhenEmpty: boolean;
     date: string;
+    /** The browser clock and whether the page shows today: together they decide which rows are late. */
+    now: number | null;
+    isToday: boolean;
     viewOnly: boolean;
     selectedUlid: string | null;
     /** Only the Done group can be closed. `undefined` for every other group. */
@@ -149,6 +156,8 @@ function ArrivalGroupSection({
     group,
     showWhenEmpty,
     date,
+    now,
+    isToday,
     viewOnly,
     selectedUlid,
     open,
@@ -161,12 +170,20 @@ function ArrivalGroupSection({
     const headingId = `arrivals-${group.key}`;
     const listId = `arrivals-${group.key}-list`;
     const collapsible = open !== undefined;
+    const lateCount = group.rows.filter(
+        (row) => lateMinutes(row.appointment, now, isToday) !== null,
+    ).length;
     const title = (
         <>
             {group.label}
             <span className="ml-2 font-normal text-muted-foreground">
                 {group.rows.length}
             </span>
+            {lateCount > 0 && (
+                <span className="ml-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+                    · {lateCount} late
+                </span>
+            )}
         </>
     );
 
@@ -215,6 +232,11 @@ function ArrivalGroupSection({
                                 key={row.appointment.ulid}
                                 row={row}
                                 date={date}
+                                late={lateMinutes(
+                                    row.appointment,
+                                    now,
+                                    isToday,
+                                )}
                                 viewOnly={viewOnly}
                                 selected={row.appointment.ulid === selectedUlid}
                             />
@@ -230,20 +252,25 @@ type ItemProps = {
     row: ArrivalRow;
     /** The clinic day on the page ('Y-m-d'), so the Open link stays on it. */
     date: string;
+    /** Minutes late, or `null` when the booking is not late. */
+    late: number | null;
     viewOnly: boolean;
     selected: boolean;
 };
 
-// The server answers a check-in by opening that booking in the side panel, and the panel takes the focus. When the
-// panel is closed, the focus goes back to the booking's Open link, which is in its new group by then.
+// The server answers a check-in or a no-show by opening that booking in the side panel, and the panel takes the
+// focus. When the panel is closed, the focus goes back to the booking's Open link, which is in its new group by then.
 function afterCheckIn() {}
 
-function ArrivalItem({ row, date, viewOnly, selected }: ItemProps) {
+function ArrivalItem({ row, date, late, viewOnly, selected }: ItemProps) {
     const { appointment, doctorName } = row;
     const time = formatClinicTime(appointment.startsAt);
     // Hiding the button for an admin is only a hint: the Policy and the Action refuse them again on the server.
     // A booking with no intake still gets the button: it opens a dialog that asks first.
     const canCheckIn = !viewOnly && appointment.status === 'booked';
+    // Only a late booking has Mark no-show here (it has started, so the Action's start-time rule is met). An earlier
+    // one is marked from the side panel. The dialog asks first, so a single click never marks anyone.
+    const canNoShow = canCheckIn && late !== null;
 
     return (
         <li
@@ -266,6 +293,7 @@ function ArrivalItem({ row, date, viewOnly, selected }: ItemProps) {
                         appointment={appointment}
                         className="shrink-0"
                     />
+                    {late !== null && <LateLabel minutes={late} />}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                     <span className="font-bold text-teal-ink">
@@ -283,7 +311,7 @@ function ArrivalItem({ row, date, viewOnly, selected }: ItemProps) {
                 />
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:w-52 md:shrink-0 md:flex-nowrap md:justify-end">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:w-80 md:shrink-0 md:justify-end">
                 {appointment.intakeMissing && (
                     <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
                         No intake yet
@@ -291,11 +319,22 @@ function ArrivalItem({ row, date, viewOnly, selected }: ItemProps) {
                 )}
 
                 {canCheckIn ? (
-                    <CheckInButton
-                        appointment={appointment}
-                        variant="row"
-                        onCheckedIn={afterCheckIn}
-                    />
+                    // One no-wrap group, so Check in and Mark no-show stay side by side. "No intake yet" wraps above it.
+                    <div className="flex w-full items-start gap-2 md:w-auto">
+                        <CheckInButton
+                            appointment={appointment}
+                            variant="row"
+                            onCheckedIn={afterCheckIn}
+                        />
+                        {canNoShow && (
+                            <NoShowDialog
+                                appointment={appointment}
+                                started
+                                variant="row"
+                                onDone={afterCheckIn}
+                            />
+                        )}
+                    </div>
                 ) : (
                     <Button
                         asChild
