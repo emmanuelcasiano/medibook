@@ -4,7 +4,11 @@ import { useId, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
-import { LONG_WAIT_MINUTES, waitMinutes } from '@/lib/schedule-time';
+import {
+    formatWait,
+    LONG_WAIT_MINUTES,
+    waitMinutes,
+} from '@/lib/schedule-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule, ScheduleAppointment } from '@/types';
 
@@ -26,19 +30,6 @@ type WaitingDoctor = {
 };
 
 const longWait = 'text-amber-700 dark:text-amber-400';
-
-/** "Just now" under a minute, then "18 min", then "1 h 5 min". */
-function formatWait(minutes: number): string {
-    if (minutes < 1) {
-        return 'Just now';
-    }
-
-    if (minutes < 60) {
-        return `${minutes} min`;
-    }
-
-    return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
-}
 
 /**
  * Who has checked in and is still waiting, by doctor, longest wait first. Built from the bookings the page already

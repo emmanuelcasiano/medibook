@@ -3,17 +3,22 @@ import { ChevronDown } from 'lucide-react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import StatusBadge from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
+import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
+import { lateMinutes } from '@/lib/schedule-time';
 import { cn } from '@/lib/utils';
 import type { ScheduleDoctor } from '@/types';
 import AppointmentFlags from './appointment-flags';
 import { isOffToday } from './doctor-filter';
+import LateLabel from './late-label';
 
 type Props = {
     /** The doctors to list, already narrowed by the chips. */
     doctors: ScheduleDoctor[];
     /** The clinic day on the page ('Y-m-d'), so a row's link stays on it. */
     date: string;
+    /** The page shows today, the only day a booking can be late. */
+    isToday: boolean;
     /** The booking whose side panel is open, if any. */
     selectedUlid: string | null;
 };
@@ -36,8 +41,10 @@ function rank(doctor: ScheduleDoctor): number {
 export default function ScheduleDoctorList({
     doctors,
     date,
+    isToday,
     selectedUlid,
 }: Props) {
+    const now = useNow();
     // `sort` is stable, so doctors of the same rank keep the server's order.
     const ordered = [...doctors].sort((a, b) => rank(a) - rank(b));
 
@@ -118,6 +125,11 @@ export default function ScheduleDoctorList({
                                                     appointment={appointment}
                                                     className="shrink-0"
                                                 />
+                                                {lateMinutes(
+                                                    appointment,
+                                                    now,
+                                                    isToday,
+                                                ) !== null && <LateLabel />}
                                             </span>
                                             <span className="block text-xs text-muted-foreground">
                                                 {appointment.serviceName}
