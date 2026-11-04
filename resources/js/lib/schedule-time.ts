@@ -6,7 +6,21 @@ import type { ScheduleAppointment } from '@/types';
  */
 export const DUE_WINDOW_MINUTES = 30;
 
+/**
+ * How long a checked-in patient may wait before the waiting strip calls it "a long time". A first guess to confirm
+ * with the front desk. It is the only place the number lives.
+ */
+export const LONG_WAIT_MINUTES = 20;
+
 const MINUTE = 60_000;
+
+/**
+ * Whole minutes since a check-in, rounded down, never below 0. A check-in time a little ahead of the browser clock
+ * (the two clocks differ) counts as 0, not as a negative wait.
+ */
+export function waitMinutes(checkedInAt: string, now: number): number {
+    return Math.max(0, Math.floor((now - Date.parse(checkedInAt)) / MINUTE));
+}
 
 /** One booking in the arrivals list, with the name of the doctor whose column it came from. */
 export type ArrivalRow = {
@@ -41,6 +55,20 @@ function byStart(a: ArrivalRow, b: ArrivalRow): number {
 }
 
 /**
+ * Oldest check-in first. A checked-in booking always has the time, but the type allows `null`, so a missing one sorts
+ * last and falls back to the start time.
+ */
+export function byCheckIn(a: ArrivalRow, b: ArrivalRow): number {
+    const time = (row: ArrivalRow) =>
+        row.appointment.checkedInAt === null
+            ? Number.POSITIVE_INFINITY
+            : Date.parse(row.appointment.checkedInAt);
+
+    // Infinity minus Infinity is NaN, which is falsy, so two missing times fall through to the start time.
+    return time(a) - time(b) || byStart(a, b);
+}
+
+/**
  * Sort the day's bookings into the groups the front desk works from. Pure: "now" comes in as a number, so the same
  * rows move between groups as the clock moves and nothing is asked of the server.
  *
@@ -48,7 +76,7 @@ function byStart(a: ArrivalRow, b: ArrivalRow): number {
  * and who is done. On any other day there is no "due", so the groups are the plain statuses. Every group is returned,
  * even empty ones, in the order they are shown; the caller decides what to do with an empty one.
  *
- * Waiting is sorted by start time until the check-in time reaches the schedule (`staff-waiting-strip`).
+ * Waiting is sorted by check-in time, oldest first: whoever has waited longest is on top.
  */
 export function groupArrivals(
     rows: ArrivalRow[],
@@ -82,7 +110,7 @@ export function groupArrivals(
             key: 'waiting',
             label: 'Waiting',
             hint: 'Checked in, and waiting for the doctor.',
-            rows: of('checked_in'),
+            rows: of('checked_in').sort(byCheckIn),
         },
         {
             key: 'due',

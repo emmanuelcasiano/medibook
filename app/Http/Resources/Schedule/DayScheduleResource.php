@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Gate;
  * The staff day schedule as the page receives it. Times of a booking are given twice: as UTC instants, and as
  * minutes from clinic midnight, so the grid can place a block without doing time zone math in the browser.
  *
- * Only the patient's name is sent: no email, birth date, intake or summary. Staff (not admins) also get two booleans
+ * Only the patient's name is sent: no email, birth date, intake or summary. The check-in time is sent too: a moment
+ * in time says nothing about health. Staff (not admins) also get two booleans
  * per booking, `intakeMissing` and `emergencyFlag`. Call `->resolve()` to get the plain array for an Inertia prop.
  *
  * @mixin DaySchedule
@@ -82,6 +83,8 @@ final class DayScheduleResource extends JsonResource
             'serviceName' => $appointment->service->name,
             'status' => $appointment->status->value,
             'statusLabel' => $appointment->status->label(),
+            // A moment in time, not health data, so staff and admins both get it. The waiting strip counts from it.
+            'checkedInAt' => $appointment->checked_in_at?->toIso8601ZuluString(),
         ];
 
         if ($withIntakeStatus) {
