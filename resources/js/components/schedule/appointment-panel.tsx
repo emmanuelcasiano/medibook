@@ -1,8 +1,6 @@
-import { Form, Link } from '@inertiajs/react';
-import { X } from 'lucide-react';
+import { Form } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import StaffAppointmentController from '@/actions/App/Http/Controllers/Staff/AppointmentController';
-import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -29,7 +27,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useNow } from '@/hooks/use-now';
 import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
 import { lateMinutes } from '@/lib/schedule-time';
-import { cn } from '@/lib/utils';
 import type {
     DaySchedule,
     MoveOptions,
@@ -45,11 +42,6 @@ type Props = {
     move: MoveOptions | null | undefined;
     /** An admin may look at the schedule but not change it. */
     viewOnly: boolean;
-    /**
-     * The panel is the content of a slide-over `Sheet` (below the `2xl` breakpoint). The sheet then brings the card,
-     * the close button and the focus trap, and the heading becomes the sheet's title.
-     */
-    inSheet?: boolean;
 };
 
 /** The longest delay `setTimeout` accepts (about 24.8 days). A longer one fires at once. */
@@ -102,16 +94,18 @@ function useHasStarted(startsAt: string, serverSaysStarted: boolean): boolean {
 }
 
 /**
- * The side panel of the staff schedule: one booking, and the buttons staff may use on it. What the buttons do is
- * decided by the server: `selected.can` hides a button the Policy or the status would refuse, and the Actions
- * refuse again on submit. Only the patient's name is shown (staff and admins don't read health data).
+ * The content of the staff schedule's drawer: one booking, and the buttons staff may use on it. It is always the
+ * content of a slide-over `Sheet`, on every screen width, so it covers the page and is hard to miss whatever opened it.
+ * The sheet brings the card, the close button and the focus trap, and the heading becomes the sheet's title.
+ *
+ * What the buttons do is decided by the server: `selected.can` hides a button the Policy or the status would refuse,
+ * and the Actions refuse again on submit. Only the patient's name is shown (staff and admins don't read health data).
  */
 export default function AppointmentPanel({
     schedule,
     selected,
     move,
     viewOnly,
-    inSheet = false,
 }: Props) {
     const found = findAppointment(schedule, selected.ulid);
     const headingRef = useRef<HTMLHeadingElement>(null);
@@ -149,10 +143,9 @@ export default function AppointmentPanel({
     const hasFlags =
         appointment.emergencyFlag || appointment.intakeMissing || late !== null;
 
+    // The sheet labels itself with its title, so the heading needs no id.
     const heading = (
         <h2
-            // The sheet labels itself with its title, so the id would only get in the way there.
-            id={inSheet ? undefined : 'appointment-panel-heading'}
             ref={headingRef}
             tabIndex={-1}
             className="text-lg font-semibold wrap-break-word outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -161,49 +154,18 @@ export default function AppointmentPanel({
         </h2>
     );
 
-    // One card, in sections: who and what status, when and with whom, flags, then the buttons.
-    const Wrapper = inSheet ? 'div' : 'aside';
-
+    // In sections: who and what status, when and with whom, flags, then the buttons.
     return (
-        <Wrapper
-            aria-labelledby={inSheet ? undefined : 'appointment-panel-heading'}
-            className={cn(
-                'divide-y',
-                !inSheet && 'rounded-xl border bg-card md:w-80 md:shrink-0',
-            )}
-        >
-            <div
-                className={cn(
-                    'flex items-start justify-between gap-3 p-4',
-                    // Room for the sheet's own close button.
-                    inSheet && 'pr-12',
-                )}
-            >
+        <div className="divide-y">
+            {/* Right padding leaves room for the sheet's own close button. */}
+            <div className="flex items-start justify-between gap-3 p-4 pr-12">
                 <div className="min-w-0 space-y-2">
                     <StatusBadge
                         status={appointment.status}
                         label={appointment.statusLabel}
                     />
-                    {inSheet ? (
-                        <SheetTitle asChild>{heading}</SheetTitle>
-                    ) : (
-                        heading
-                    )}
+                    <SheetTitle asChild>{heading}</SheetTitle>
                 </div>
-                {!inSheet && (
-                    <Button asChild variant="ghost" size="icon">
-                        <Link
-                            href={ScheduleController.index({
-                                query: { date: schedule.date },
-                            })}
-                            preserveScroll
-                            preserveState
-                            aria-label="Close the appointment panel"
-                        >
-                            <X aria-hidden />
-                        </Link>
-                    </Button>
-                )}
             </div>
 
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 p-4 text-sm">
@@ -267,7 +229,7 @@ export default function AppointmentPanel({
                     </p>
                 )}
             </section>
-        </Wrapper>
+        </div>
     );
 }
 
