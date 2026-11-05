@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DoctorController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\TimeOffController;
@@ -62,6 +63,9 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::get('doctors/{doctor}/time-offs', [TimeOffController::class, 'index'])->name('doctors.time-offs.index');
         Route::post('doctors/{doctor}/time-offs', [TimeOffController::class, 'store'])->middleware('throttle:20,1')->name('doctors.time-offs.store');
         Route::delete('doctors/{doctor}/time-offs/{timeOff}', [TimeOffController::class, 'destroy'])->scopeBindings()->name('doctors.time-offs.destroy');
+
+        // Read only: the audit log has a list and nothing else, so there is no route that can change a row.
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 
     // The schedule is for staff, and an admin may look at it (PROJECT.md section 3). The action routes in this
