@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,6 +59,7 @@ final class UserController extends Controller
         $data = $request->validated();
 
         $user = $create->handle(
+            $request->user(),
             $data['name'],
             $data['email'],
             $data['password'],
@@ -73,11 +75,11 @@ final class UserController extends Controller
         return to_route('admin.users.index');
     }
 
-    public function deactivate(User $user, DeactivateUser $deactivate): RedirectResponse
+    public function deactivate(Request $request, User $user, DeactivateUser $deactivate): RedirectResponse
     {
         Gate::authorize('deactivate', $user);
 
-        $deactivate->handle($user);
+        $deactivate->handle($request->user(), $user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been deactivated.', ['name' => $user->name])]);
 

@@ -332,7 +332,7 @@ describe('the update working hours action', function () {
         WorkingHour::factory()->for($doctor)->onWeekday(1)->create();
 
         // A weekday that does not fit the column breaks the insert, after the old rows were deleted.
-        expect(fn () => app(UpdateWorkingHours::class)->handle($doctor, [
+        expect(fn () => app(UpdateWorkingHours::class)->handle(userWithRole(Role::Admin), $doctor, [
             ['weekday' => 1, 'starts_at' => '09:00', 'ends_at' => '10:00'],
             ['weekday' => 999, 'starts_at' => '09:00', 'ends_at' => '10:00'],
         ]))->toThrow(Exception::class);
@@ -345,8 +345,10 @@ describe('the update working hours action', function () {
         $other = Doctor::factory()->create();
         WorkingHour::factory()->for($other)->onWeekday(2)->create();
 
-        app(UpdateWorkingHours::class)->handle($doctor, [['weekday' => 1, 'starts_at' => '09:00', 'ends_at' => '10:00']]);
-        app(UpdateWorkingHours::class)->handle($doctor, []);
+        $admin = userWithRole(Role::Admin);
+
+        app(UpdateWorkingHours::class)->handle($admin, $doctor, [['weekday' => 1, 'starts_at' => '09:00', 'ends_at' => '10:00']]);
+        app(UpdateWorkingHours::class)->handle($admin, $doctor, []);
 
         expect($doctor->workingHours()->count())->toBe(0)
             ->and($other->workingHours()->count())->toBe(1);

@@ -8,6 +8,7 @@ use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Models\VisitNote;
+use App\Support\AuditLogger;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 final class SaveVisitNote
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /**
      * Saves the doctor's private note for one of their own appointments (PROJECT.md F8). There is one note per
      * appointment: the first save creates it and every later save edits it in place.
@@ -35,6 +38,9 @@ final class SaveVisitNote
      * The appointment row is locked while the note is read and written, so two saves at the same moment can't both
      * find no note and create two. The unique key on `appointment_id` is the backstop if some other code path forgets.
      *
+     * Every save writes `notes.saved` to the audit log in the same transaction. The row says that a note was created
+     * or edited and on which appointment, never what it says.
+     *
      * @throws AuthorizationException When $actor is not the appointment's own doctor.
      * @throws ValidationException When the appointment's status does not take a note.
      */
@@ -44,7 +50,7 @@ final class SaveVisitNote
         $gate->authorize('view', $appointment);
         $gate->authorize('create', [VisitNote::class, $appointment]);
 
-        return DB::transaction(function () use ($gate, $appointment, $body): VisitNote {
+        return DB::transaction(function () use ($actor, $gate, $appointment, $body): VisitNote {
             $locked = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->status->allowsVisitNote()) {
@@ -58,16 +64,23 @@ final class SaveVisitNote
 
             $note = VisitNote::query()->where('appointment_id', $appointment->id)->first();
 
+            $created = $note === null;
+
             if ($note === null) {
-                return VisitNote::create([
+                $note = VisitNote::create([
                     'appointment_id' => $appointment->id,
                     'doctor_id' => $appointment->doctor_id,
                     'body' => $body,
                 ]);
+            } else {
+                $gate->authorize('update', $note);
+                $note->update(['body' => $body]);
             }
 
-            $gate->authorize('update', $note);
-            $note->update(['body' => $body]);
+            $this->audit->record($actor, 'notes.saved', $note, [
+                'appointment_id' => $appointment->id,
+                'created' => $created,
+            ]);
 
             return $note;
         });

@@ -7,6 +7,7 @@ namespace App\Actions\Doctor;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -14,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 final class CompleteAppointment
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /**
      * The doctor finishes a visit: `checked_in` becomes `completed` (PROJECT.md F8). The status is the only thing
      * that changes. A completed visit still holds its slot (`completed` is an active status), and the doctor can keep
@@ -33,7 +36,7 @@ final class CompleteAppointment
     {
         Gate::forUser($actor)->authorize('complete', $appointment);
 
-        return DB::transaction(function () use ($appointment): Appointment {
+        return DB::transaction(function () use ($actor, $appointment): Appointment {
             // Lock and re-read the row. The model in the caller's hand may be stale, and without the lock a finish and
             // a staff cancel or no-show running together could both pass the status check below.
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
@@ -43,6 +46,11 @@ final class CompleteAppointment
             }
 
             $current->update(['status' => AppointmentStatus::Completed]);
+
+            $this->audit->record($actor, 'appointment.completed', $current, [
+                'status_from' => AppointmentStatus::CheckedIn->value,
+                'status_to' => AppointmentStatus::Completed->value,
+            ]);
 
             return $current;
         });

@@ -521,7 +521,7 @@ describe('the create and delete time off actions', function () {
         $doctor = Doctor::factory()->create();
         $other = Doctor::factory()->create();
 
-        $timeOff = app(CreateTimeOff::class)->handle($doctor, clinicUtc('2026-11-10 08:00'), clinicUtc('2026-11-10 17:00'), 'Conference');
+        $timeOff = app(CreateTimeOff::class)->handle(userWithRole(Role::Admin), $doctor, clinicUtc('2026-11-10 08:00'), clinicUtc('2026-11-10 17:00'), 'Conference');
 
         expect($timeOff->doctor_id)->toBe($doctor->id)
             ->and(storedTimeOffs($doctor))->toBe([['2026-11-10 00:00', '2026-11-10 09:00', 'Conference']])
@@ -533,7 +533,7 @@ describe('the create and delete time off actions', function () {
         $remove = timeOffBetween($doctor, '2026-11-10 08:00', '2026-11-10 17:00');
         $keep = timeOffBetween($doctor, '2026-11-20 08:00', '2026-11-20 17:00');
 
-        app(DeleteTimeOff::class)->handle($remove);
+        app(DeleteTimeOff::class)->handle(userWithRole(Role::Admin), $remove);
 
         expect(TimeOff::query()->pluck('id')->all())->toBe([$keep->id]);
     });

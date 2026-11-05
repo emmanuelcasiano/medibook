@@ -16,7 +16,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 // "Mark reviewed" (step 10.3). The request has no body: the doctor and the time come from the server, so there is no
 // input to validate. The "validation" group here is the state rule instead (only a ready summary can be reviewed).
-// The `summary.reviewed` audit write is step 11.2. "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
+// The `summary.reviewed` audit write is tested in Audit/ActionAuditTest. "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
 
 beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-11-02 09:00', 'Asia/Manila'));

@@ -295,7 +295,7 @@ describe('the update doctor action', function () {
         $doctor->services()->attach($kept);
 
         // An id that is not a service breaks the pivot insert (foreign key), after the profile update ran.
-        expect(fn () => app(UpdateDoctor::class)->handle($doctor, 'Pediatrics', null, [999999]))->toThrow(Exception::class);
+        expect(fn () => app(UpdateDoctor::class)->handle(userWithRole(Role::Admin), $doctor, 'Pediatrics', null, [999999]))->toThrow(Exception::class);
 
         expect($doctor->fresh()->specialty)->toBe('Dermatology')
             ->and(DB::table('doctor_service')->where('doctor_id', $doctor->id)->pluck('service_id')->all())->toBe([$kept->id]);

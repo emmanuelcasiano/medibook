@@ -7,6 +7,7 @@ namespace App\Actions\Booking;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 final class CheckInAppointment
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /**
      * Check a patient in at the front desk: `booked` becomes `checked_in`, and `checked_in_at` records when.
      *
@@ -33,7 +36,7 @@ final class CheckInAppointment
         // Before any lock or write, so a user who may not check in learns nothing about the booking's state.
         Gate::forUser($actor)->authorize('checkIn', $appointment);
 
-        return DB::transaction(function () use ($appointment): Appointment {
+        return DB::transaction(function () use ($actor, $appointment): Appointment {
             // Lock and re-read the row. The model in the caller's hand may be stale, and without the lock a check-in
             // and a cancel (or a no-show) running together could both pass the status check below.
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
@@ -45,6 +48,12 @@ final class CheckInAppointment
             $current->update([
                 'status' => AppointmentStatus::CheckedIn,
                 'checked_in_at' => CarbonImmutable::now(),
+            ]);
+
+            // In the same transaction, so the log row exists if and only if the check-in does.
+            $this->audit->record($actor, 'appointment.checked_in', $current, [
+                'status_from' => AppointmentStatus::Booked->value,
+                'status_to' => AppointmentStatus::CheckedIn->value,
             ]);
 
             return $current;
