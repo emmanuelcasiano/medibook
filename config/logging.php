@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\LogMasker;
+use App\Support\MaskLogs;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -60,6 +62,7 @@ return [
 
         'single' => [
             'driver' => 'single',
+            'tap' => [MaskLogs::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
@@ -67,6 +70,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
+            'tap' => [MaskLogs::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 14),
@@ -75,6 +79,7 @@ return [
 
         'monthly' => [
             'driver' => 'monthly',
+            'tap' => [MaskLogs::class],
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => 3,
@@ -83,6 +88,7 @@ return [
 
         'slack' => [
             'driver' => 'slack',
+            'tap' => [MaskLogs::class],
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
             'username' => env('LOG_SLACK_USERNAME', env('APP_NAME', 'Laravel')),
             'emoji' => env('LOG_SLACK_EMOJI', ':boom:'),
@@ -99,7 +105,8 @@ return [
                 'port' => env('PAPERTRAIL_PORT'),
                 'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
             ],
-            'processors' => [PsrLogMessageProcessor::class],
+            // LogMasker first: PsrLogMessageProcessor copies context values into the message, so it must see masked ones.
+            'processors' => [LogMasker::class, PsrLogMessageProcessor::class],
         ],
 
         'stderr' => [
@@ -110,11 +117,13 @@ return [
                 'stream' => 'php://stderr',
             ],
             'formatter' => env('LOG_STDERR_FORMATTER'),
-            'processors' => [PsrLogMessageProcessor::class],
+            // LogMasker first: PsrLogMessageProcessor copies context values into the message, so it must see masked ones.
+            'processors' => [LogMasker::class, PsrLogMessageProcessor::class],
         ],
 
         'syslog' => [
             'driver' => 'syslog',
+            'tap' => [MaskLogs::class],
             'level' => env('LOG_LEVEL', 'debug'),
             'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
             'replace_placeholders' => true,
@@ -122,6 +131,7 @@ return [
 
         'errorlog' => [
             'driver' => 'errorlog',
+            'tap' => [MaskLogs::class],
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
