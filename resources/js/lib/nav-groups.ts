@@ -3,10 +3,12 @@ import {
     CalendarPlus,
     ClipboardList,
     Clock,
+    ScrollText,
     ShieldCheck,
     Stethoscope,
     Users,
 } from 'lucide-react';
+import AuditLogController from '@/actions/App/Http/Controllers/Admin/AuditLogController';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
@@ -93,6 +95,11 @@ const roleNavGroups: Record<Role, NavGroup[]> = {
         {
             label: 'Oversight',
             items: [
+                {
+                    title: 'Audit log',
+                    href: AuditLogController.index(),
+                    icon: ScrollText,
+                },
                 // An admin can look at the schedule but not act on it, so the page says "View only" too.
                 {
                     title: 'Schedule (view only)',

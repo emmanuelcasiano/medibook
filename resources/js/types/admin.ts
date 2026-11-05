@@ -95,6 +95,36 @@ export type AdminTimeOffListItem = {
     bookingsInside: number;
 };
 
+/**
+ * One audit log row as the page receives it. `createdAt` is ISO 8601 UTC. The actor is null for a guest or the system.
+ * `details` is the safe metadata as plain text lines, never health text.
+ */
+export type AdminAuditLogListItem = {
+    id: number;
+    createdAt: string;
+    actorName: string | null;
+    actorRoleLabel: string | null;
+    action: string;
+    subject: string | null;
+    details: string[];
+};
+
+/** The audit filters as typed in the form. An empty string means "not set". `date` is a clinic date, `YYYY-MM-DD`. */
+export type AdminAuditLogFilters = {
+    actor: string;
+    action: string;
+    subject_type: string;
+    subject_id: string;
+    date: string;
+};
+
+/** The choices in the audit filter lists: only what is in the log. */
+export type AdminAuditLogOptions = {
+    actors: { id: number; name: string }[];
+    actions: string[];
+    subjectTypes: string[];
+};
+
 /** The parts of Laravel's paginator that the pages use. */
 export type Paginated<T> = {
     data: T[];
