@@ -12,6 +12,7 @@ use App\Http\Requests\Admin\StoreTimeOffRequest;
 use App\Models\Doctor;
 use App\Models\TimeOff;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -57,7 +58,7 @@ final class TimeOffController extends Controller
 
         $data = $request->validated();
 
-        $timeOff = $create->handle($doctor, $request->startsAt(), $request->endsAt(), $data['reason'] ?? null);
+        $timeOff = $create->handle($request->user(), $doctor, $request->startsAt(), $request->endsAt(), $data['reason'] ?? null);
 
         $inside = $countBookings->handle($doctor, collect([$timeOff]))[$timeOff->id] ?? 0;
 
@@ -73,14 +74,14 @@ final class TimeOffController extends Controller
         return to_route('admin.doctors.time-offs.index', $doctor);
     }
 
-    public function destroy(Doctor $doctor, TimeOff $timeOff, DeleteTimeOff $delete): RedirectResponse
+    public function destroy(Request $request, Doctor $doctor, TimeOff $timeOff, DeleteTimeOff $delete): RedirectResponse
     {
         Gate::authorize('update', $doctor);
 
         $doctor->loadMissing('user');
 
         // The route binds `{timeOff}` through this doctor (scoped), so another doctor's time off is a 404 here.
-        $delete->handle($timeOff);
+        $delete->handle($request->user(), $timeOff);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time off removed for :name.', ['name' => $doctor->user->name])]);
 

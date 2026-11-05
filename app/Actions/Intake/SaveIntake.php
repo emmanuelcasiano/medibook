@@ -10,13 +10,17 @@ use App\Models\Appointment;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 final class SaveIntake
 {
-    public function __construct(private readonly DetectEmergency $detectEmergency) {}
+    public function __construct(
+        private readonly DetectEmergency $detectEmergency,
+        private readonly AuditLogger $audit,
+    ) {}
 
     /**
      * Save the intake form of an appointment: the first save creates the intake, every later save replaces its
@@ -45,6 +49,8 @@ final class SaveIntake
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
 
             $intake = Intake::query()->where('appointment_id', $current->id)->first();
+            $created = $intake === null;
+            $wasFlagged = $current->emergency_flag;
 
             if ($intake === null) {
                 Gate::forUser($actor)->authorize('create', [Intake::class, $current]);
@@ -71,7 +77,16 @@ final class SaveIntake
                 'submitted_at' => now(),
             ])->save();
 
-            $this->applyEmergencyCheck($current, $intake);
+            $isEmergency = $this->applyEmergencyCheck($current, $intake);
+
+            // Facts only: that the intake was saved, and whether the staff flag changed. Never the answers or the
+            // words that matched. Edits can clear the flag, so the log is the only place that shows it was raised.
+            $this->audit->record($actor, 'intake.saved', $intake, [
+                'appointment_id' => $current->id,
+                'created' => $created,
+                'emergency_flag_from' => $wasFlagged,
+                'emergency_flag_to' => $isEmergency,
+            ]);
 
             return $intake;
         });
@@ -85,8 +100,10 @@ final class SaveIntake
      * - Any other save gets an empty `pending` row and a `SummarizeIntake` job. The job is queued after the commit, so
      *   the worker can't run before the new answers are saved. If the AI is off or the daily cap is reached, the job
      *   turns the row into `skipped` (see GenerateIntakeSummary).
+     *
+     * @return bool Whether the answers were an emergency.
      */
-    private function applyEmergencyCheck(Appointment $appointment, Intake $intake): void
+    private function applyEmergencyCheck(Appointment $appointment, Intake $intake): bool
     {
         $answers = $intake->answers;
 
@@ -102,12 +119,14 @@ final class SaveIntake
         if ($isEmergency) {
             $this->replaceSummary($intake, SummaryStatus::Skipped);
 
-            return;
+            return true;
         }
 
         $this->replaceSummary($intake, SummaryStatus::Pending);
 
         SummarizeIntake::dispatch($intake->id);
+
+        return false;
     }
 
     private function replaceSummary(Intake $intake, SummaryStatus $status): void

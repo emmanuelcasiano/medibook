@@ -49,7 +49,7 @@ final class WorkingHourController extends Controller
 
         $data = $request->validated();
 
-        $update->handle($doctor, array_values(array_map(fn (array $range): array => [
+        $update->handle($request->user(), $doctor, array_values(array_map(fn (array $range): array => [
             'weekday' => (int) $range['weekday'],
             'starts_at' => (string) $range['starts_at'],
             'ends_at' => (string) $range['ends_at'],

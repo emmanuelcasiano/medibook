@@ -18,8 +18,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 // Visit notes (step 10.4): one private, encrypted note per appointment, written and read by its own doctor only. The
 // full Policy matrix is in HealthDataPoliciesTest; here each refused role is tried once through the route, to prove
-// the controller and the Action call the Policy. The `notes.saved` and `notes.viewed` audit writes are steps 11.2 and
-// 11.3. "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
+// the controller and the Action call the Policy. The `notes.saved` audit write is tested in Audit/ActionAuditTest, and
+// `notes.viewed` comes in step 11.3. "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
 
 beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-11-02 09:00', 'Asia/Manila'));

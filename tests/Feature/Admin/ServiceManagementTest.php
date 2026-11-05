@@ -356,7 +356,7 @@ describe('deleting a service', function () {
         $service = Service::factory()->create();
         Appointment::factory()->completed()->create(['service_id' => $service->id]);
 
-        expect(fn () => app(DeleteService::class)->handle($service))->toThrow(ValidationException::class);
+        expect(fn () => app(DeleteService::class)->handle(userWithRole(Role::Admin), $service))->toThrow(ValidationException::class);
         expect(Service::query()->whereKey($service->id)->exists())->toBeTrue();
     });
 

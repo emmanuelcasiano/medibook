@@ -13,6 +13,7 @@ use App\Http\Requests\Admin\UpdateServiceRequest;
 use App\Models\Doctor;
 use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,6 +67,7 @@ final class ServiceController extends Controller
         $data = $request->validated();
 
         $service = $create->handle(
+            $request->user(),
             $data['name'],
             $data['description'] ?? null,
             (int) $data['duration_minutes'],
@@ -101,6 +103,7 @@ final class ServiceController extends Controller
         $data = $request->validated();
 
         $update->handle(
+            $request->user(),
             $service,
             $data['name'],
             $data['description'] ?? null,
@@ -114,11 +117,11 @@ final class ServiceController extends Controller
         return to_route('admin.services.index');
     }
 
-    public function destroy(Service $service, DeleteService $delete): RedirectResponse
+    public function destroy(Request $request, Service $service, DeleteService $delete): RedirectResponse
     {
         Gate::authorize('delete', $service);
 
-        $delete->handle($service);
+        $delete->handle($request->user(), $service);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been deleted.', ['name' => $service->name])]);
 

@@ -81,6 +81,7 @@ final class DoctorController extends Controller
         $data = $request->validated();
 
         $update->handle(
+            $request->user(),
             $doctor,
             $data['specialty'],
             $data['bio'] ?? null,

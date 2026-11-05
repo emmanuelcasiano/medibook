@@ -11,19 +11,19 @@ use Illuminate\Database\QueryException;
 
 describe('CreateStaffUser', function () {
     it('creates a doctor together with the doctor profile', function () {
-        $user = app(CreateStaffUser::class)->handle('Dr. Ana Reyes', 'ana@example.test', 'a-long-demo-password-1', Role::Doctor, 'Dermatology');
+        $user = app(CreateStaffUser::class)->handle(userWithRole(Role::Admin), 'Dr. Ana Reyes', 'ana@example.test', 'a-long-demo-password-1', Role::Doctor, 'Dermatology');
 
         expect($user->role)->toBe(Role::Doctor)
             ->and(Doctor::query()->where('user_id', $user->id)->value('specialty'))->toBe('Dermatology');
     });
 
     it('refuses to create a patient', function () {
-        app(CreateStaffUser::class)->handle('Pat Ient', 'pat@example.test', 'a-long-demo-password-1', Role::Patient);
+        app(CreateStaffUser::class)->handle(userWithRole(Role::Admin), 'Pat Ient', 'pat@example.test', 'a-long-demo-password-1', Role::Patient);
     })->throws(InvalidArgumentException::class);
 
     it('refuses a doctor without a specialty, and creates nothing', function (?string $specialty) {
         try {
-            app(CreateStaffUser::class)->handle('Dr. No Specialty', 'nospec@example.test', 'a-long-demo-password-1', Role::Doctor, $specialty);
+            app(CreateStaffUser::class)->handle(userWithRole(Role::Admin), 'Dr. No Specialty', 'nospec@example.test', 'a-long-demo-password-1', Role::Doctor, $specialty);
         } catch (InvalidArgumentException) {
             // expected
         }
@@ -33,14 +33,14 @@ describe('CreateStaffUser', function () {
 
     it('rolls back the user when the doctor profile can not be saved', function () {
         // A specialty longer than the column makes the doctors insert fail after the user row was written.
-        expect(fn () => app(CreateStaffUser::class)->handle('Dr. Long', 'long@example.test', 'a-long-demo-password-1', Role::Doctor, str_repeat('x', 300)))
+        expect(fn () => app(CreateStaffUser::class)->handle(userWithRole(Role::Admin), 'Dr. Long', 'long@example.test', 'a-long-demo-password-1', Role::Doctor, str_repeat('x', 300)))
             ->toThrow(QueryException::class);
 
         expect(User::query()->where('email', 'long@example.test')->exists())->toBeFalse();
     });
 
     it('hashes the password', function () {
-        $user = app(CreateStaffUser::class)->handle('Sam Staff', 'sam@example.test', 'a-long-demo-password-1', Role::Staff);
+        $user = app(CreateStaffUser::class)->handle(userWithRole(Role::Admin), 'Sam Staff', 'sam@example.test', 'a-long-demo-password-1', Role::Staff);
 
         expect($user->password)->not->toBe('a-long-demo-password-1');
     });
@@ -50,7 +50,7 @@ describe('DeactivateUser', function () {
     it('turns the account off and clears the remember token', function () {
         $user = User::factory()->create(['remember_token' => 'abc123']);
 
-        app(DeactivateUser::class)->handle($user);
+        app(DeactivateUser::class)->handle(userWithRole(Role::Admin), $user);
 
         $fresh = $user->fresh();
         expect($fresh->is_active)->toBeFalse()
@@ -60,7 +60,7 @@ describe('DeactivateUser', function () {
     it('is safe to run twice', function () {
         $user = User::factory()->inactive()->create();
 
-        app(DeactivateUser::class)->handle($user);
+        app(DeactivateUser::class)->handle(userWithRole(Role::Admin), $user);
 
         expect($user->fresh()->is_active)->toBeFalse();
     });

@@ -8,6 +8,7 @@ use App\Enums\SummaryStatus;
 use App\Models\Appointment;
 use App\Models\IntakeSummary;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 final class MarkSummaryReviewed
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /**
      * The doctor confirms they have read the AI draft: `reviewed_by` and `reviewed_at` are saved on the summary
      * (PROJECT.md F6). Both come from here, the signed-in doctor and the server clock, never from the request.
@@ -70,6 +73,9 @@ final class MarkSummaryReviewed
                     'reviewed_by' => $actor->id,
                     'reviewed_at' => CarbonImmutable::now(),
                 ])->save();
+
+                // Only the first review is logged: a double click or a second tab changes nothing, so it is not an event.
+                $this->audit->record($actor, 'summary.reviewed', $summary, ['appointment_id' => $intake->appointment_id]);
             }
 
             return $summary;

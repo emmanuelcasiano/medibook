@@ -7,6 +7,7 @@ namespace App\Actions\Booking;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 final class MarkNoShow
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /**
      * Record that a patient did not arrive: `booked` becomes `no_show`. Only once the start time has come (PROJECT.md
      * section 4), so staff can't write off a patient who is not yet late. Exactly at the start is allowed.
@@ -33,7 +36,7 @@ final class MarkNoShow
         // Before any lock or write, so a user who may not do this learns nothing about the booking's state.
         Gate::forUser($actor)->authorize('markNoShow', $appointment);
 
-        return DB::transaction(function () use ($appointment): Appointment {
+        return DB::transaction(function () use ($actor, $appointment): Appointment {
             // Lock and re-read the row, for the same reason as in CheckInAppointment: a stale model must not decide.
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
 
@@ -47,6 +50,11 @@ final class MarkNoShow
             }
 
             $current->update(['status' => AppointmentStatus::NoShow]);
+
+            $this->audit->record($actor, 'appointment.no_show', $current, [
+                'status_from' => AppointmentStatus::Booked->value,
+                'status_to' => AppointmentStatus::NoShow->value,
+            ]);
 
             return $current;
         });

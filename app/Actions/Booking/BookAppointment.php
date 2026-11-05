@@ -9,12 +9,15 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 final class BookAppointment
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /** The `starts_at` error when the doctor is busy then. BookAnyDoctor reads it to know it may try the next doctor. */
     public const string TIME_TAKEN_MESSAGE = 'This time is no longer free. Please pick another slot.';
 
@@ -40,10 +43,13 @@ final class BookAppointment
      * service and doctor pair, the patient limits and the overlap; it does not re-check working hours, time off
      * or the lead time.
      *
+     * The booking is written to the audit log (`appointment.booked`) in the same transaction, so a refused booking
+     * leaves no row. `$audit` is false only for MoveAppointment, which logs one `appointment.moved` of its own.
+     *
      * @throws ValidationException When the service is switched off, the doctor's account is switched off, the doctor
      *                             does not offer the service, the patient is over a limit, or the time is taken.
      */
-    public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt): Appointment
+    public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt, bool $audit = true): Appointment
     {
         // The database holds UTC, and the query builder writes a date as it is, with no timezone conversion.
         // Without this, a Manila time would be stored and compared as if it were UTC.
@@ -52,7 +58,7 @@ final class BookAppointment
         // The buffer keeps the doctor free for the next patient, so it blocks the slot like the visit does.
         $blockedUntil = $endsAt->addMinutes($service->buffer_minutes);
 
-        return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil): Appointment {
+        return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil, $audit): Appointment {
             // Lock the patient row first. The doctor lock below can't stop one patient from booking two different
             // doctors at the same moment, so without this both requests could pass the limit checks. Always patient
             // then doctor, in that order, so two transactions can never wait on each other.
@@ -116,7 +122,7 @@ final class BookAppointment
                 throw ValidationException::withMessages(['starts_at' => self::TIME_TAKEN_MESSAGE]);
             }
 
-            return Appointment::create([
+            $appointment = Appointment::create([
                 'patient_id' => $patient->id,
                 'doctor_id' => $doctor->id,
                 'service_id' => $service->id,
@@ -125,6 +131,17 @@ final class BookAppointment
                 'blocked_until' => $blockedUntil,
                 'status' => AppointmentStatus::Booked,
             ]);
+
+            if ($audit) {
+                // Ids and the start time only: enough to answer "who booked what", with no health text.
+                $this->audit->record($patient, 'appointment.booked', $appointment, [
+                    'doctor_id' => $doctor->id,
+                    'service_id' => $service->id,
+                    'starts_at' => $startsAt->toIso8601ZuluString(),
+                ]);
+            }
+
+            return $appointment;
         });
     }
 }
