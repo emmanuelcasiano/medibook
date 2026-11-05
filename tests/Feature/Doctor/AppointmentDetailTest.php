@@ -15,8 +15,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 // takes no input, so there is no validation test: the appointment comes from the URL and the Policy decides. Who may
 // open it is in the "denied access" group. The full role matrix of IntakePolicy is in HealthDataPoliciesTest; here
 // each role is tried once through the route, to prove the controller calls the Policy. "Mark reviewed" is tested in
-// MarkSummaryReviewedTest (step 10.3). Visit notes and "Finish visit" are steps 10.4 and 10.5, and the `intake.viewed`
-// audit write is step 11.3.
+// MarkSummaryReviewedTest (step 10.3). Visit notes and "Finish visit" are steps 10.4 and 10.5, and the view audit rows
+// (`intake.viewed` and the others) are tested in tests/Feature/Audit/ViewAuditEventsTest.php (step 11.3).
 // The AI label ("AI draft. The doctor must review.") is React, so it is checked in the browser, not here.
 // "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
 

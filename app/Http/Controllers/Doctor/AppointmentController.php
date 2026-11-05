@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Doctor;
 
 use App\Actions\Doctor\CompleteAppointment;
 use App\Actions\Doctor\MarkSummaryReviewed;
+use App\Enums\SummaryStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Doctor\ReviewSummaryRequest;
 use App\Http\Resources\Doctor\AppointmentDetailResource;
@@ -13,6 +14,7 @@ use App\Http\Resources\Doctor\IntakeDetailResource;
 use App\Http\Resources\Doctor\IntakeSummaryResource;
 use App\Http\Resources\Doctor\VisitNoteResource;
 use App\Models\Appointment;
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -30,8 +32,14 @@ final class AppointmentController extends Controller
      * (403). Then the intake Policy and the summary Policy, because the answers and the draft are health data and
      * have their own rules (staff and admins never get them). The intake, summary and note props are built only after
      * their check has passed. The birth date is never sent: only the age in years.
+     *
+     * Every open writes a view row for each piece of health data the page really carries (PROJECT.md F10): the intake
+     * answers, a ready AI draft, the doctor's note. The rows are written after the last check has passed, so a refused
+     * request leaves none, and before the page is built, so no content goes out without its row. If the write fails,
+     * the page fails with it (the content is not shown without a trace). The rows hold the appointment id and nothing
+     * else, never the health text.
      */
-    public function show(Appointment $appointment): Response
+    public function show(Request $request, Appointment $appointment, AuditLogger $audit): Response
     {
         Gate::authorize('view', $appointment);
 
@@ -62,6 +70,22 @@ final class AppointmentController extends Controller
 
             Gate::authorize('view', $intake);
             Gate::authorize('viewSummary', $intake);
+        }
+
+        $viewed = ['appointment_id' => $appointment->id];
+        $doctor = $request->user();
+
+        if ($intake !== null) {
+            $audit->record($doctor, 'intake.viewed', $intake, $viewed);
+        }
+
+        // A pending, failed or skipped summary has no AI text on the page, so only a ready draft counts as a view.
+        if ($summary !== null && $summary->status === SummaryStatus::Ready) {
+            $audit->record($doctor, 'summary.viewed', $summary, $viewed);
+        }
+
+        if ($note !== null) {
+            $audit->record($doctor, 'notes.viewed', $note, $viewed);
         }
 
         return Inertia::render('doctor/appointments/show', [
