@@ -11,9 +11,11 @@ use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 /**
- * Append-only. The "throws on update and delete" guard and the AuditLogger come on Day 11.
+ * Append-only: a saved row can't be updated or deleted through the model. Rows are written by the AuditLogger.
+ * The guard covers model calls only. The query builder skips model events, so no code path may touch this table that way.
  *
  * @property int $id
  * @property int|null $actor_id
@@ -31,6 +33,13 @@ class AuditLog extends Model
 {
     /** @use HasFactory<AuditLogFactory> */
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // An audit trail you can edit proves nothing, so fail loudly instead of silently ignoring the call.
+        static::updating(static fn (): never => throw new LogicException('Audit log rows cannot be updated.'));
+        static::deleting(static fn (): never => throw new LogicException('Audit log rows cannot be deleted.'));
+    }
 
     protected function casts(): array
     {
