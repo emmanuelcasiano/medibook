@@ -89,12 +89,18 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
             ? chosen
             : chosen.filter((doctor) => !isOffToday(doctor));
 
+    // The panel closes at once, and the visit then refreshes the schedule behind it. If the visit fails, the props come
+    // back and the panel with them. `async: false` makes it cancel an "open" still waiting for its answer.
     function closePanel() {
-        router.get(
-            ScheduleController.index.url({ query: { date: schedule.date } }),
-            {},
-            { preserveScroll: true, preserveState: true },
-        );
+        router
+            .optimistic(() => ({ selected: null }))
+            .get(
+                ScheduleController.index.url({
+                    query: { date: schedule.date },
+                }),
+                {},
+                { preserveScroll: true, preserveState: true, async: false },
+            );
     }
 
     const appointments = schedule.doctors.flatMap(
@@ -312,7 +318,9 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                         // The panel's own heading takes the focus, so the sheet must not pick a button.
                         onOpenAutoFocus={(event) => event.preventDefault()}
                         aria-describedby={undefined}
-                        className="w-full gap-0 overflow-y-auto sm:max-w-sm"
+                        // A quick slide-in (the shared sheet takes 500ms). The sheet leaves the page as soon as `selected`
+                        // is null, so it has no slide-out to speed up.
+                        className="w-full gap-0 overflow-y-auto data-[state=open]:duration-200 sm:max-w-sm"
                     >
                         <AppointmentPanel
                             key={selected.ulid}

@@ -41,9 +41,15 @@ export type ScheduleDoctor = {
 /**
  * The booking whose side panel is open, and what the signed-in user may do with it. Its name, time, doctor and
  * service are already in the schedule, so only the extra facts are sent. `null` on the page means no panel.
+ *
+ * The server never sends `pending`. The browser sets it on a placeholder, so the panel can open before the server has
+ * answered (see `OpenPanelLink`). The placeholder has every `can` flag false: it can only show what the schedule holds,
+ * and it never grants a button. The server's answer replaces it.
  */
 export type SelectedAppointment = {
     ulid: string;
+    /** `true` only on the browser's placeholder, until the server's answer arrives. */
+    pending?: true;
     /** From the server's clock. A no-show is refused before the start. */
     hasStarted: boolean;
     /** The server hides a button the Policy or the status would refuse, and refuses it again on submit. */
