@@ -7,6 +7,7 @@ namespace App\Actions\Booking;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\User;
+use App\Notifications\AppointmentBooked;
 use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -45,6 +46,9 @@ final class MoveAppointment
      * The cancel and the booking inside it are told not to log, so the log reads as what the staff member did and
      * not as a cancel plus a booking. The row is written in the same transaction, so a refused move leaves none.
      *
+     * The emails follow the same idea: the cancel and the booking send none, and the patient gets one
+     * AppointmentBooked with the new date, time and doctor, queued after the commit.
+     *
      * @throws AuthorizationException When $actor may not move this appointment.
      * @throws ValidationException When the appointment is not `booked`, the time is where the booking already is,
      *                             the time is not one the slot finder offers or is taken, or BookAppointment
@@ -59,7 +63,7 @@ final class MoveAppointment
             // Locks and re-reads the row, and refuses anything that is not `booked`. The row it returns is the
             // current one, so everything below reads from it and not from the caller's possibly stale model.
             try {
-                $old = $this->cancel->handle($actor, $appointment, $this->reason($startsAt), audit: false)
+                $old = $this->cancel->handle($actor, $appointment, $this->reason($startsAt), audit: false, notify: false)
                     ->loadMissing(['patient', 'service']);
             } catch (ValidationException) {
                 // For staff the only refusal left is the status (the reason is ours and the 2 hour rule is for
@@ -78,7 +82,7 @@ final class MoveAppointment
                 throw ValidationException::withMessages(['starts_at' => BookAppointment::TIME_TAKEN_MESSAGE]);
             }
 
-            $new = $this->book->handle($old->patient, $doctor, $old->service, $startsAt, audit: false);
+            $new = $this->book->handle($old->patient, $doctor, $old->service, $startsAt, audit: false, notify: false);
 
             $this->audit->record($actor, 'appointment.moved', $new, [
                 'from_appointment_id' => $old->id,
@@ -87,6 +91,8 @@ final class MoveAppointment
                 'from_starts_at' => $old->starts_at->toIso8601ZuluString(),
                 'to_starts_at' => $new->starts_at->toIso8601ZuluString(),
             ]);
+
+            $old->patient->notify(new AppointmentBooked($new));
 
             return $new;
         });

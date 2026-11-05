@@ -7,6 +7,7 @@ namespace App\Actions\Booking;
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Notifications\AppointmentCancelled;
 use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -37,11 +38,15 @@ final class CancelAppointment
      * out of the log on purpose: free text from a patient can hold health detail, and the row already has it.
      * `$audit` is false only for MoveAppointment, which logs one `appointment.moved` of its own.
      *
+     * When staff cancel, the patient gets an AppointmentCancelled email (PROJECT.md F9), queued after the commit.
+     * A patient who cancels their own booking gets none. `$notify` is false only for MoveAppointment: a move is not a
+     * cancel to the patient, who gets the new time instead.
+     *
      * @throws AuthorizationException When $actor may not cancel this appointment.
      * @throws ValidationException When the appointment is not `booked`, a patient is inside the 2 hour limit, or
      *                             staff gave no reason or one that is too long.
      */
-    public function handle(User $actor, Appointment $appointment, ?string $reason = null, bool $audit = true): Appointment
+    public function handle(User $actor, Appointment $appointment, ?string $reason = null, bool $audit = true, bool $notify = true): Appointment
     {
         // Before any lock or write, so a user who may not cancel this booking learns nothing about its state.
         Gate::forUser($actor)->authorize('cancel', $appointment);
@@ -57,7 +62,7 @@ final class CancelAppointment
             throw ValidationException::withMessages(['reason' => sprintf('The reason may not be longer than %d characters.', self::MAX_REASON_LENGTH)]);
         }
 
-        return DB::transaction(function () use ($actor, $appointment, $reason, $audit): Appointment {
+        return DB::transaction(function () use ($actor, $appointment, $reason, $audit, $notify): Appointment {
             // Lock and re-read the row. The model in the caller's hand may be stale, and without the lock a cancel
             // and a check-in (or two cancels) running together could both pass the status check below.
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
@@ -86,6 +91,10 @@ final class CancelAppointment
                     'status_from' => AppointmentStatus::Booked->value,
                     'status_to' => AppointmentStatus::Cancelled->value,
                 ]);
+            }
+
+            if ($notify && $actor->isStaff()) {
+                $current->loadMissing('patient')->patient->notify(new AppointmentCancelled($current));
             }
 
             return $current;

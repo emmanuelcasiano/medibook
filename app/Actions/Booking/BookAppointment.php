@@ -9,6 +9,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Service;
 use App\Models\User;
+use App\Notifications\AppointmentBooked;
 use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -46,10 +47,13 @@ final class BookAppointment
      * The booking is written to the audit log (`appointment.booked`) in the same transaction, so a refused booking
      * leaves no row. `$audit` is false only for MoveAppointment, which logs one `appointment.moved` of its own.
      *
+     * The patient gets an AppointmentBooked email (PROJECT.md F9). It is queued after the commit, so a refused
+     * booking sends nothing. `$notify` is false only for MoveAppointment, which sends one email for the new time.
+     *
      * @throws ValidationException When the service is switched off, the doctor's account is switched off, the doctor
      *                             does not offer the service, the patient is over a limit, or the time is taken.
      */
-    public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt, bool $audit = true): Appointment
+    public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt, bool $audit = true, bool $notify = true): Appointment
     {
         // The database holds UTC, and the query builder writes a date as it is, with no timezone conversion.
         // Without this, a Manila time would be stored and compared as if it were UTC.
@@ -58,7 +62,7 @@ final class BookAppointment
         // The buffer keeps the doctor free for the next patient, so it blocks the slot like the visit does.
         $blockedUntil = $endsAt->addMinutes($service->buffer_minutes);
 
-        return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil, $audit): Appointment {
+        return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil, $audit, $notify): Appointment {
             // Lock the patient row first. The doctor lock below can't stop one patient from booking two different
             // doctors at the same moment, so without this both requests could pass the limit checks. Always patient
             // then doctor, in that order, so two transactions can never wait on each other.
@@ -139,6 +143,10 @@ final class BookAppointment
                     'service_id' => $service->id,
                     'starts_at' => $startsAt->toIso8601ZuluString(),
                 ]);
+            }
+
+            if ($notify) {
+                $patient->notify(new AppointmentBooked($appointment));
             }
 
             return $appointment;
