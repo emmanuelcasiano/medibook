@@ -1,9 +1,8 @@
-import { Link } from '@inertiajs/react';
 import { PanelRightOpen, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import AppointmentFlags from '@/components/schedule/appointment-flags';
 import CheckInButton from '@/components/schedule/check-in-button';
+import OpenPanelLink from '@/components/schedule/open-panel-link';
 import StatusBadge from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -285,12 +284,9 @@ function PatientResult({
                         variant="outline"
                         className="w-full border-teal-line/50 md:w-auto"
                     >
-                        <Link
-                            href={ScheduleController.index({
-                                query: { date, appointment: appointment.ulid },
-                            })}
-                            preserveScroll
-                            preserveState
+                        <OpenPanelLink
+                            date={date}
+                            ulid={appointment.ulid}
                             aria-label={`Open ${appointment.patientName} at ${time}`}
                             // Closing the panel then gives the focus back to this button, as it does for a block.
                             data-appointment={appointment.ulid}
@@ -299,7 +295,7 @@ function PatientResult({
                         >
                             <PanelRightOpen aria-hidden />
                             Open
-                        </Link>
+                        </OpenPanelLink>
                     </Button>
                 )}
             </div>

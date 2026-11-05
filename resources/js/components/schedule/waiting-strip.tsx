@@ -1,7 +1,6 @@
-import { Link } from '@inertiajs/react';
 import { ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
-import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
+import OpenPanelLink from '@/components/schedule/open-panel-link';
 import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
 import {
@@ -185,18 +184,15 @@ function WaitingRow({
             data-test="waiting-row"
             className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2 text-sm"
         >
-            <Link
-                href={ScheduleController.index({
-                    query: { date, appointment: appointment.ulid },
-                })}
-                preserveScroll
-                preserveState
+            <OpenPanelLink
+                date={date}
+                ulid={appointment.ulid}
                 // Closing the panel then gives the focus back to this link, as it does for a block.
                 data-appointment={appointment.ulid}
                 className="min-w-0 truncate rounded-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
                 {appointment.patientName}
-            </Link>
+            </OpenPanelLink>
             <span className="text-muted-foreground">
                 Checked in {formatClinicTime(checkedInAt)} ·{' '}
                 <span className={cn(isLong && cn(longWait, 'font-medium'))}>

@@ -1,6 +1,4 @@
-import { Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { formatWait, lateMinutes } from '@/lib/schedule-time';
@@ -8,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { DaySchedule, ScheduleAppointment, ScheduleDoctor } from '@/types';
 import AppointmentFlags from './appointment-flags';
 import LateLabel from './late-label';
+import OpenPanelLink from './open-panel-link';
 import { selectedStyle, statusStyles } from './status-styles';
 
 /** The height of one grid row (one slot step), in rem. */
@@ -336,12 +335,9 @@ function Block({
             }}
         >
             {/* The whole block opens the side panel. A real link, so Tab and Enter work, and the address can be shared. */}
-            <Link
-                href={ScheduleController.index({
-                    query: { date, appointment: appointment.ulid },
-                })}
-                preserveScroll
-                preserveState
+            <OpenPanelLink
+                date={date}
+                ulid={appointment.ulid}
                 aria-current={selected ? 'true' : undefined}
                 data-appointment={appointment.ulid}
                 title={`${appointment.patientName} · ${appointment.serviceName} · ${appointment.statusLabel}${late === null ? '' : ` · Late ${formatWait(late)}`}`}
@@ -383,7 +379,7 @@ function Block({
                         </p>
                     </>
                 )}
-            </Link>
+            </OpenPanelLink>
         </div>
     );
 }

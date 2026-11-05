@@ -1,7 +1,6 @@
-import { Link } from '@inertiajs/react';
 import { ChevronDown, Siren } from 'lucide-react';
 import { useId, useState } from 'react';
-import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
+import OpenPanelLink from '@/components/schedule/open-panel-link';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
 import type { DaySchedule } from '@/types';
@@ -81,21 +80,15 @@ export default function AttentionBanner({ schedule }: Props) {
                             data-test="attention-row"
                             className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-2 text-sm"
                         >
-                            <Link
-                                href={ScheduleController.index({
-                                    query: {
-                                        date: schedule.date,
-                                        appointment: appointment.ulid,
-                                    },
-                                })}
-                                preserveScroll
-                                preserveState
+                            <OpenPanelLink
+                                date={schedule.date}
+                                ulid={appointment.ulid}
                                 // Closing the panel then gives the focus back to this link, as it does for a block.
                                 data-appointment={appointment.ulid}
                                 className="min-w-0 truncate rounded-sm font-medium underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                             >
                                 {appointment.patientName}
-                            </Link>
+                            </OpenPanelLink>
                             <span>
                                 {doctorName} ·{' '}
                                 {formatClinicTime(appointment.startsAt)} ·{' '}

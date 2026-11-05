@@ -191,6 +191,14 @@ export default function AppointmentPanel({
             )}
 
             <section aria-label="Actions" className="space-y-3 p-4">
+                {/* The panel opens before the server has said what the user may do, and every `can` flag is false until then. */}
+                {selected.pending && (
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Spinner />
+                        Loading actions
+                    </p>
+                )}
+
                 {selected.can.checkIn && (
                     <CheckInButton
                         appointment={appointment}
@@ -221,7 +229,7 @@ export default function AppointmentPanel({
                     <CancelDialog appointment={appointment} />
                 )}
 
-                {!canAct && (
+                {!canAct && !selected.pending && (
                     <p className="text-sm text-muted-foreground">
                         {viewOnly
                             ? 'You can look at the schedule. Only front-desk staff can make changes.'

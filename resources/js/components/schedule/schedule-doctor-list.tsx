@@ -1,6 +1,4 @@
-import { Link } from '@inertiajs/react';
 import { ChevronDown } from 'lucide-react';
-import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
 import StatusBadge from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { useNow } from '@/hooks/use-now';
@@ -11,6 +9,7 @@ import type { ScheduleDoctor } from '@/types';
 import AppointmentFlags from './appointment-flags';
 import { isOffToday } from './doctor-filter';
 import LateLabel from './late-label';
+import OpenPanelLink from './open-panel-link';
 
 type Props = {
     /** The doctors to list, already narrowed by the chips. */
@@ -94,15 +93,9 @@ export default function ScheduleDoctorList({
                                     )}
                                 >
                                     {/* The whole row opens the side panel, which slides over the list. */}
-                                    <Link
-                                        href={ScheduleController.index({
-                                            query: {
-                                                date,
-                                                appointment: appointment.ulid,
-                                            },
-                                        })}
-                                        preserveScroll
-                                        preserveState
+                                    <OpenPanelLink
+                                        date={date}
+                                        ulid={appointment.ulid}
                                         aria-current={
                                             appointment.ulid === selectedUlid
                                                 ? 'true'
@@ -139,7 +132,7 @@ export default function ScheduleDoctorList({
                                             status={appointment.status}
                                             label={appointment.statusLabel}
                                         />
-                                    </Link>
+                                    </OpenPanelLink>
                                 </li>
                             ))}
                         </ol>
