@@ -1,3 +1,4 @@
+import type { SummaryStatus } from '@/types/doctor';
 import type { Role } from '@/types/auth';
 
 /** One row of the admin users list, as the page receives it. */
@@ -123,6 +124,26 @@ export type AdminAuditLogOptions = {
     actors: { id: number; name: string }[];
     actions: string[];
     subjectTypes: string[];
+};
+
+/** One line of "summaries by status". All four statuses are always sent, with a count of 0 when there are none. */
+export type AdminAiUsageStatus = {
+    status: SummaryStatus;
+    label: string;
+    count: number;
+};
+
+/**
+ * The AI usage screen as the page receives it: counts and sums only, never a summary, an intake answer or a patient name.
+ * `month` is a clinic date (`YYYY-MM-DD`, the first of the month). `estimatedCost` is US dollars as a string with
+ * 4 decimals, or null when the price is not set in config (the page says "Price not set", not 0).
+ */
+export type AdminAiUsage = {
+    month: string;
+    statuses: AdminAiUsageStatus[];
+    tokens: { input: number; output: number; total: number };
+    estimatedCost: string | null;
+    cap: { daily: number; usedToday: number; reached: boolean };
 };
 
 /** The parts of Laravel's paginator that the pages use. */
