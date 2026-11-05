@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AiUsageController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DoctorController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
 
         // Read only: the audit log has a list and nothing else, so there is no route that can change a row.
         Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+        // Read only too: this month's AI summaries, tokens and cost. One GET, nothing to change.
+        Route::get('ai-usage', [AiUsageController::class, 'index'])->name('ai-usage.index');
     });
 
     // The schedule is for staff, and an admin may look at it (PROJECT.md section 3). The action routes in this

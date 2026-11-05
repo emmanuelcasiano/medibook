@@ -5,9 +5,11 @@ import {
     Clock,
     ScrollText,
     ShieldCheck,
+    Sparkles,
     Stethoscope,
     Users,
 } from 'lucide-react';
+import AiUsageController from '@/actions/App/Http/Controllers/Admin/AiUsageController';
 import AuditLogController from '@/actions/App/Http/Controllers/Admin/AuditLogController';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
@@ -99,6 +101,11 @@ const roleNavGroups: Record<Role, NavGroup[]> = {
                     title: 'Audit log',
                     href: AuditLogController.index(),
                     icon: ScrollText,
+                },
+                {
+                    title: 'AI usage',
+                    href: AiUsageController.index(),
+                    icon: Sparkles,
                 },
                 // An admin can look at the schedule but not act on it, so the page says "View only" too.
                 {

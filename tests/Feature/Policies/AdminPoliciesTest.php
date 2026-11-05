@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\Role;
 use App\Models\AuditLog;
 use App\Models\Doctor;
+use App\Models\IntakeSummary;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
@@ -71,6 +72,16 @@ it('lets only admins read the audit log', function (Role $role) {
 
     expect(Gate::forUser($user)->allows('viewAny', AuditLog::class))->toBe($isAdmin)
         ->and(Gate::forUser($user)->allows('view', $entry))->toBe($isAdmin);
+})->with('roles');
+
+it('lets only admins read the AI usage, and nobody anything else on a summary', function (Role $role) {
+    $summary = IntakeSummary::factory()->create();
+    $user = userWithRole($role);
+
+    expect(Gate::forUser($user)->allows('viewUsage', IntakeSummary::class))->toBe($role === Role::Admin)
+        ->and(Gate::forUser($user)->denies('view', $summary))->toBeTrue()
+        ->and(Gate::forUser($user)->denies('update', $summary))->toBeTrue()
+        ->and(Gate::forUser($user)->denies('delete', $summary))->toBeTrue();
 })->with('roles');
 
 it('denies by default: an ability no policy defines is denied to every role, admins included', function (Role $role) {

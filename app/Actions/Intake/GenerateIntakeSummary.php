@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 final class GenerateIntakeSummary
 {
+    public function __construct(private readonly GetTokensUsedToday $tokensUsedToday) {}
+
     /**
      * Make the AI draft summary of one intake (PROJECT.md F6) and save it in `intake_summaries`.
      *
@@ -42,7 +44,7 @@ final class GenerateIntakeSummary
             return $this->replace($intake, SummaryStatus::Skipped);
         }
 
-        if ($this->tokensUsedToday() >= (int) config('medibook.ai.daily_token_cap')) {
+        if ($this->tokensUsedToday->handle() >= (int) config('medibook.ai.daily_token_cap')) {
             return $this->replace($intake, SummaryStatus::Skipped);
         }
 
@@ -111,22 +113,6 @@ final class GenerateIntakeSummary
             'allergies_and_meds' => $valid['allergies_and_meds'],
             'questions_for_doctor' => array_values($valid['questions_for_doctor']),
         ];
-    }
-
-    /**
-     * Input plus output tokens of every summary row made since the clinic's day began. Failed rows count too, because
-     * the model was paid for. Rows with no tokens (`skipped`) add nothing.
-     */
-    private function tokensUsedToday(): int
-    {
-        // The column is UTC and the clinic day starts at midnight in Manila, so the bound is converted to UTC first.
-        $dayStart = now((string) config('app.clinic_timezone'))->startOfDay()->utc();
-
-        return (int) IntakeSummary::query()
-            ->where('created_at', '>=', $dayStart)
-            ->toBase()
-            ->selectRaw('coalesce(sum(coalesce(input_tokens, 0) + coalesce(output_tokens, 0)), 0) as total')
-            ->value('total');
     }
 
     /**

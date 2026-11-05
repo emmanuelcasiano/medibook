@@ -106,6 +106,12 @@ return [
     |                  because model ids change. Set MEDIBOOK_AI_MODEL in .env.
     | daily_token_cap: input + output tokens per day. When the total is reached, new
     |                  summaries are "skipped" and the raw answers are still shown.
+    | price_input_per_million / price_output_per_million:
+    |                  US dollars per one million input or output tokens, for the
+    |                  estimated cost on the admin AI usage screen (PROJECT.md F11).
+    |                  Copy them from the provider's price page for the model above.
+    |                  Left empty, the screen says "Price not set" and not $0. Keep
+    |                  them as plain decimals ("0.30"), which are never cast to float.
     |
     */
 
@@ -117,6 +123,10 @@ return [
         'model' => env('MEDIBOOK_AI_MODEL'),
 
         'daily_token_cap' => (int) env('MEDIBOOK_AI_DAILY_TOKEN_CAP', 200_000),
+
+        'price_input_per_million' => env('MEDIBOOK_AI_PRICE_INPUT_PER_MILLION'),
+
+        'price_output_per_million' => env('MEDIBOOK_AI_PRICE_OUTPUT_PER_MILLION'),
     ],
 
 ];
