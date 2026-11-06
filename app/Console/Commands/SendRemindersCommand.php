@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 
 #[Signature('medibook:send-reminders')]
 #[Description('Email a reminder for every booking that starts in about 24 hours and has not had one yet')]
-final class SendReminders extends Command
+final class SendRemindersCommand extends Command
 {
     public function handle(SendAppointmentReminders $send): int
     {
