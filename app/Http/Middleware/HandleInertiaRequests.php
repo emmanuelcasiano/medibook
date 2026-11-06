@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\DemoMode;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,6 +39,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Only a flag: it shows the fake-data banner and the one-click logins. The server still checks it on the route.
+            'demo' => DemoMode::enabled(),
             'auth' => [
                 'user' => $request->user(),
             ],

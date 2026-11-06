@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Support\DemoMode;
 use Illuminate\Database\Seeder;
 
 // No WithoutModelEvents here: HasUlids fills `appointments.ulid` in a `creating` event,
@@ -15,6 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        DemoMode::ensureSeedingAllowed();
+
         $this->call([
             ServiceSeeder::class,
             UserSeeder::class,

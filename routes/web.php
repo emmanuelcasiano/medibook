@@ -11,6 +11,7 @@ use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Booking\DoctorController as BookingDoctorController;
 use App\Http\Controllers\Booking\ServiceController as BookingServiceController;
 use App\Http\Controllers\Booking\SlotController;
+use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
 use App\Http\Controllers\Doctor\TodayController;
 use App\Http\Controllers\Doctor\VisitNoteController;
@@ -34,6 +35,12 @@ Route::middleware('throttle:booking-pages')->prefix('book')->name('booking.')->g
     Route::get('{service:slug}/any', [SlotController::class, 'any'])->name('slots.any');
     Route::get('{service:slug}/doctors/{doctor}', [SlotController::class, 'doctor'])->scopeBindings()->name('slots.doctor');
 });
+
+// The one-click demo logins (PROJECT.md F12). `demo-mode` makes the route a 404 unless APP_DEMO is on, `guest` keeps a
+// signed-in user from being swapped into another account, and `{role}` is checked by enum binding (any other value is a 404).
+Route::post('demo/login/{role}', DemoLoginController::class)
+    ->middleware(['demo-mode', 'guest', 'throttle:demo-login'])
+    ->name('demo.login');
 
 // Every app route needs a signed-in, verified user. `two-factor` sends staff, doctors and admins to the 2FA
 // setup page until it is on. `role:` closes a whole group to other roles; Policies check each action inside it.

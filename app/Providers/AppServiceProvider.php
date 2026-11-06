@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\DemoMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -57,6 +58,10 @@ class AppServiceProvider extends ServiceProvider
         // Doctor buttons that write under a row lock ("Mark reviewed", and later visit notes and "Finish visit"). A
         // doctor works through a few patients an hour, so 30 a minute is far above real use and too few for a loop.
         RateLimiter::for('doctor-actions', fn (Request $request): Limit => Limit::perMinute(30)->by((string) (Auth::id() ?? $request->ip())));
+
+        // The one-click demo login is open to every guest (no password), and each click starts a session. It is per IP
+        // because the visitor has no account yet. 20 a minute covers a reviewer trying all four roles, and no more.
+        RateLimiter::for('demo-login', fn (Request $request): Limit => Limit::perMinute(20)->by((string) $request->ip()));
     }
 
     /**
@@ -70,8 +75,10 @@ class AppServiceProvider extends ServiceProvider
         // Off in production so a mistake there shows a page, not an error.
         Model::shouldBeStrict(! app()->isProduction());
 
+        // `migrate:fresh` is refused in production, except on the demo server: its nightly reset (routes/console.php)
+        // is that command, and everything in that database is fake data.
         DB::prohibitDestructiveCommands(
-            app()->isProduction(),
+            app()->isProduction() && ! DemoMode::enabled(),
         );
 
         Password::defaults(fn (): ?Password => app()->isProduction()

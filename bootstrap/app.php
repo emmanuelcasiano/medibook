@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureDemoModeIsOn;
 use App\Http\Middleware\EnsureTwoFactorIsEnabled;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->alias([
+            'demo-mode' => EnsureDemoModeIsOn::class,
             'role' => EnsureUserHasRole::class,
             'two-factor' => EnsureTwoFactorIsEnabled::class,
         ]);

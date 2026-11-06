@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Models\Doctor;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\DemoMode;
 use Illuminate\Database\Seeder;
 
 /**
@@ -17,6 +18,8 @@ class DoctorSeeder extends Seeder
 {
     public function run(): void
     {
+        DemoMode::ensureSeedingAllowed();
+
         // Weekday numbers follow Carbon: 0 = Sunday ... 6 = Saturday.
         $doctors = [
             [
