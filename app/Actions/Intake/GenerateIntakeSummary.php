@@ -10,12 +10,15 @@ use App\Models\Intake;
 use App\Models\IntakeSummary;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 final class GenerateIntakeSummary
 {
-    public function __construct(private readonly GetTokensUsedToday $tokensUsedToday) {}
+    public function __construct(
+        private readonly GetTokensUsedToday $tokensUsedToday,
+        private readonly BuildIntakePrompt $buildPrompt,
+        private readonly ValidateIntakeSummary $validateSummary,
+    ) {}
 
     /**
      * Make the AI draft summary of one intake (PROJECT.md F6) and save it in `intake_summaries`.
@@ -51,7 +54,7 @@ final class GenerateIntakeSummary
         $model = config('medibook.ai.model');
 
         $response = (new IntakeSummarizer)->prompt(
-            $this->buildPrompt($intake),
+            $this->buildPrompt->handle($intake->answers),
             provider: (string) config('medibook.ai.provider'),
             model: is_string($model) && $model !== '' ? $model : null,
         );
@@ -63,56 +66,13 @@ final class GenerateIntakeSummary
         ];
 
         try {
-            $summary = $this->validated($response->toArray());
+            $summary = $this->validateSummary->handle($response->toArray());
         } catch (ValidationException $e) {
             // Class name only: the message and the model output can carry the patient's words.
             return $this->replace($intake, SummaryStatus::Failed, [...$usage, 'error' => class_basename($e)]);
         }
 
         return $this->replace($intake, SummaryStatus::Ready, [...$usage, 'summary' => $summary]);
-    }
-
-    /**
-     * The prompt is the answers and nothing else. json_encode with JSON_HEX_TAG turns "<" and ">" into escapes, so a
-     * patient can't type "</intake>" to close the tag early and put text outside the data block.
-     */
-    private function buildPrompt(Intake $intake): string
-    {
-        $json = json_encode(
-            $intake->answers,
-            JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
-        );
-
-        return "<intake>\n{$json}\n</intake>";
-    }
-
-    /**
-     * Structured output helps, but the shape and the lengths are still checked before anything is saved. Only the four
-     * known keys come back, so a stray field from the model can't reach the database.
-     *
-     * @param  array<string, mixed>  $output
-     * @return array{chief_complaint: string, key_points: list<string>, allergies_and_meds: string, questions_for_doctor: list<string>}
-     *
-     * @throws ValidationException
-     */
-    private function validated(array $output): array
-    {
-        $valid = Validator::make($output, [
-            'chief_complaint' => ['required', 'string', 'max:500'],
-            'key_points' => ['present', 'array', 'max:10'],
-            'key_points.*' => ['string', 'max:500'],
-            'allergies_and_meds' => ['required', 'string', 'max:500'],
-            'questions_for_doctor' => ['present', 'array', 'max:10'],
-            'questions_for_doctor.*' => ['string', 'max:500'],
-        ])->validate();
-
-        // Built key by key, so the saved shape and its order never depend on the validator's output order.
-        return [
-            'chief_complaint' => $valid['chief_complaint'],
-            'key_points' => array_values($valid['key_points']),
-            'allergies_and_meds' => $valid['allergies_and_meds'],
-            'questions_for_doctor' => array_values($valid['questions_for_doctor']),
-        ];
     }
 
     /**
