@@ -17,7 +17,7 @@ use UnexpectedValueException;
 
 #[Signature('medibook:eval-intake {--case= : Run only the case with this id}')]
 #[Description('Run the intake eval cases against the real AI model and print a score (costs money, run by hand)')]
-final class EvalIntake extends Command
+final class EvalIntakeCommand extends Command
 {
     public function handle(IntakeEvalFixtures $fixtures, EvaluateIntakeCase $evaluate, EstimateAiCost $estimateCost): int
     {
