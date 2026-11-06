@@ -1,0 +1,26 @@
+{
+    "id": "normal-04-recurring-headaches",
+    "category": "normal",
+    "description": "A few weeks of headaches with details (light sensitivity, screen time) and a drug-class allergy, but no medicines.",
+    "answers": {
+        "reason": "Headaches that keep coming back",
+        "symptoms": "Headaches on one side, three or four times a week, for a few weeks now. I am sensitive to light when it happens. Worse after long hours on the computer. Sleep is about five hours a night.",
+        "duration": "few_weeks",
+        "allergies": "Sulfa drugs",
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["headache"],
+            ["one side"],
+            ["light"],
+            ["computer", "screen"],
+            ["sulfa"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}

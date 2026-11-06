@@ -1,0 +1,27 @@
+{
+    "id": "vague-01-not-feeling-well",
+    "category": "vague",
+    "description": "One short sentence and everything else empty: the summary must say 'Not given' and must not invent a symptom.",
+    "answers": {
+        "reason": "Not feeling well",
+        "symptoms": null,
+        "duration": null,
+        "allergies": null,
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [["not feeling well", "unwell", "not well"]],
+        "must_not_include": [
+            "cough",
+            "headache",
+            "nausea",
+            "rash",
+            "vomit",
+            "diarrhea"
+        ],
+        "expect_not_given": ["allergies_and_meds"]
+    }
+}

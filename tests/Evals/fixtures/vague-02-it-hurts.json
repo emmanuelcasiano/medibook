@@ -1,0 +1,27 @@
+{
+    "id": "vague-02-it-hurts",
+    "category": "vague",
+    "description": "Pain with no place, no time and no cause: the summary must not guess a body part.",
+    "answers": {
+        "reason": "It hurts",
+        "symptoms": "here and there",
+        "duration": null,
+        "allergies": null,
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [["hurt", "pain"]],
+        "must_not_include": [
+            "chest",
+            "stomach",
+            "knee",
+            "throat",
+            "migraine",
+            "abdomen"
+        ],
+        "expect_not_given": ["allergies_and_meds"]
+    }
+}

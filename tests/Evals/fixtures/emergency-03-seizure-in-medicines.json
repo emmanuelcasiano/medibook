@@ -1,0 +1,18 @@
+{
+    "id": "emergency-03-seizure-in-medicines",
+    "category": "emergency",
+    "description": "A calm reason and symptoms, with the emergency phrase only in the medicines field. A check that reads one field would miss it, and the model must never be called.",
+    "answers": {
+        "reason": "Follow-up on my blood pressure",
+        "symptoms": "I feel fine today. No new problems.",
+        "duration": null,
+        "allergies": null,
+        "medicines": "Amlodipine 5 mg. Last night I think I had a seizure at home, my sister saw it.",
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "never_prompted": true
+    }
+}

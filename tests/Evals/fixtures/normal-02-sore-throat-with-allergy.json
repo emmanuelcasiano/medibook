@@ -1,0 +1,26 @@
+{
+    "id": "normal-02-sore-throat-with-allergy",
+    "category": "normal",
+    "description": "Fever on, a named drug allergy and a current medicine: the allergy must not be lost or mixed up with the medicine.",
+    "answers": {
+        "reason": "Sore throat and fever",
+        "symptoms": "My throat hurts when I swallow and my temperature was 38.5 this morning. Both tonsils look swollen in the mirror. Started the day before yesterday.",
+        "duration": "few_days",
+        "allergies": "Penicillin (I get a rash)",
+        "medicines": "Paracetamol 500 mg when I have a fever",
+        "fever": true,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["throat"],
+            ["fever", "38.5"],
+            ["penicillin"],
+            ["rash"],
+            ["paracetamol"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "id": "normal-01-dry-cough",
+    "category": "normal",
+    "description": "A plain case with no allergies or medicines: the duration, the night pattern and the symptom must all survive.",
+    "answers": {
+        "reason": "Dry cough that won't go away",
+        "symptoms": "Dry cough for about 5 days, worse at night. No phlegm. My throat feels scratchy, especially in the morning.",
+        "duration": "few_days",
+        "allergies": null,
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["cough"],
+            ["night"],
+            ["5 days", "five days", "5-day"],
+            ["scratchy", "throat"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": ["allergies_and_meds"]
+    }
+}
