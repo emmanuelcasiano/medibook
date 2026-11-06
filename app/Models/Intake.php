@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property CarbonImmutable $submitted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Appointment $appointment `appointment_id` is a NOT NULL foreign key.
  */
 #[Fillable(['appointment_id', 'answers', 'submitted_at'])]
 class Intake extends Model

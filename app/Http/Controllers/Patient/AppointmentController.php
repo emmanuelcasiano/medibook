@@ -11,8 +11,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\CancelAppointmentRequest;
 use App\Http\Resources\Booking\MyAppointmentResource;
 use App\Models\Appointment;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,11 +21,11 @@ use Inertia\Response;
 final class AppointmentController extends Controller
 {
     /** "My appointments": the signed-in patient's own bookings, upcoming and past. */
-    public function index(Request $request, ListMyAppointments $list): Response
+    public function index(#[CurrentUser] User $patient, ListMyAppointments $list): Response
     {
         Gate::authorize('viewAny', Appointment::class);
 
-        $appointments = $list->handle($request->user());
+        $appointments = $list->handle($patient);
 
         return Inertia::render('my/appointments/index', [
             'upcoming' => $appointments['upcoming']
@@ -45,11 +46,11 @@ final class AppointmentController extends Controller
      * Cancel one of the patient's own bookings. The 2 hour rule, the status check and the row lock are in the
      * Action. A refusal there comes back as a validation error on `appointment` or `reason`.
      */
-    public function cancel(CancelAppointmentRequest $request, Appointment $appointment, CancelAppointment $cancel): RedirectResponse
+    public function cancel(CancelAppointmentRequest $request, #[CurrentUser] User $user, Appointment $appointment, CancelAppointment $cancel): RedirectResponse
     {
         Gate::authorize('cancel', $appointment);
 
-        $cancel->handle($request->user(), $appointment, $request->validated('reason'));
+        $cancel->handle($user, $appointment, $request->validated('reason'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Your appointment has been cancelled.')]);
 

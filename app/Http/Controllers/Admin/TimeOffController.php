@@ -11,8 +11,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTimeOffRequest;
 use App\Models\Doctor;
 use App\Models\TimeOff;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -50,7 +51,7 @@ final class TimeOffController extends Controller
         ]);
     }
 
-    public function store(StoreTimeOffRequest $request, Doctor $doctor, CreateTimeOff $create, CountBookingsInTimeOff $countBookings): RedirectResponse
+    public function store(StoreTimeOffRequest $request, #[CurrentUser] User $user, Doctor $doctor, CreateTimeOff $create, CountBookingsInTimeOff $countBookings): RedirectResponse
     {
         Gate::authorize('update', $doctor);
 
@@ -58,7 +59,7 @@ final class TimeOffController extends Controller
 
         $data = $request->validated();
 
-        $timeOff = $create->handle($request->user(), $doctor, $request->startsAt(), $request->endsAt(), $data['reason'] ?? null);
+        $timeOff = $create->handle($user, $doctor, $request->startsAt(), $request->endsAt(), $data['reason'] ?? null);
 
         $inside = $countBookings->handle($doctor, collect([$timeOff]))[$timeOff->id] ?? 0;
 
@@ -74,14 +75,14 @@ final class TimeOffController extends Controller
         return to_route('admin.doctors.time-offs.index', $doctor);
     }
 
-    public function destroy(Request $request, Doctor $doctor, TimeOff $timeOff, DeleteTimeOff $delete): RedirectResponse
+    public function destroy(#[CurrentUser] User $user, Doctor $doctor, TimeOff $timeOff, DeleteTimeOff $delete): RedirectResponse
     {
         Gate::authorize('update', $doctor);
 
         $doctor->loadMissing('user');
 
         // The route binds `{timeOff}` through this doctor (scoped), so another doctor's time off is a 404 here.
-        $delete->handle($request->user(), $timeOff);
+        $delete->handle($user, $timeOff);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Time off removed for :name.', ['name' => $doctor->user->name])]);
 

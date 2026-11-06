@@ -12,8 +12,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Staff\CancelAppointmentRequest;
 use App\Http\Requests\Staff\MoveAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -28,33 +29,33 @@ use Inertia\Inertia;
  */
 final class AppointmentController extends Controller
 {
-    public function checkIn(Request $request, Appointment $appointment, CheckInAppointment $checkIn): RedirectResponse
+    public function checkIn(#[CurrentUser] User $user, Appointment $appointment, CheckInAppointment $checkIn): RedirectResponse
     {
         Gate::authorize('checkIn', $appointment);
 
-        $appointment = $checkIn->handle($request->user(), $appointment)->loadMissing('patient:id,name');
+        $appointment = $checkIn->handle($user, $appointment)->loadMissing('patient:id,name');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name is checked in.', ['name' => $appointment->patient->name])]);
 
         return $this->backToPanel($appointment);
     }
 
-    public function noShow(Request $request, Appointment $appointment, MarkNoShow $markNoShow): RedirectResponse
+    public function noShow(#[CurrentUser] User $user, Appointment $appointment, MarkNoShow $markNoShow): RedirectResponse
     {
         Gate::authorize('markNoShow', $appointment);
 
-        $appointment = $markNoShow->handle($request->user(), $appointment)->loadMissing('patient:id,name');
+        $appointment = $markNoShow->handle($user, $appointment)->loadMissing('patient:id,name');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name was marked as a no-show.', ['name' => $appointment->patient->name])]);
 
         return $this->backToPanel($appointment);
     }
 
-    public function cancel(CancelAppointmentRequest $request, Appointment $appointment, CancelAppointment $cancel): RedirectResponse
+    public function cancel(CancelAppointmentRequest $request, #[CurrentUser] User $user, Appointment $appointment, CancelAppointment $cancel): RedirectResponse
     {
         Gate::authorize('cancel', $appointment);
 
-        $appointment = $cancel->handle($request->user(), $appointment, $request->validated('reason'))->loadMissing('patient:id,name');
+        $appointment = $cancel->handle($user, $appointment, $request->validated('reason'))->loadMissing('patient:id,name');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('The appointment of :name was cancelled.', ['name' => $appointment->patient->name])]);
 
@@ -64,11 +65,11 @@ final class AppointmentController extends Controller
         ]);
     }
 
-    public function move(MoveAppointmentRequest $request, Appointment $appointment, MoveAppointment $move): RedirectResponse
+    public function move(MoveAppointmentRequest $request, #[CurrentUser] User $user, Appointment $appointment, MoveAppointment $move): RedirectResponse
     {
         Gate::authorize('move', $appointment);
 
-        $moved = $move->handle($request->user(), $appointment, $request->doctor(), $request->startsAt())->loadMissing('patient:id,name');
+        $moved = $move->handle($user, $appointment, $request->doctor(), $request->startsAt())->loadMissing('patient:id,name');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('The appointment of :name was moved to :time.', [
             'name' => $moved->patient->name,

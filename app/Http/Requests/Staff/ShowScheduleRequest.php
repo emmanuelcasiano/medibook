@@ -6,6 +6,7 @@ namespace App\Http\Requests\Staff;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
+use LogicException;
 
 final class ShowScheduleRequest extends FormRequest
 {
@@ -72,6 +73,7 @@ final class ShowScheduleRequest extends FormRequest
             return CarbonImmutable::now($timezone)->startOfDay();
         }
 
-        return CarbonImmutable::createFromFormat('!'.self::DATE_FORMAT, $date, $timezone);
+        return CarbonImmutable::createFromFormat('!'.self::DATE_FORMAT, $date, $timezone)
+            ?? throw new LogicException('The date is read before validation passed.');
     }
 }

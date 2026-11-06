@@ -8,7 +8,9 @@ use App\Actions\Admin\UpdateWorkingHours;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateWorkingHoursRequest;
 use App\Models\Doctor;
+use App\Models\User;
 use App\Models\WorkingHour;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -41,7 +43,7 @@ final class WorkingHourController extends Controller
         ]);
     }
 
-    public function update(UpdateWorkingHoursRequest $request, Doctor $doctor, UpdateWorkingHours $update): RedirectResponse
+    public function update(UpdateWorkingHoursRequest $request, #[CurrentUser] User $user, Doctor $doctor, UpdateWorkingHours $update): RedirectResponse
     {
         Gate::authorize('update', $doctor);
 
@@ -49,7 +51,7 @@ final class WorkingHourController extends Controller
 
         $data = $request->validated();
 
-        $update->handle($request->user(), $doctor, array_values(array_map(fn (array $range): array => [
+        $update->handle($user, $doctor, array_values(array_map(fn (array $range): array => [
             'weekday' => (int) $range['weekday'],
             'starts_at' => (string) $range['starts_at'],
             'ends_at' => (string) $range['ends_at'],

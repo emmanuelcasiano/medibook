@@ -82,7 +82,8 @@ final class MoveAppointmentRequest extends FormRequest
     /** The new start time as a UTC instant. Call it only after validation passed. */
     public function startsAt(): CarbonImmutable
     {
-        return CarbonImmutable::createFromFormat(self::STARTS_AT_FORMAT, (string) $this->input('starts_at'), 'UTC');
+        return CarbonImmutable::createFromFormat(self::STARTS_AT_FORMAT, (string) $this->input('starts_at'), 'UTC')
+            ?? throw new LogicException('The start time is read before validation passed.');
     }
 
     /** @return array<string, string> */

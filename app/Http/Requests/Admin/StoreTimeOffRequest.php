@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use LogicException;
 
 final class StoreTimeOffRequest extends FormRequest
 {
@@ -94,6 +95,9 @@ final class StoreTimeOffRequest extends FormRequest
     /** The admin types clinic time. The database keeps UTC, so convert here, at the edge. */
     private function clinicInputToUtc(string $value): CarbonImmutable
     {
-        return CarbonImmutable::createFromFormat(self::INPUT_FORMAT, $value, config('app.clinic_timezone'))->utc();
+        $local = CarbonImmutable::createFromFormat(self::INPUT_FORMAT, $value, config('app.clinic_timezone'))
+            ?? throw new LogicException('The time is read before validation passed.');
+
+        return $local->utc();
     }
 }

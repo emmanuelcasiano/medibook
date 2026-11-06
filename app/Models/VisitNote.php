@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $doctor_id
  * @property string $body The doctor's private note, encrypted at rest. Never log it.
  * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property Carbon $updated_at The column allows null, but notes are only written through Eloquent (`SaveVisitNote`), which always stamps it.
  */
 #[Fillable(['appointment_id', 'doctor_id', 'body'])]
 class VisitNote extends Model

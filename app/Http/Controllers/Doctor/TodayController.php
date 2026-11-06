@@ -8,8 +8,9 @@ use App\Actions\Doctor\ListTodaysAppointments;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Doctor\TodayAppointmentResource;
 use App\Models\Appointment;
+use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\Request;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,7 +21,7 @@ final class TodayController extends Controller
      * The doctor's own appointments for today. The `role:doctor` group closes the route to other roles, and the
      * Action scopes the list to the signed-in doctor. The list is not paginated: one clinic day is a bounded list.
      */
-    public function index(Request $request, ListTodaysAppointments $list): Response
+    public function index(#[CurrentUser] User $doctor, ListTodaysAppointments $list): Response
     {
         Gate::authorize('viewAny', Appointment::class);
 
@@ -29,7 +30,7 @@ final class TodayController extends Controller
 
         return Inertia::render('doctor/today', [
             'date' => $today->format('Y-m-d'),
-            'appointments' => $list->handle($request->user(), $today)
+            'appointments' => $list->handle($doctor, $today)
                 ->map(fn (Appointment $appointment): array => (new TodayAppointmentResource($appointment))->resolve())
                 ->values()
                 ->all(),

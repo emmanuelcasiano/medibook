@@ -13,6 +13,8 @@ use App\Http\Resources\Booking\BookableDoctorResource;
 use App\Http\Resources\Booking\BookableServiceResource;
 use App\Models\Appointment;
 use App\Models\Service;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -47,11 +49,10 @@ final class BookingController extends Controller
      * The time was checked against the slot finders in the Form Request. A clash or a patient limit comes back as a
      * validation error from the Action.
      */
-    public function store(ConfirmBookingRequest $request, Service $service, BookAppointment $book, BookAnyDoctor $bookAnyDoctor): RedirectResponse
+    public function store(ConfirmBookingRequest $request, #[CurrentUser] User $patient, Service $service, BookAppointment $book, BookAnyDoctor $bookAnyDoctor): RedirectResponse
     {
         Gate::authorize('create', Appointment::class);
 
-        $patient = $request->user();
         $doctor = $request->doctor();
 
         $appointment = $doctor === null

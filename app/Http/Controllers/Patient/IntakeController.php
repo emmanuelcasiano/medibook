@@ -13,6 +13,8 @@ use App\Http\Resources\Booking\BookableServiceResource;
 use App\Http\Resources\Intake\IntakeResource;
 use App\Models\Appointment;
 use App\Models\Intake;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -68,11 +70,11 @@ final class IntakeController extends Controller
      * Save the form. The patient is always the signed-in user and the booking comes from the URL. The "until
      * check-in" rule, the row lock and the encryption are in the Action, which checks the Policy itself.
      */
-    public function update(SaveIntakeRequest $request, Appointment $appointment, SaveIntake $save): RedirectResponse
+    public function update(SaveIntakeRequest $request, #[CurrentUser] User $user, Appointment $appointment, SaveIntake $save): RedirectResponse
     {
         Gate::authorize('view', $appointment);
 
-        $save->handle($request->user(), $appointment, $request->answers());
+        $save->handle($user, $appointment, $request->answers());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Your intake was saved.')]);
 

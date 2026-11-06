@@ -11,6 +11,7 @@ use App\Models\Service;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use LogicException;
 
 /**
  * The chosen time for the confirm page (GET, in the query string) and for the booking itself (POST, in the body).
@@ -99,7 +100,8 @@ final class ConfirmBookingRequest extends FormRequest
     /** The chosen start time as a UTC instant. Call it only after validation passed. */
     public function startsAt(): CarbonImmutable
     {
-        return CarbonImmutable::createFromFormat(self::STARTS_AT_FORMAT, (string) $this->input('starts_at'), 'UTC');
+        return CarbonImmutable::createFromFormat(self::STARTS_AT_FORMAT, (string) $this->input('starts_at'), 'UTC')
+            ?? throw new LogicException('The start time is read before validation passed.');
     }
 
     /**

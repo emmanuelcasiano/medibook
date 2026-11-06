@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateDoctorRequest;
 use App\Models\Doctor;
 use App\Models\Service;
 use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -72,7 +73,7 @@ final class DoctorController extends Controller
         ]);
     }
 
-    public function update(UpdateDoctorRequest $request, Doctor $doctor, UpdateDoctor $update): RedirectResponse
+    public function update(UpdateDoctorRequest $request, #[CurrentUser] User $user, Doctor $doctor, UpdateDoctor $update): RedirectResponse
     {
         Gate::authorize('update', $doctor);
 
@@ -81,7 +82,7 @@ final class DoctorController extends Controller
         $data = $request->validated();
 
         $update->handle(
-            $request->user(),
+            $user,
             $doctor,
             $data['specialty'],
             $data['bio'] ?? null,
