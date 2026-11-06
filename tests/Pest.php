@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\TimeOff;
 use App\Models\User;
 use App\Models\WorkingHour;
+use App\Support\DemoMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
@@ -70,6 +71,25 @@ function userWithRole(Role $role, bool $twoFactor = true): User
     }
 
     $user = $factory->create();
+
+    if ($role === Role::Doctor) {
+        Doctor::factory()->create(['user_id' => $user->id]);
+    }
+
+    return $user;
+}
+
+/**
+ * The seeded demo user of a role, made the way `UserSeeder` makes it: the fixed email and no 2FA.
+ * A doctor also gets a doctor profile.
+ */
+function demoUser(Role $role): User
+{
+    $user = User::factory()->state([
+        'role' => $role,
+        'email' => DemoMode::emailFor($role),
+        'birth_date' => $role === Role::Patient ? '1990-01-01' : null,
+    ])->create();
 
     if ($role === Role::Doctor) {
         Doctor::factory()->create(['user_id' => $user->id]);

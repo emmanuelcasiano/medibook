@@ -11,6 +11,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\DemoMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
@@ -32,6 +33,8 @@ class DemoScheduleSeeder extends Seeder
 
     public function run(): void
     {
+        DemoMode::ensureSeedingAllowed();
+
         $this->addDoctors();
         $this->addAppointments();
     }

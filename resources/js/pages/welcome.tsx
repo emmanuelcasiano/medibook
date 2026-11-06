@@ -21,6 +21,7 @@ import {
 import { Fragment, useEffect, useRef, useState } from 'react';
 import AppLogoMark from '@/components/app-logo-mark';
 import DoctorAvatar from '@/components/booking/doctor-avatar';
+import DemoBanner from '@/components/demo-banner';
 import { Button } from '@/components/ui/button';
 import { dashboard, home, login, register } from '@/routes';
 import { services } from '@/routes/booking';
@@ -302,6 +303,8 @@ export default function Welcome({ doctors }: Props) {
                 >
                     Skip to the content
                 </a>
+
+                <DemoBanner />
 
                 <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur">
                     <div

@@ -1,6 +1,7 @@
 import type { InertiaLinkProps } from '@inertiajs/react';
 import { Link, usePage } from '@inertiajs/react';
 import AppLogoMark from '@/components/app-logo-mark';
+import DemoBanner from '@/components/demo-banner';
 import { Button } from '@/components/ui/button';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn } from '@/lib/utils';
@@ -52,6 +53,8 @@ export default function BookingLayout({
             >
                 Skip to the booking steps
             </a>
+
+            <DemoBanner />
 
             <header className="border-b">
                 <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">

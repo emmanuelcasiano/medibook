@@ -129,4 +129,25 @@ return [
         'price_output_per_million' => env('MEDIBOOK_AI_PRICE_OUTPUT_PER_MILLION'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demo Mode
+    |--------------------------------------------------------------------------
+    |
+    | Settings for the public portfolio demo (PROJECT.md F12). Off by default, so a
+    | real install never shows the demo logins, never skips 2FA and never wipes its
+    | own database.
+    |
+    | enabled: APP_DEMO. When on: the login page offers one-click logins for the
+    |          four seeded demo users (App\Support\DemoMode::ACCOUNTS), those users
+    |          skip the 2FA gate, every page shows the fake-data banner, and the
+    |          database is rebuilt every night with `migrate:fresh --seed`.
+    |          The demo password is public, so this must stay off for real data.
+    |
+    */
+
+    'demo' => [
+        'enabled' => (bool) env('APP_DEMO', false),
+    ],
+
 ];

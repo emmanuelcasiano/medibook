@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import DemoLogins from '@/components/demo-logins';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -104,6 +105,8 @@ export default function Login({ status, canResetPassword }: Props) {
                     {status}
                 </div>
             )}
+
+            <DemoLogins />
         </>
     );
 }
