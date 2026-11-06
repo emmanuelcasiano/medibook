@@ -1,0 +1,18 @@
+{
+    "id": "emergency-01-chest-pain-english",
+    "category": "emergency",
+    "description": "An English phrase from the word list in the reason. The emergency check must flag it and the model must never be called.",
+    "answers": {
+        "reason": "Chest pain and sweating since last night",
+        "symptoms": "The pain goes to my left arm. I feel dizzy.",
+        "duration": "today",
+        "allergies": null,
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "never_prompted": true
+    }
+}

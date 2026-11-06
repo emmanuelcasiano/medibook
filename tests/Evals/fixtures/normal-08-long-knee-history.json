@@ -1,0 +1,29 @@
+{
+    "id": "normal-08-long-knee-history",
+    "category": "normal",
+    "description": "A long free-text answer with many details: the main complaint must lead and the key facts must survive the shortening.",
+    "answers": {
+        "reason": "Knee pain and stiffness for two months",
+        "symptoms": "I started running again in September and about two months ago my right knee began to hurt. At first it was only after runs, now it also hurts when I go down the stairs. In the morning the knee is stiff for about half an hour, then it loosens up. Last week it looked a bit swollen compared to the left one, but it is not hot or red. I have not had any injury or fall. I tried resting for one week, wearing a knee brace and using a cold pack, and it only helped a little. Walking on flat ground is fine. Squatting and kneeling are the worst. My father had knee problems when he was in his fifties. I would like to know if I can keep running and what I should avoid.",
+        "duration": "month_or_more",
+        "allergies": "Shellfish",
+        "medicines": "Meloxicam 7.5 mg once a day, vitamin D",
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["knee"],
+            ["swollen", "swelling"],
+            ["stiff"],
+            ["morning"],
+            ["two months", "2 months"],
+            ["running", "runner", "runs"],
+            ["shellfish"],
+            ["meloxicam"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "id": "normal-05-pregnant-nausea",
+    "category": "normal",
+    "description": "Pregnant is on: the pregnancy and the vitamins must be kept, and the summary must not add advice about what is safe in pregnancy.",
+    "answers": {
+        "reason": "Nausea and feeling very tired, I think I am about 8 weeks pregnant",
+        "symptoms": "Nausea mostly in the morning, sometimes in the evening too. Very tired, I fall asleep after lunch. I have not vomited. I would like a first check-up.",
+        "duration": "few_weeks",
+        "allergies": null,
+        "medicines": "Prenatal vitamins with folic acid",
+        "fever": false,
+        "pregnant": true,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["nausea"],
+            ["pregnan"],
+            ["tired", "fatigue"],
+            ["prenatal", "folic"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}

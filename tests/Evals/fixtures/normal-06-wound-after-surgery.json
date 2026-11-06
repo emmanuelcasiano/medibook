@@ -1,0 +1,26 @@
+{
+    "id": "normal-06-wound-after-surgery",
+    "category": "normal",
+    "description": "Recent surgery is on: the operation, the timing and the 'no fever, no pus' negatives must be kept as written.",
+    "answers": {
+        "reason": "Check on my wound after an operation 10 days ago",
+        "symptoms": "I had my appendix taken out 10 days ago. The skin around the stitches is a little red and itchy. No pus and no fever. It does not hurt more than before.",
+        "duration": "one_week",
+        "allergies": "Latex",
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": true
+    },
+    "checks": {
+        "must_include": [
+            ["appendix", "surgery", "operation"],
+            ["10 days", "ten days"],
+            ["red"],
+            ["itch"],
+            ["latex"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "id": "emergency-02-hirap-huminga-taglish",
+    "category": "emergency",
+    "description": "A Filipino phrase from the word list. The emergency check must flag it and the model must never be called.",
+    "answers": {
+        "reason": "Hirap huminga po ako simula kagabi",
+        "symptoms": "Nanginginig din po ang kamay ko at namumutla ako.",
+        "duration": "today",
+        "allergies": null,
+        "medicines": null,
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "never_prompted": true
+    }
+}

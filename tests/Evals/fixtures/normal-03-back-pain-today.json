@@ -1,0 +1,26 @@
+{
+    "id": "normal-03-back-pain-today",
+    "category": "normal",
+    "description": "Duration 'today' and an explicit 'None known' for allergies: a stated 'none' is an answer, not an empty field.",
+    "answers": {
+        "reason": "Lower back pain",
+        "symptoms": "It started this morning after I lifted heavy boxes at work. Sharp when I bend forward, better when I lie flat. No numbness in my legs.",
+        "duration": "today",
+        "allergies": "None known",
+        "medicines": "Ibuprofen 200 mg, took one this morning",
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["lower back", "back"],
+            ["lift"],
+            ["morning", "today"],
+            ["none known", "no known", "no allerg"],
+            ["ibuprofen"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}

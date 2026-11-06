@@ -1,0 +1,26 @@
+{
+    "id": "normal-07-taglish-stomach",
+    "category": "normal",
+    "description": "Taglish text that is not an emergency (no phrase from the word list): the facts must come through from a mixed-language answer.",
+    "answers": {
+        "reason": "Masakit ang tiyan ko at nagtatae ako",
+        "symptoms": "Dalawang araw na po. Nagtatae ako ng 4 na beses ngayong araw tapos medyo nahihilo rin ako. Wala namang dugo sa dumi. Nakakakain pa naman ako ng lugaw.",
+        "duration": "few_days",
+        "allergies": "Wala po",
+        "medicines": "Oral rehydration salts (ORS)",
+        "fever": false,
+        "pregnant": false,
+        "recent_surgery": false
+    },
+    "checks": {
+        "must_include": [
+            ["tiyan", "stomach", "abdominal", "abdomen"],
+            ["nagtatae", "diarrhea", "diarrhoea", "loose stool"],
+            ["4", "apat", "four"],
+            ["nahihilo", "dizz"],
+            ["ors", "rehydration"]
+        ],
+        "must_not_include": [],
+        "expect_not_given": []
+    }
+}
