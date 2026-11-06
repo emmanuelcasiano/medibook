@@ -10,8 +10,8 @@ use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,14 +52,14 @@ final class UserController extends Controller
         ]);
     }
 
-    public function store(StoreUserRequest $request, CreateStaffUser $create): RedirectResponse
+    public function store(StoreUserRequest $request, #[CurrentUser] User $actor, CreateStaffUser $create): RedirectResponse
     {
         Gate::authorize('create', User::class);
 
         $data = $request->validated();
 
         $user = $create->handle(
-            $request->user(),
+            $actor,
             $data['name'],
             $data['email'],
             $data['password'],
@@ -75,11 +75,11 @@ final class UserController extends Controller
         return to_route('admin.users.index');
     }
 
-    public function deactivate(Request $request, User $user, DeactivateUser $deactivate): RedirectResponse
+    public function deactivate(#[CurrentUser] User $actor, User $user, DeactivateUser $deactivate): RedirectResponse
     {
         Gate::authorize('deactivate', $user);
 
-        $deactivate->handle($request->user(), $user);
+        $deactivate->handle($actor, $user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been deactivated.', ['name' => $user->name])]);
 

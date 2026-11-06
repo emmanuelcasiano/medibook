@@ -39,6 +39,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read bool $intake_exists Only there after `withExists('intake')`.
+ * @property-read User $patient `patient_id`, `doctor_id` and `service_id` are NOT NULL foreign keys, so these three never come back null.
+ * @property-read Doctor $doctor
+ * @property-read Service $service
  */
 // `active_key` is not fillable: it is a generated column and MySQL refuses writes to it.
 // `status`, `emergency_flag` and the cancel/check-in columns are fillable because Actions call create()/update()

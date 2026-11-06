@@ -5,6 +5,7 @@ namespace App\Http\Requests\Settings;
 use App\Concerns\ProfileValidationRules;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use LogicException;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -17,6 +18,9 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        // `profileRules()` takes null for registration. Here a missing user must fail, not switch to those rules.
+        $user = $this->user() ?? throw new LogicException('The profile form is for a signed-in user.');
+
+        return $this->profileRules($user->id);
     }
 }

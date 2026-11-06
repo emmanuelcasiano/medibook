@@ -20,7 +20,8 @@ use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\ScheduleController;
 use App\Http\Controllers\WelcomeController;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', WelcomeController::class)->name('home');
@@ -48,7 +49,7 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
     // There is no dashboard page: each role has its own work screen. The name stays, because Fortify's `home` and
     // the links after login, register and verify point here. The middleware above runs first, so a user who must
     // set up 2FA goes to the security page before this redirect.
-    Route::get('dashboard', fn (Request $request) => redirect()->route($request->user()->role->homeRoute()))->name('dashboard');
+    Route::get('dashboard', fn (#[CurrentUser] User $user) => redirect()->route($user->role->homeRoute()))->name('dashboard');
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');

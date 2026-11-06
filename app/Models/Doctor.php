@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $bio
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read User $user `user_id` is a NOT NULL foreign key, so a doctor always has an account.
  */
 #[Fillable(['user_id', 'specialty', 'bio'])]
 class Doctor extends Model

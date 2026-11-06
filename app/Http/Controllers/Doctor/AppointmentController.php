@@ -14,7 +14,9 @@ use App\Http\Resources\Doctor\IntakeDetailResource;
 use App\Http\Resources\Doctor\IntakeSummaryResource;
 use App\Http\Resources\Doctor\VisitNoteResource;
 use App\Models\Appointment;
+use App\Models\User;
 use App\Support\AuditLogger;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -103,11 +105,11 @@ final class AppointmentController extends Controller
      * the draft that was on the page. The appointment Policy runs here, and the Action runs the intake Policy, the
      * ready-summary rule and the token check.
      */
-    public function review(ReviewSummaryRequest $request, Appointment $appointment, MarkSummaryReviewed $markReviewed): RedirectResponse
+    public function review(ReviewSummaryRequest $request, #[CurrentUser] User $user, Appointment $appointment, MarkSummaryReviewed $markReviewed): RedirectResponse
     {
         Gate::authorize('view', $appointment);
 
-        $markReviewed->handle($request->user(), $appointment, $request->validated('version'));
+        $markReviewed->handle($user, $appointment, $request->validated('version'));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('The summary is marked as reviewed.')]);
 
@@ -118,11 +120,11 @@ final class AppointmentController extends Controller
      * "Finish visit". No input: the doctor comes from the session and the new status is fixed by the Action. The
      * appointment Policy runs here, and again inside the Action.
      */
-    public function complete(Request $request, Appointment $appointment, CompleteAppointment $completeAppointment): RedirectResponse
+    public function complete(#[CurrentUser] User $user, Appointment $appointment, CompleteAppointment $completeAppointment): RedirectResponse
     {
         Gate::authorize('complete', $appointment);
 
-        $completeAppointment->handle($request->user(), $appointment);
+        $completeAppointment->handle($user, $appointment);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('The visit is finished.')]);
 

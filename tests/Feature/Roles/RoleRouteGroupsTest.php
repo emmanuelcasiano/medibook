@@ -30,6 +30,38 @@ it('sends guests to the login page', function (string $routeName) {
     'staff area' => 'staff.home',
     'doctor area' => 'doctor.home',
     'patient area' => 'my.home',
+    'dashboard' => 'dashboard',
+]);
+
+// Controllers get the signed-in user from `#[CurrentUser]`. A guest must be stopped by the `auth` middleware before the
+// controller is built, so every write route answers with a redirect to login and never a 500.
+it('sends guests to the login page on every write route', function (string $method, string $routeName, array $parameters) {
+    $this->call($method, route($routeName, $parameters))->assertRedirect(route('login'));
+
+    $this->assertGuest();
+})->with([
+    'update doctor' => ['PUT', 'admin.doctors.update', ['doctor' => 1]],
+    'add time off' => ['POST', 'admin.doctors.time-offs.store', ['doctor' => 1]],
+    'remove time off' => ['DELETE', 'admin.doctors.time-offs.destroy', ['doctor' => 1, 'timeOff' => 1]],
+    'save working hours' => ['PUT', 'admin.doctors.working-hours.update', ['doctor' => 1]],
+    'create service' => ['POST', 'admin.services.store', []],
+    'update service' => ['PUT', 'admin.services.update', ['service' => 1]],
+    'delete service' => ['DELETE', 'admin.services.destroy', ['service' => 1]],
+    'create user' => ['POST', 'admin.users.store', []],
+    'deactivate user' => ['PATCH', 'admin.users.deactivate', ['user' => 1]],
+    'confirm booking' => ['POST', 'booking.store', ['service' => 'any-service']],
+    'finish visit' => ['POST', 'doctor.appointments.complete', ['appointment' => 'x']],
+    'review summary' => ['POST', 'doctor.appointments.summary.review', ['appointment' => 'x']],
+    'save visit note' => ['PUT', 'doctor.appointments.visit-note.update', ['appointment' => 'x']],
+    'patient cancel' => ['POST', 'my.appointments.cancel', ['appointment' => 'x']],
+    'save intake' => ['PUT', 'my.appointments.intake.update', ['appointment' => 'x']],
+    'change password' => ['PUT', 'user-password.update', []],
+    'update profile' => ['PATCH', 'profile.update', []],
+    'delete profile' => ['DELETE', 'profile.destroy', []],
+    'staff cancel' => ['POST', 'staff.appointments.cancel', ['appointment' => 'x']],
+    'check in' => ['POST', 'staff.appointments.check-in', ['appointment' => 'x']],
+    'move' => ['POST', 'staff.appointments.move', ['appointment' => 'x']],
+    'no-show' => ['POST', 'staff.appointments.no-show', ['appointment' => 'x']],
 ]);
 
 it('keeps unverified users out of every route group', function (string $routeName, Role $role) {

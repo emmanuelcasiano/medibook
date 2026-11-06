@@ -12,8 +12,9 @@ use App\Http\Requests\Admin\StoreServiceRequest;
 use App\Http\Requests\Admin\UpdateServiceRequest;
 use App\Models\Doctor;
 use App\Models\Service;
+use App\Models\User;
+use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -60,14 +61,14 @@ final class ServiceController extends Controller
         return Inertia::render('admin/services/create');
     }
 
-    public function store(StoreServiceRequest $request, CreateService $create): RedirectResponse
+    public function store(StoreServiceRequest $request, #[CurrentUser] User $user, CreateService $create): RedirectResponse
     {
         Gate::authorize('create', Service::class);
 
         $data = $request->validated();
 
         $service = $create->handle(
-            $request->user(),
+            $user,
             $data['name'],
             $data['description'] ?? null,
             (int) $data['duration_minutes'],
@@ -96,14 +97,14 @@ final class ServiceController extends Controller
         ]);
     }
 
-    public function update(UpdateServiceRequest $request, Service $service, UpdateService $update): RedirectResponse
+    public function update(UpdateServiceRequest $request, #[CurrentUser] User $user, Service $service, UpdateService $update): RedirectResponse
     {
         Gate::authorize('update', $service);
 
         $data = $request->validated();
 
         $update->handle(
-            $request->user(),
+            $user,
             $service,
             $data['name'],
             $data['description'] ?? null,
@@ -117,11 +118,11 @@ final class ServiceController extends Controller
         return to_route('admin.services.index');
     }
 
-    public function destroy(Request $request, Service $service, DeleteService $delete): RedirectResponse
+    public function destroy(#[CurrentUser] User $user, Service $service, DeleteService $delete): RedirectResponse
     {
         Gate::authorize('delete', $service);
 
-        $delete->handle($request->user(), $service);
+        $delete->handle($user, $service);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been deleted.', ['name' => $service->name])]);
 
