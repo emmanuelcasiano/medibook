@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -64,6 +65,13 @@ class AppServiceProvider extends ServiceProvider
         // The one-click demo login is open to every guest (no password), and each click starts a session. It is per IP
         // because the visitor has no account yet. 20 a minute covers a reviewer trying all four roles, and no more.
         RateLimiter::for('demo-login', fn (Request $request): Limit => Limit::perMinute(20)->by((string) $request->ip()));
+
+        // Sign-up and password reset are open to every guest and write a row or send an email. Per IP, because the
+        // visitor has no account yet. 5 a minute is more than a person needs (a typo or two) and too few to fill the
+        // users table or flood an inbox. The reset form and the "send link" form share one counter, as a real reset
+        // uses each once. Attached by `ThrottleAccountForms`, since Fortify only limits login and 2FA.
+        RateLimiter::for('register', fn (Request $request): Limit => Limit::perMinute(5)->by((string) $request->ip()));
+        RateLimiter::for('password-reset', fn (Request $request): Limit => Limit::perMinute(5)->by((string) $request->ip()));
     }
 
     /**
@@ -72,6 +80,10 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        // Behind nginx the app sees plain HTTP, so without this a link, a redirect or a Wayfinder URL could be built as
+        // http:// on a TLS site. Only production: local development runs on http://localhost.
+        URL::forceHttps(app()->isProduction());
 
         // Throws on lazy loading (N+1), silently dropped attributes and missing attributes.
         // Off in production so a mistake there shows a page, not an error.

@@ -6,6 +6,8 @@ use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ThrottleAccountForms;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,8 +29,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'two-factor' => EnsureTwoFactorIsEnabled::class,
         ]);
 
+        // In production nginx on this same server ends TLS and passes the request on as plain HTTP. Trusting only
+        // 127.0.0.1 lets the app believe `X-Forwarded-Proto: https` from nginx and from nobody else (a visitor who sends
+        // that header is ignored). If the proxy ever moves to another host, change this address.
+        $middleware->trustProxies(at: '127.0.0.1');
+
+        // Global, not in the `web` group: `auth` and `throttle` are sorted ahead of group middleware, so a redirect to
+        // the login page or a 429 would leave without these headers. A 404 for an unknown URL never enters `web` at all.
+        $middleware->append(SecurityHeaders::class);
+
         // Runs on every web request, so a deactivated user is signed out on their next click, wherever they are.
         $middleware->web(append: [
+            ThrottleAccountForms::class,
             EnsureUserIsActive::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
