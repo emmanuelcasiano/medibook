@@ -38,34 +38,38 @@ export default function SummaryCard({
     return (
         <section
             aria-labelledby="ai-summary-heading"
-            className="space-y-4 rounded-xl border bg-muted/30 p-5"
+            className="overflow-hidden rounded-xl border-[1.5px] border-ai-line bg-card"
         >
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-ai-line bg-ai-soft px-5 py-3.5">
                 <h2
                     id="ai-summary-heading"
                     ref={headingRef}
                     tabIndex={-1}
-                    className="flex items-center gap-2 rounded-sm text-lg font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex items-center gap-2 rounded-sm text-base font-semibold text-ai-ink outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
                 >
                     <Sparkles aria-hidden className="size-4" />
                     AI summary
                 </h2>
                 {summary?.status === 'ready' && summary.summary !== null && (
-                    <Badge variant="outline">
+                    // White on the light-mode indigo is 6.5:1. The dark-mode indigo is light, so white would be 2.5:1:
+                    // there it uses the soft background with the dark-mode ink (the pair the header already uses).
+                    <span className="rounded-md bg-ai px-2 py-0.5 text-xs font-bold text-white dark:border dark:border-ai-line dark:bg-ai-soft dark:text-ai-ink">
                         AI draft. The doctor must review.
-                    </Badge>
+                    </span>
                 )}
             </div>
 
-            <SummaryBody
-                appointmentUlid={appointmentUlid}
-                summary={summary}
-                hasIntake={hasIntake}
-                emergency={emergency}
-                // The button is gone once the review is saved, so focus would drop to the top of the page. The
-                // card heading is the place to go instead (the staff panel does the same).
-                onReviewed={() => headingRef.current?.focus()}
-            />
+            <div className="space-y-4 p-5">
+                <SummaryBody
+                    appointmentUlid={appointmentUlid}
+                    summary={summary}
+                    hasIntake={hasIntake}
+                    emergency={emergency}
+                    // The button is gone once the review is saved, so focus would drop to the top of the page. The
+                    // card heading is the place to go instead (the staff panel does the same).
+                    onReviewed={() => headingRef.current?.focus()}
+                />
+            </div>
         </section>
     );
 }
@@ -266,8 +270,8 @@ function State({
     children: ReactNode;
 }) {
     return (
-        <div className="flex flex-col items-center gap-2 rounded-lg bg-background p-6 text-center">
-            <span className="text-muted-foreground">{icon}</span>
+        <div className="flex flex-col items-center gap-2 rounded-lg bg-ai-soft/40 p-6 text-center">
+            <span className="text-ai-ink">{icon}</span>
             <p className="font-medium">{title}</p>
             <p className="text-sm text-muted-foreground">{children}</p>
         </div>

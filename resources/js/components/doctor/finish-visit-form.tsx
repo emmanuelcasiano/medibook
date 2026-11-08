@@ -27,6 +27,7 @@ export default function FinishVisitForm({
                 <>
                     <Button
                         type="submit"
+                        size="lg"
                         disabled={processing}
                         data-test="finish-visit-button"
                     >

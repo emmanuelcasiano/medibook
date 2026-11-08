@@ -1,5 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Siren } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { Siren } from 'lucide-react';
 import { useRef } from 'react';
 import FinishVisitForm from '@/components/doctor/finish-visit-form';
 import IntakeAnswersCard from '@/components/doctor/intake-answers-card';
@@ -43,56 +43,7 @@ export default function DoctorAppointmentShow({
             <Head title={patientFirstName} />
 
             <div className="space-y-6 p-4">
-                <Link
-                    href={doctorHome()}
-                    className="inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    <ArrowLeft aria-hidden className="size-4" />
-                    Today
-                </Link>
-
-                <section
-                    aria-labelledby="patient-heading"
-                    className="space-y-3 rounded-xl border bg-card p-5"
-                >
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <h1
-                            id="patient-heading"
-                            ref={headingRef}
-                            tabIndex={-1}
-                            className="rounded-sm text-2xl font-semibold tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            {patientFirstName}
-                        </h1>
-                        {patientAge !== null && (
-                            <span className="text-muted-foreground">
-                                {patientAge} years old
-                            </span>
-                        )}
-                        {/* Written out, so the status never depends on color alone. */}
-                        <StatusBadge
-                            status={appointment.status}
-                            label={appointment.statusLabel}
-                        />
-                    </div>
-                    <p className="text-sm">
-                        {appointment.serviceName} ·{' '}
-                        {formatClinicDateTime(appointment.startsAt)} to{' '}
-                        {formatClinicTime(appointment.endsAt)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        All times are Manila time.
-                    </p>
-                    {appointment.can.complete && (
-                        <FinishVisitForm
-                            appointmentUlid={appointment.ulid}
-                            // The button is gone once the visit is finished, so focus would drop to the top of the
-                            // page. The patient heading is the place to go instead.
-                            onFinished={() => headingRef.current?.focus()}
-                        />
-                    )}
-                </section>
-
+                {/* First on the page, so it is the first thing read. The words themselves are never sent here. */}
                 {appointment.emergency && (
                     <Alert variant="destructive">
                         <Siren />
@@ -103,6 +54,51 @@ export default function DoctorAppointmentShow({
                         </AlertTitle>
                     </Alert>
                 )}
+
+                {/* No "← Today" link: the breadcrumb above already goes back to Today. */}
+                <section
+                    aria-labelledby="patient-heading"
+                    className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4 rounded-xl border bg-card p-5"
+                >
+                    <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                            <h1
+                                id="patient-heading"
+                                ref={headingRef}
+                                tabIndex={-1}
+                                className="rounded-sm text-2xl font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring md:text-[28px] md:leading-8.5"
+                            >
+                                {patientFirstName}
+                            </h1>
+                            {patientAge !== null && (
+                                <span className="text-muted-foreground">
+                                    {patientAge} years old
+                                </span>
+                            )}
+                            {/* Written out, so the status never depends on color alone. */}
+                            <StatusBadge
+                                status={appointment.status}
+                                label={appointment.statusLabel}
+                            />
+                        </div>
+                        <p className="text-sm">
+                            {appointment.serviceName} ·{' '}
+                            {formatClinicDateTime(appointment.startsAt)} to{' '}
+                            {formatClinicTime(appointment.endsAt)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            All times are Manila time.
+                        </p>
+                    </div>
+                    {appointment.can.complete && (
+                        <FinishVisitForm
+                            appointmentUlid={appointment.ulid}
+                            // The button is gone once the visit is finished, so focus would drop to the top of the
+                            // page. The patient heading is the place to go instead.
+                            onFinished={() => headingRef.current?.focus()}
+                        />
+                    )}
+                </section>
 
                 <div className="grid items-start gap-6 lg:grid-cols-2">
                     <IntakeAnswersCard intake={intake} />
