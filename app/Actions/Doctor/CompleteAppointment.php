@@ -15,7 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 final class CompleteAppointment
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly RequestFollowUp $requestFollowUp,
+    ) {}
 
     /**
      * The doctor finishes a visit: `checked_in` becomes `completed` (PROJECT.md F8). The status is the only thing
@@ -29,14 +32,18 @@ final class CompleteAppointment
      * skip the check either. It runs before any lock or write, so a user who may not finish this visit learns nothing
      * about its state.
      *
+     * With $followUp the doctor also asks the patient to come back. It runs in the same transaction, after the status
+     * change, so if RequestFollowUp refuses (a bad window, a service this doctor does not offer) the whole finish is
+     * rolled back and the visit stays `checked_in`. The doctor can fix the form and send it again.
+     *
      * @throws AuthorizationException When $actor may not finish this appointment (only its own doctor may).
-     * @throws ValidationException When the appointment is not `checked_in`.
+     * @throws ValidationException When the appointment is not `checked_in`, or the follow-up is refused.
      */
-    public function handle(User $actor, Appointment $appointment): Appointment
+    public function handle(User $actor, Appointment $appointment, ?FollowUpData $followUp = null): Appointment
     {
         Gate::forUser($actor)->authorize('complete', $appointment);
 
-        return DB::transaction(function () use ($actor, $appointment): Appointment {
+        return DB::transaction(function () use ($actor, $appointment, $followUp): Appointment {
             // Lock and re-read the row. The model in the caller's hand may be stale, and without the lock a finish and
             // a staff cancel or no-show running together could both pass the status check below.
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
@@ -51,6 +58,10 @@ final class CompleteAppointment
                 'status_from' => AppointmentStatus::CheckedIn->value,
                 'status_to' => AppointmentStatus::Completed->value,
             ]);
+
+            if ($followUp !== null) {
+                $this->requestFollowUp->handle($actor, $current, $followUp);
+            }
 
             return $current;
         });

@@ -80,4 +80,14 @@ final class AppointmentPolicy
     {
         return $user->isDoctor() && $appointment->doctor_id === $user->doctorId();
     }
+
+    /**
+     * Ask the patient of a visit to come back: the appointment's own doctor only. The same people as `complete`, kept
+     * as its own ability so a later change to one (for example, a follow-up after the visit is finished) can't
+     * quietly change the other.
+     */
+    public function requestFollowUp(User $user, Appointment $appointment): bool
+    {
+        return $user->isDoctor() && $appointment->doctor_id === $user->doctorId();
+    }
 }

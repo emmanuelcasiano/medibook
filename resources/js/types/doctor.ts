@@ -35,6 +35,23 @@ export type DoctorAppointment = {
     emergency: boolean;
     /** Computed on the server. The Policy and the Action check again on submit. */
     can: { complete: boolean };
+    /** What the doctor asked for when they finished the visit. null when they did not. The note is never sent back. */
+    followUp: RequestedFollowUp | null;
+};
+
+/** The follow-up of a visit, as the doctor's appointment page shows it. Dates are clinic dates ('Y-m-d'). */
+export type RequestedFollowUp = {
+    statusLabel: string;
+    startsOn: string;
+    endsOn: string;
+    sameDoctor: boolean;
+};
+
+/** A service the doctor offers, for the "ask to come back" choice. */
+export type FollowUpService = {
+    id: number;
+    name: string;
+    durationMinutes: number;
 };
 
 /** The intake the doctor reads: the saved answers plus the "how long" choice in words. Health text. */

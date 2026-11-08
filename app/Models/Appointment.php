@@ -137,4 +137,14 @@ class Appointment extends Model
     {
         return $this->hasMany(VisitNote::class);
     }
+
+    /**
+     * The follow-up the doctor asked for when this visit was finished. At most one per visit: RequestFollowUp checks it.
+     *
+     * @return HasOne<FollowUp, $this>
+     */
+    public function followUp(): HasOne
+    {
+        return $this->hasOne(FollowUp::class, 'source_appointment_id');
+    }
 }

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * The header of the doctor's appointment page, as the page receives it. The caller must load `patient` (with
- * `birth_date`) and `service` first (strict mode throws on a lazy load). The patient is the first name and the age in
+ * `birth_date`), `service` and `followUp` first (strict mode throws on a lazy load). The patient is the first name and the age in
  * years only: no surname, email or birth date. No intake or summary text is here; those have their own resources, so
  * they are built only after the Policy has opened them. Call `->resolve()` to get the plain array for an Inertia prop.
  *
@@ -32,6 +32,7 @@ final class AppointmentDetailResource extends JsonResource
      *     serviceName: string,
      *     emergency: bool,
      *     can: array{complete: bool},
+     *     followUp: array{statusLabel: string, startsOn: string, endsOn: string, sameDoctor: bool}|null,
      * }
      */
     public function toArray(Request $request): array
@@ -51,6 +52,13 @@ final class AppointmentDetailResource extends JsonResource
             // not over). CompleteAppointment checks both again on submit.
             'can' => [
                 'complete' => $this->status === AppointmentStatus::CheckedIn && Gate::allows('complete', $this->resource),
+            ],
+            // What the doctor asked for, so the page can say so. The note is left out on purpose: the page does not need it.
+            'followUp' => $this->followUp === null ? null : [
+                'statusLabel' => $this->followUp->status->label(),
+                'startsOn' => $this->followUp->window_starts_on->toDateString(),
+                'endsOn' => $this->followUp->window_ends_on->toDateString(),
+                'sameDoctor' => $this->followUp->same_doctor,
             ],
         ];
     }

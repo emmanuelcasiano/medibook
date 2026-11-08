@@ -263,6 +263,15 @@ describe('validation', function () {
         expect(VisitNote::query()->sole()->body)->toBe('Kept.');
     });
 
+    // A refused form is sent back with the input flashed to the session ("old input"). The sessions table is not
+    // encrypted and the note is health text, so it must not go there. The page does not need it: the typed text stays
+    // in the form.
+    it('does not keep the typed note in the session when the save is refused', function () {
+        ($this->save)(($this->booking)(), ['body' => str_repeat('a', 10001)])
+            ->assertSessionHasErrors('body')
+            ->assertSessionMissing('_old_input.body');
+    });
+
     it('accepts a text of exactly 10,000 characters', function () {
         ($this->save)(($this->booking)(), ['body' => str_repeat('a', 10000)])->assertSessionHasNoErrors();
 
