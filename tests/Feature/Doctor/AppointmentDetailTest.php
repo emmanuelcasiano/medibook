@@ -85,6 +85,8 @@ describe('the page', function () {
                     'emergency' => false,
                     // A booking that has not been checked in can not be finished yet.
                     'can' => ['complete' => false],
+                    // No follow-up was asked for. The follow-up cases are in RequestFollowUpTest.
+                    'followUp' => null,
                 ])
                 ->where('intake', [
                     'answers' => [

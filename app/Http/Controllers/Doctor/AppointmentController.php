@@ -8,15 +8,18 @@ use App\Actions\Doctor\CompleteAppointment;
 use App\Actions\Doctor\MarkSummaryReviewed;
 use App\Enums\SummaryStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Doctor\CompleteAppointmentRequest;
 use App\Http\Requests\Doctor\ReviewSummaryRequest;
 use App\Http\Resources\Doctor\AppointmentDetailResource;
 use App\Http\Resources\Doctor\IntakeDetailResource;
 use App\Http\Resources\Doctor\IntakeSummaryResource;
 use App\Http\Resources\Doctor\VisitNoteResource;
 use App\Models\Appointment;
+use App\Models\Service;
 use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Container\Attributes\CurrentUser;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -53,6 +56,7 @@ final class AppointmentController extends Controller
             'intake',
             'intake.summary',
             'visitNotes',
+            'followUp:id,source_appointment_id,window_starts_on,window_ends_on,same_doctor,status',
         ]);
 
         $intake = $appointment->intake;
@@ -90,8 +94,21 @@ final class AppointmentController extends Controller
             $audit->record($doctor, 'notes.viewed', $note, $viewed);
         }
 
+        $detail = (new AppointmentDetailResource($appointment))->resolve();
+
         return Inertia::render('doctor/appointments/show', [
-            'appointment' => (new AppointmentDetailResource($appointment))->resolve(),
+            'appointment' => $detail,
+            // The "ask to come back" choices: the services this doctor offers. Only built while the "Finish visit"
+            // button is shown, so a page that has no button runs no query for it.
+            'followUpServices' => $detail['can']['complete']
+                ? Service::query()
+                    ->where('is_active', true)
+                    ->whereHas('doctors', fn (Builder $doctors) => $doctors->whereKey($appointment->doctor_id))
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'duration_minutes'])
+                    ->map(fn (Service $service): array => ['id' => $service->id, 'name' => $service->name, 'durationMinutes' => $service->duration_minutes])
+                    ->all()
+                : [],
             'intake' => $intake === null ? null : (new IntakeDetailResource($intake))->resolve(),
             'summary' => $summary === null ? null : (new IntakeSummaryResource($summary))->resolve(),
             'visitNote' => $note === null ? null : (new VisitNoteResource($note))->resolve(),
@@ -117,16 +134,22 @@ final class AppointmentController extends Controller
     }
 
     /**
-     * "Finish visit". No input: the doctor comes from the session and the new status is fixed by the Action. The
-     * appointment Policy runs here, and again inside the Action.
+     * "Finish visit", with an optional "ask the patient to come back". The doctor comes from the session and the new
+     * status is fixed by the Action. The only input is the follow-up group, and the Action saves it in the same
+     * transaction as the finish. The appointment Policy runs here, and again inside the Action.
      */
-    public function complete(#[CurrentUser] User $user, Appointment $appointment, CompleteAppointment $completeAppointment): RedirectResponse
+    public function complete(CompleteAppointmentRequest $request, #[CurrentUser] User $user, Appointment $appointment, CompleteAppointment $completeAppointment): RedirectResponse
     {
         Gate::authorize('complete', $appointment);
 
-        $completeAppointment->handle($user, $appointment);
+        $followUp = $request->followUp();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('The visit is finished.')]);
+        $completeAppointment->handle($user, $appointment, $followUp);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $followUp === null ? __('The visit is finished.') : __('The visit is finished and the follow-up is requested.'),
+        ]);
 
         return to_route('doctor.appointments.show', $appointment);
     }

@@ -71,6 +71,7 @@ it('matches the role table for each appointment ability', function (string $abil
     'markNoShow' => ['markNoShow', [Role::Staff]],
     'move' => ['move', [Role::Staff]],
     'complete' => ['complete', []],
+    'requestFollowUp' => ['requestFollowUp', []],
 ]);
 
 it('lets only patients book', function (Role $role) {

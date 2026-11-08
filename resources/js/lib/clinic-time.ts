@@ -54,8 +54,30 @@ const clinicInstantDayNumber = new Intl.DateTimeFormat('en-PH', {
     day: 'numeric',
 });
 
+// 'en-CA' writes a date as 'Y-m-d', which is the form the server and a date field use.
+const clinicTodayFormat = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+});
+
 function clinicDateAsUtc(date: string): Date {
     return new Date(`${date}T00:00:00Z`);
+}
+
+/** Today's date at the clinic ('Y-m-d'), whatever time zone the browser is in. */
+export function clinicToday(): string {
+    return clinicTodayFormat.format(new Date());
+}
+
+/** A clinic date ('Y-m-d') moved by whole days. Works in UTC, so a daylight-saving change can't shift it. */
+export function addClinicDays(date: string, days: number): string {
+    const moved = clinicDateAsUtc(date);
+
+    moved.setUTCDate(moved.getUTCDate() + days);
+
+    return moved.toISOString().slice(0, 10);
 }
 
 /** Show an ISO 8601 UTC string from the server in clinic time (Asia/Manila). */

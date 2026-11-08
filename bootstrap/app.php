@@ -53,9 +53,13 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // A refused form is sent back with its input flashed to the session, and the sessions table is not encrypted.
-        // The intake answers are health text, so they must never be flashed. No page needs it: Inertia forms keep the
-        // typed values on the screen. (The Handler already skips the password fields.)
+        // The intake answers, the doctor's visit note (`body`) and the follow-up group (its `note` is health text) must
+        // never be flashed. The whole `follow_up` group is left out, so a field added to it later is covered too. No
+        // page needs it: Inertia forms keep the typed values on the screen. (The Handler already skips the password
+        // fields.)
         $exceptions->dontFlash([
             'reason', 'symptoms', 'duration', 'allergies', 'medicines', 'fever', 'pregnant', 'recent_surgery',
+            'body',
+            'follow_up',
         ]);
     })->create();

@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Siren } from 'lucide-react';
+import { CalendarClock, Siren } from 'lucide-react';
 import { useRef } from 'react';
 import FinishVisitForm from '@/components/doctor/finish-visit-form';
 import IntakeAnswersCard from '@/components/doctor/intake-answers-card';
@@ -7,11 +7,16 @@ import SummaryCard from '@/components/doctor/summary-card';
 import VisitNoteCard from '@/components/doctor/visit-note-card';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import StatusBadge from '@/components/status-badge';
-import { formatClinicDateTime, formatClinicTime } from '@/lib/clinic-time';
+import {
+    formatClinicDate,
+    formatClinicDateTime,
+    formatClinicTime,
+} from '@/lib/clinic-time';
 import { home as doctorHome } from '@/routes/doctor';
 import type {
     DoctorAppointment,
     DoctorIntake,
+    FollowUpService,
     IntakeSummary,
     VisitNote,
 } from '@/types';
@@ -26,6 +31,8 @@ type Props = {
     visitNote: VisitNote | null;
     /** False for a booking that has not started, a cancellation and a no-show. The server checks again on save. */
     canSaveVisitNote: boolean;
+    /** The services for "ask to come back". Empty unless the "Finish visit" button is shown. */
+    followUpServices: FollowUpService[];
 };
 
 export default function DoctorAppointmentShow({
@@ -34,6 +41,7 @@ export default function DoctorAppointmentShow({
     summary,
     visitNote,
     canSaveVisitNote,
+    followUpServices,
 }: Props) {
     const { patientFirstName, patientAge } = appointment;
     const headingRef = useRef<HTMLHeadingElement>(null);
@@ -89,10 +97,36 @@ export default function DoctorAppointmentShow({
                         <p className="text-sm text-muted-foreground">
                             All times are Manila time.
                         </p>
+                        {/* Written out, with the dates, so it never depends on color or an icon alone. */}
+                        {appointment.followUp !== null && (
+                            <p
+                                className="flex items-center gap-2 text-sm"
+                                data-test="follow-up-requested"
+                            >
+                                <CalendarClock aria-hidden className="size-4" />
+                                <span>
+                                    Follow-up requested:{' '}
+                                    {formatClinicDate(
+                                        appointment.followUp.startsOn,
+                                    )}{' '}
+                                    to{' '}
+                                    {formatClinicDate(
+                                        appointment.followUp.endsOn,
+                                    )}
+                                    ,{' '}
+                                    {appointment.followUp.sameDoctor
+                                        ? 'with you'
+                                        : 'with any doctor'}{' '}
+                                    ({appointment.followUp.statusLabel})
+                                </span>
+                            </p>
+                        )}
                     </div>
                     {appointment.can.complete && (
                         <FinishVisitForm
                             appointmentUlid={appointment.ulid}
+                            patientFirstName={patientFirstName}
+                            services={followUpServices}
                             // The button is gone once the visit is finished, so focus would drop to the top of the
                             // page. The patient heading is the place to go instead.
                             onFinished={() => headingRef.current?.focus()}
