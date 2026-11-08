@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\FollowUp;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
 use App\Models\User;
@@ -38,6 +39,17 @@ it('encrypts visit notes at rest and decrypts them on read', function () {
 
     expect($raw)->not->toContain('Secret chest rash')
         ->and($note->fresh()->body)->toBe('Secret chest rash');
+});
+
+it('encrypts the follow-up note at rest, decrypts it on read and keeps it out of serialized data', function () {
+    $followUp = FollowUp::factory()->create(['note' => 'Secret chest rash']);
+
+    $raw = DB::table('follow_ups')->where('id', $followUp->id)->value('note');
+
+    expect($raw)->not->toContain('Secret chest rash')
+        ->and($followUp->fresh()->note)->toBe('Secret chest rash')
+        ->and($followUp->fresh()->toArray())->not->toHaveKey('note')
+        ->and($followUp->fresh()->toJson())->not->toContain('Secret chest rash');
 });
 
 it('encrypts the birth date at rest and decrypts it on read', function () {
