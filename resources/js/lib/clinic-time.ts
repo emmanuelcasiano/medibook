@@ -43,6 +43,17 @@ const clinicMonth = new Intl.DateTimeFormat('en-PH', {
     year: 'numeric',
 });
 
+// The month and the day of the month of an instant, for the date box on a card.
+const clinicInstantShortMonth = new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    month: 'short',
+});
+
+const clinicInstantDayNumber = new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    day: 'numeric',
+});
+
 function clinicDateAsUtc(date: string): Date {
     return new Date(`${date}T00:00:00Z`);
 }
@@ -65,6 +76,16 @@ export function formatClinicDate(date: string): string {
 /** The day of an ISO 8601 UTC string, in clinic time, as "Monday 2 November". */
 export function formatClinicInstantDay(iso: string): string {
     return clinicInstantDay.format(new Date(iso));
+}
+
+/** The month of an ISO 8601 UTC string, in clinic time, as "Nov". */
+export function formatClinicInstantShortMonth(iso: string): string {
+    return clinicInstantShortMonth.format(new Date(iso));
+}
+
+/** The day of the month of an ISO 8601 UTC string, in clinic time, as "2". */
+export function formatClinicInstantDayNumber(iso: string): string {
+    return clinicInstantDayNumber.format(new Date(iso));
 }
 
 /** A clinic date from the server ('Y-m-d') as "Mon". */
