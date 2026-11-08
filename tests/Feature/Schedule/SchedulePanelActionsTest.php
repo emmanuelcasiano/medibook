@@ -163,6 +163,9 @@ describe('the selected prop', function () {
 
     it('still carries the patient\'s name only, with no contact or health fields', function () {
         $patient = $this->started->patient;
+        // A fixed name: assertSee() escapes its text, so a random surname with an apostrophe (O'Kon) is searched as
+        // "O&#039;Kon" but sits unescaped in the page's JSON, and the test failed on those draws.
+        $patient->forceFill(['name' => 'Maria Santos'])->save();
 
         $this->actingAs($this->staff)
             ->get(panelPage($this->started))
