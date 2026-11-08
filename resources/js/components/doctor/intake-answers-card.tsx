@@ -1,5 +1,7 @@
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, ShieldAlert } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { formatClinicDateTime } from '@/lib/clinic-time';
+import { cn } from '@/lib/utils';
 import type { DoctorIntake } from '@/types';
 
 type Props = {
@@ -8,6 +10,8 @@ type Props = {
 };
 
 const NOT_GIVEN = 'Not given';
+
+const yesNo = (value: boolean) => (value ? 'Yes' : 'No');
 
 /** The patient's own words, read-only. Always shown, whatever the state of the AI summary. */
 export default function IntakeAnswersCard({ intake }: Props) {
@@ -38,18 +42,6 @@ export default function IntakeAnswersCard({ intake }: Props) {
     }
 
     const { answers } = intake;
-    const yesNo = (value: boolean) => (value ? 'Yes' : 'No');
-
-    const rows: { label: string; value: string }[] = [
-        { label: 'Reason for the visit', value: answers.reason },
-        { label: 'Symptoms', value: answers.symptoms ?? NOT_GIVEN },
-        { label: 'How long', value: intake.durationLabel ?? NOT_GIVEN },
-        { label: 'Allergies', value: answers.allergies ?? NOT_GIVEN },
-        { label: 'Medicines now', value: answers.medicines ?? NOT_GIVEN },
-        { label: 'Fever', value: yesNo(answers.fever) },
-        { label: 'Pregnant, or might be', value: yesNo(answers.pregnant) },
-        { label: 'Recent surgery', value: yesNo(answers.recent_surgery) },
-    ];
 
     return (
         <section
@@ -69,17 +61,87 @@ export default function IntakeAnswersCard({ intake }: Props) {
                 </span>
             </div>
 
+            {/* The safety answers, picked by their fixed keys (not by matching text), shown in full. */}
+            <section
+                aria-labelledby="check-first-heading"
+                className="space-y-4 rounded-lg border border-amber-line bg-amber-soft p-4 text-amber-ink"
+            >
+                <h3
+                    id="check-first-heading"
+                    className="flex items-center gap-2 text-sm font-semibold"
+                >
+                    <ShieldAlert aria-hidden className="size-4" />
+                    Check first
+                </h3>
+                {/* The grid is the list itself: a <dl> may only hold <dt>/<dd> pairs (or one <div> around each pair). */}
+                <dl className="grid grid-cols-2 gap-4">
+                    <Answer label="Allergies" className="col-span-2">
+                        {answers.allergies ?? NOT_GIVEN}
+                    </Answer>
+                    <Answer label="Medicines now" className="col-span-2">
+                        {answers.medicines ?? NOT_GIVEN}
+                    </Answer>
+                    <Answer label="Fever">{yesNo(answers.fever)}</Answer>
+                    <Answer label="Pregnant, or might be">
+                        {yesNo(answers.pregnant)}
+                    </Answer>
+                </dl>
+            </section>
+
             <dl className="grid gap-4">
-                {rows.map(({ label, value }) => (
-                    <div key={label} className="grid gap-1">
-                        <dt className="text-sm font-medium text-muted-foreground">
-                            {label}
-                        </dt>
-                        {/* Patient text: rendered as text only, never as HTML. */}
-                        <dd className="whitespace-pre-line">{value}</dd>
-                    </div>
-                ))}
+                <Answer label="Reason for the visit" plain>
+                    {answers.reason}
+                </Answer>
+                <Answer label="Symptoms" plain>
+                    {answers.symptoms ?? NOT_GIVEN}
+                </Answer>
+            </dl>
+
+            <dl className="grid grid-cols-2 gap-4 border-t pt-4">
+                <Answer label="How long" plain>
+                    {intake.durationLabel ?? NOT_GIVEN}
+                </Answer>
+                <Answer label="Recent surgery" plain>
+                    {yesNo(answers.recent_surgery)}
+                </Answer>
             </dl>
         </section>
+    );
+}
+
+/** One label and its answer. `plain` is for the page's own colors; the default inherits the Check first colors. */
+function Answer({
+    label,
+    plain = false,
+    className,
+    children,
+}: {
+    label: string;
+    plain?: boolean;
+    className?: string;
+    children: ReactNode;
+}) {
+    return (
+        <div className={cn('grid gap-1', className)}>
+            <dt
+                className={
+                    plain
+                        ? 'text-xs font-semibold tracking-wider text-muted-foreground uppercase'
+                        : 'text-xs font-semibold tracking-wider uppercase'
+                }
+            >
+                {label}
+            </dt>
+            {/* Patient text: rendered as text only, never as HTML. */}
+            <dd
+                className={
+                    plain
+                        ? 'whitespace-pre-line'
+                        : 'font-medium whitespace-pre-line text-foreground'
+                }
+            >
+                {children}
+            </dd>
+        </div>
     );
 }
