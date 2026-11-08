@@ -3,7 +3,6 @@ import { Siren } from 'lucide-react';
 import IntakeAnswersView from '@/components/intake/intake-answers';
 import IntakeForm from '@/components/intake/intake-form';
 import PageHeader from '@/components/page-header';
-import { Alert, AlertTitle } from '@/components/ui/alert';
 import { formatClinicDateTime } from '@/lib/clinic-time';
 import type {
     IntakeAppointment,
@@ -35,63 +34,72 @@ export default function MyAppointmentsIntake({
         <>
             <Head title="Intake form" />
 
-            <div className="max-w-2xl space-y-6 p-4">
-                <PageHeader
-                    title="Intake form"
-                    description={
-                        <>
-                            <p>
-                                Your doctor reads this before your visit. Short,
-                                plain answers are fine.
-                            </p>
-                            <p className="text-foreground">
-                                {service.name} with {doctor.name} ·{' '}
-                                {formatClinicDateTime(startsAt)}
-                            </p>
-                        </>
-                    }
-                />
-
+            <div className="space-y-6 p-4">
+                {/* The one large red block on the patient side. The text is the exact wording of PROJECT.md F5. */}
                 {emergency && (
-                    <Alert variant="destructive">
-                        <Siren />
-                        {/* The title clamps to one line by default. This safety message must always show in full. */}
-                        <AlertTitle className="line-clamp-none">
+                    <section
+                        role="alert"
+                        className="flex items-start gap-4 rounded-xl bg-destructive p-5 text-white"
+                    >
+                        <Siren aria-hidden className="mt-0.5 size-7 shrink-0" />
+                        <p className="text-lg leading-7 font-semibold">
                             This may be an emergency. Call 911 or go to the
                             nearest emergency room now.
-                        </AlertTitle>
-                    </Alert>
-                )}
-
-                {can.save ? (
-                    <>
-                        <p className="text-sm text-muted-foreground">
-                            Demo with fake data. Do not enter real health
-                            information.
-                        </p>
-                        {/* A new key remounts the form after a save, so it shows what was stored. */}
-                        <IntakeForm
-                            key={intake?.submittedAt ?? 'new'}
-                            appointmentUlid={appointment.ulid}
-                            answers={intake?.answers ?? null}
-                            durations={durations}
-                        />
-                    </>
-                ) : intake ? (
-                    <IntakeAnswersView
-                        answers={intake.answers}
-                        durations={durations}
-                    />
-                ) : (
-                    <section className="space-y-2 rounded-xl border bg-muted/50 p-5">
-                        <h2 className="text-lg font-semibold">Not filled in</h2>
-                        <p className="text-sm text-muted-foreground">
-                            This visit is no longer open for an intake form.
-                            Please tell the front desk anything your doctor
-                            should know.
                         </p>
                     </section>
                 )}
+
+                <div className="max-w-2xl space-y-6">
+                    <PageHeader
+                        title="Intake form"
+                        description="Your doctor reads this before your visit. Short, plain answers are fine."
+                    />
+
+                    <section
+                        aria-label="Your appointment"
+                        className="space-y-1 rounded-xl border bg-card p-4"
+                    >
+                        <p className="font-mono text-base font-medium tabular-nums">
+                            {formatClinicDateTime(startsAt)}
+                        </p>
+                        <p>{service.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {doctor.name} · {doctor.specialty}
+                        </p>
+                    </section>
+
+                    {can.save ? (
+                        <>
+                            <p className="text-sm text-muted-foreground">
+                                Demo with fake data. Do not enter real health
+                                information.
+                            </p>
+                            {/* A new key remounts the form after a save, so it shows what was stored. */}
+                            <IntakeForm
+                                key={intake?.submittedAt ?? 'new'}
+                                appointmentUlid={appointment.ulid}
+                                answers={intake?.answers ?? null}
+                                durations={durations}
+                            />
+                        </>
+                    ) : intake ? (
+                        <IntakeAnswersView
+                            answers={intake.answers}
+                            durations={durations}
+                        />
+                    ) : (
+                        <section className="space-y-2 rounded-xl border bg-muted/50 p-5">
+                            <h2 className="text-lg font-semibold">
+                                Not filled in
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                This visit is no longer open for an intake form.
+                                Please tell the front desk anything your doctor
+                                should know.
+                            </p>
+                        </section>
+                    )}
+                </div>
             </div>
         </>
     );

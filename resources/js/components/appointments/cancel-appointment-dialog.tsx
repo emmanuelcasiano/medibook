@@ -51,7 +51,7 @@ export default function CancelAppointmentDialog({ appointment }: Props) {
             <DialogTrigger asChild>
                 <Button
                     type="button"
-                    variant="outline"
+                    variant="destructive-outline"
                     size="sm"
                     data-test="cancel-appointment-button"
                 >

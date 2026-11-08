@@ -1,11 +1,16 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, Plus } from 'lucide-react';
+import { CalendarDays, Info, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import AppointmentCard from '@/components/appointments/appointment-card';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { services as bookingServices } from '@/routes/booking';
 import { home as myHome } from '@/routes/my';
 import type { MyAppointment, Paginated } from '@/types';
+
+/** How many past visits show before "Show all on this page". The server's paging is not changed. */
+const PAST_PREVIEW = 5;
 
 type Props = {
     upcoming: MyAppointment[];
@@ -25,6 +30,38 @@ export default function MyAppointments({
     maxUpcoming,
     canBook,
 }: Props) {
+    // Remember which page was expanded, so paging to another page of past visits starts short again.
+    const [expandedPage, setExpandedPage] = useState<number | null>(null);
+    const showAllPast = expandedPage === past.current_page;
+
+    // The "Show all" button removes itself when pressed, so focus would fall back to the top of the page. After the
+    // press it moves to the first card that was just revealed. Only a press sets the flag, so paging back to an
+    // expanded page does not steal focus.
+    const pastList = useRef<HTMLUListElement>(null);
+    const focusRevealed = useRef(false);
+
+    useEffect(() => {
+        if (!focusRevealed.current) {
+            return;
+        }
+
+        focusRevealed.current = false;
+
+        const firstRevealed = pastList.current?.children[PAST_PREVIEW];
+
+        if (firstRevealed instanceof HTMLElement) {
+            firstRevealed.tabIndex = -1;
+            firstRevealed.focus();
+        }
+    }, [expandedPage]);
+
+    const hiddenPast = showAllPast
+        ? 0
+        : Math.max(0, past.data.length - PAST_PREVIEW);
+    const visiblePast = showAllPast
+        ? past.data
+        : past.data.slice(0, PAST_PREVIEW);
+
     return (
         <>
             <Head title="My appointments" />
@@ -35,7 +72,20 @@ export default function MyAppointments({
                         title="My appointments"
                         description={`All times are Manila time. You can cancel for free up to ${cancelHours} hours before a visit.`}
                     />
-                    <div className="space-y-1 sm:text-right">
+                    <div className="flex flex-wrap items-center gap-3">
+                        {!canBook && (
+                            <p
+                                id="book-limit-note"
+                                className="flex max-w-xs items-start gap-2 rounded-lg border border-amber-line bg-amber-soft px-3 py-2 text-sm text-amber-ink"
+                            >
+                                <Info
+                                    aria-hidden
+                                    className="mt-0.5 size-4 shrink-0"
+                                />
+                                You have {maxUpcoming} upcoming appointments.
+                                Cancel one to book another.
+                            </p>
+                        )}
                         {canBook ? (
                             <Button asChild>
                                 <Link href={bookingServices()}>
@@ -44,22 +94,10 @@ export default function MyAppointments({
                                 </Link>
                             </Button>
                         ) : (
-                            <>
-                                <Button
-                                    disabled
-                                    aria-describedby="book-limit-note"
-                                >
-                                    <Plus aria-hidden />
-                                    Book an appointment
-                                </Button>
-                                <p
-                                    id="book-limit-note"
-                                    className="text-sm text-muted-foreground"
-                                >
-                                    You have {maxUpcoming} upcoming
-                                    appointments. Cancel one to book another.
-                                </p>
-                            </>
+                            <Button disabled aria-describedby="book-limit-note">
+                                <Plus aria-hidden />
+                                Book an appointment
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -80,13 +118,31 @@ export default function MyAppointments({
                             ({upcoming.length})
                         </span>
                     </h2>
+                    {/* Built from the props the page already has. The text carries the meaning; the bars are for the eye. */}
+                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span aria-hidden className="flex gap-1">
+                            {Array.from({ length: maxUpcoming }, (_, index) => (
+                                <span
+                                    key={index}
+                                    className={cn(
+                                        'h-1.5 w-6 rounded-full',
+                                        index < upcoming.length
+                                            ? 'bg-teal'
+                                            : 'bg-muted',
+                                    )}
+                                />
+                            ))}
+                        </span>
+                        {upcoming.length} of {maxUpcoming} upcoming
+                    </p>
                     {upcoming.length > 0 ? (
                         <ul className="space-y-3">
-                            {upcoming.map((appointment) => (
+                            {upcoming.map((appointment, index) => (
                                 <AppointmentCard
                                     key={appointment.ulid}
                                     appointment={appointment}
                                     upcoming
+                                    next={index === 0}
                                 />
                             ))}
                         </ul>
@@ -116,15 +172,32 @@ export default function MyAppointments({
                         </span>
                     </h2>
                     {past.data.length > 0 ? (
-                        <ul className="space-y-3">
-                            {past.data.map((appointment) => (
-                                <AppointmentCard
-                                    key={appointment.ulid}
-                                    appointment={appointment}
-                                    upcoming={false}
-                                />
-                            ))}
-                        </ul>
+                        <>
+                            <ul ref={pastList} className="space-y-3">
+                                {visiblePast.map((appointment) => (
+                                    <AppointmentCard
+                                        key={appointment.ulid}
+                                        appointment={appointment}
+                                        upcoming={false}
+                                    />
+                                ))}
+                            </ul>
+                            {hiddenPast > 0 && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        focusRevealed.current = true;
+                                        setExpandedPage(past.current_page);
+                                    }}
+                                >
+                                    Show all on this page
+                                    <span className="text-muted-foreground">
+                                        ({hiddenPast} more)
+                                    </span>
+                                </Button>
+                            )}
+                        </>
                     ) : (
                         <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
                             No past visits yet.
