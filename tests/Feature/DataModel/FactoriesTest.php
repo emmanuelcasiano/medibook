@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Appointment;
 use App\Models\AuditLog;
 use App\Models\Doctor;
+use App\Models\FollowUp;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
 use App\Models\Service;
@@ -30,6 +31,7 @@ it('has a working factory for every model', function (string $model) {
     Intake::class,
     IntakeSummary::class,
     VisitNote::class,
+    FollowUp::class,
     AuditLog::class,
 ]);
 
