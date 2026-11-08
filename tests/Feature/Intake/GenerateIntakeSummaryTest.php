@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\Intake\GenerateIntakeSummary;
 use App\Ai\Agents\IntakeSummarizer;
+use App\Enums\SummaryGap;
 use App\Enums\SummaryStatus;
 use App\Models\Appointment;
 use App\Models\Intake;
@@ -19,15 +20,23 @@ use Laravel\Ai\Responses\StructuredTextResponse;
 // Day 10 Policy test. Every test fakes IntakeSummarizer, so none of them can reach a real provider. "Now" is Friday
 // 30 October 2026, 09:00 in Manila.
 
+/** A good v2 answer. Pass overrides to change one field. */
+function v2Fields(array $overrides = []): array
+{
+    return [
+        'headline' => 'Dry cough for a few days, worse at night.',
+        'timeline' => ['Cough started a few days ago', 'Worse at night'],
+        'in_english' => null,
+        'gaps' => ['severity', 'already_tried'],
+        'check_with_patient' => ["Fever is ticked 'no', but the symptoms say 'may lagnat since Monday'."],
+        ...$overrides,
+    ];
+}
+
 /** A good model answer, with the token counts a provider would report. */
 function aiAnswer(int $in = 120, int $out = 80, ?array $fields = null): StructuredTextResponse
 {
-    $fields ??= [
-        'chief_complaint' => 'Dry cough for a few days',
-        'key_points' => ['Cough at night', 'No fever'],
-        'allergies_and_meds' => 'Allergies: none. Medicines: paracetamol when needed.',
-        'questions_for_doctor' => ['Is it getting worse?'],
-    ];
+    $fields ??= v2Fields();
 
     return new StructuredTextResponse($fields, json_encode($fields), new TextUsage($in, $out), new Meta('anthropic', 'test-model'));
 }
@@ -60,12 +69,7 @@ it('saves a ready summary with the model and the tokens', function () {
     $summary = summarize($this->intake);
 
     expect($summary->status)->toBe(SummaryStatus::Ready)
-        ->and($summary->fresh()->summary)->toBe([
-            'chief_complaint' => 'Dry cough for a few days',
-            'key_points' => ['Cough at night', 'No fever'],
-            'allergies_and_meds' => 'Allergies: none. Medicines: paracetamol when needed.',
-            'questions_for_doctor' => ['Is it getting worse?'],
-        ])
+        ->and($summary->fresh()->summary)->toBe(v2Fields())
         ->and($summary->model)->toBe('test-model')
         ->and($summary->input_tokens)->toBe(120)
         ->and($summary->output_tokens)->toBe(80)
@@ -217,29 +221,73 @@ it('marks a broken model answer as failed and keeps the tokens', function (array
         ->and($summary->output_tokens)->toBe(60)
         ->and(IntakeSummary::query()->count())->toBe(1)
         ->and($this->intake->fresh()->answers)->toBe($answersBefore);
-})->with([
-    'a missing key' => [['chief_complaint' => 'Cough', 'key_points' => [], 'allergies_and_meds' => 'Not given']],
-    'a list sent as a string' => [['chief_complaint' => 'Cough', 'key_points' => 'Dry cough', 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]],
-    'an empty chief complaint' => [['chief_complaint' => '', 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]],
-    'a number in a list' => [['chief_complaint' => 'Cough', 'key_points' => [42], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]],
-    'a text that is too long' => [['chief_complaint' => str_repeat('a', 501), 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]],
-    'too many points' => [['chief_complaint' => 'Cough', 'key_points' => array_fill(0, 11, 'Point'), 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]],
-]);
+})->with(function () {
+    $without = static function (string $key): array {
+        $fields = v2Fields();
+        unset($fields[$key]);
 
-it('saves only the four known fields when the model adds more', function () {
-    IntakeSummarizer::fake([aiAnswer(fields: [
-        'chief_complaint' => 'Cough',
-        'key_points' => [],
-        'allergies_and_meds' => 'Not given',
-        'questions_for_doctor' => [],
-        'diagnosis' => 'Pneumonia',
-    ])]);
+        return $fields;
+    };
+
+    return [
+        'a missing headline' => [$without('headline')],
+        'a missing timeline' => [$without('timeline')],
+        'a missing in_english' => [$without('in_english')],
+        'a missing gaps' => [$without('gaps')],
+        'a missing check_with_patient' => [$without('check_with_patient')],
+        'an old v1 answer' => [['chief_complaint' => 'Cough', 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]],
+        'an empty headline' => [v2Fields(['headline' => ''])],
+        'a headline that is too long' => [v2Fields(['headline' => str_repeat('a', 161)])],
+        'a timeline sent as a string' => [v2Fields(['timeline' => 'Cough for 3 days'])],
+        'a number in the timeline' => [v2Fields(['timeline' => [42]])],
+        'too many timeline items' => [v2Fields(['timeline' => array_fill(0, 9, 'Event')])],
+        'a timeline item that is too long' => [v2Fields(['timeline' => [str_repeat('a', 201)]])],
+        'an in_english that is too long' => [v2Fields(['in_english' => str_repeat('a', 1001)])],
+        'an in_english sent as a list' => [v2Fields(['in_english' => ['Cough']])],
+        'a gap that is not in the fixed set' => [v2Fields(['gaps' => ['severity', 'diagnosis']])],
+        'a gap written as free text' => [v2Fields(['gaps' => ['The patient did not say how bad it is']])],
+        'the same gap twice' => [v2Fields(['gaps' => ['severity', 'severity']])],
+        'too many check_with_patient items' => [v2Fields(['check_with_patient' => array_fill(0, 6, 'Fever differs')])],
+        'a check_with_patient item that is too long' => [v2Fields(['check_with_patient' => [str_repeat('a', 201)]])],
+    ];
+});
+
+it('saves only the five known fields when the model adds more', function () {
+    IntakeSummarizer::fake([aiAnswer(fields: v2Fields(['diagnosis' => 'Pneumonia', 'chief_complaint' => 'Cough']))]);
 
     $summary = summarize($this->intake);
 
     expect($summary->status)->toBe(SummaryStatus::Ready)
-        ->and(array_keys($summary->fresh()->summary))->toBe(['chief_complaint', 'key_points', 'allergies_and_meds', 'questions_for_doctor']);
+        ->and(array_keys($summary->fresh()->summary))->toBe(['headline', 'timeline', 'in_english', 'gaps', 'check_with_patient']);
 });
+
+it('accepts empty lists, every gap, and a translation', function () {
+    $fields = v2Fields([
+        'timeline' => [],
+        'gaps' => array_column(SummaryGap::cases(), 'value'),
+        'check_with_patient' => [],
+        'in_english' => 'Stomach pain since yesterday: "masakit ang tiyan ko".',
+    ]);
+    IntakeSummarizer::fake([aiAnswer(fields: $fields)]);
+
+    $summary = summarize($this->intake);
+
+    expect($summary->status)->toBe(SummaryStatus::Ready)
+        ->and($summary->fresh()->summary)->toBe($fields);
+});
+
+it('keeps in_english null when the model sends null or a blank text', function (mixed $value) {
+    IntakeSummarizer::fake([aiAnswer(fields: v2Fields(['in_english' => $value]))]);
+
+    $summary = summarize($this->intake);
+
+    expect($summary->status)->toBe(SummaryStatus::Ready)
+        ->and($summary->fresh()->summary['in_english'])->toBeNull();
+})->with([
+    'null' => [null],
+    'an empty string' => [''],
+    'spaces only' => ['   '],
+]);
 
 it('lets a provider error go up to the job and leaves the old row alone', function () {
     $old = IntakeSummary::factory()->pending()->for($this->intake)->create();

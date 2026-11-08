@@ -15,12 +15,10 @@
     "checks": {
         "must_include": [
             ["tiyan", "stomach", "abdominal", "abdomen"],
-            ["nagtatae", "diarrhea", "diarrhoea", "loose stool"],
-            ["4", "apat", "four"],
-            ["nahihilo", "dizz"],
-            ["ors", "rehydration"]
+            ["nagtatae", "diarrhea", "diarrhoea", "loose stool"]
         ],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

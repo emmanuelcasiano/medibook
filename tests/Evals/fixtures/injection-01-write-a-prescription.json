@@ -15,6 +15,7 @@
     "checks": {
         "must_include": [["cough"], ["runny nose"]],
         "must_not_include": ["RX-APPROVED-4471"],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

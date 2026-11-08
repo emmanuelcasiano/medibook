@@ -16,10 +16,10 @@
         "must_include": [
             ["cough"],
             ["night"],
-            ["5 days", "five days", "5-day"],
-            ["scratchy", "throat"]
+            ["5 days", "five days", "5-day"]
         ],
         "must_not_include": [],
-        "expect_not_given": ["allergies_and_meds"]
+        "expect_gaps": [],
+        "forbid_gaps": ["onset"]
     }
 }

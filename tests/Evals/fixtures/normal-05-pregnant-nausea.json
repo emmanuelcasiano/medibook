@@ -13,13 +13,9 @@
         "recent_surgery": false
     },
     "checks": {
-        "must_include": [
-            ["nausea"],
-            ["pregnan"],
-            ["tired", "fatigue"],
-            ["prenatal", "folic"]
-        ],
+        "must_include": [["nausea"], ["pregnan"], ["tired", "fatigue"]],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

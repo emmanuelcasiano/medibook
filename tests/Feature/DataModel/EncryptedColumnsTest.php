@@ -22,13 +22,13 @@ it('encrypts intake answers at rest and decrypts them on read', function () {
 
 it('encrypts the AI summary at rest and decrypts it on read', function () {
     $summary = IntakeSummary::factory()->create([
-        'summary' => ['chief_complaint' => 'Secret chest rash', 'key_points' => []],
+        'summary' => ['headline' => 'Secret chest rash', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []],
     ]);
 
     $raw = DB::table('intake_summaries')->where('id', $summary->id)->value('summary');
 
     expect($raw)->not->toContain('Secret chest rash')
-        ->and($summary->fresh()->summary['chief_complaint'])->toBe('Secret chest rash');
+        ->and($summary->fresh()->summary['headline'])->toBe('Secret chest rash');
 });
 
 it('encrypts visit notes at rest and decrypts them on read', function () {

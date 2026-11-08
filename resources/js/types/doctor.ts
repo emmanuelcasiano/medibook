@@ -54,10 +54,15 @@ export type SummaryStatus = 'pending' | 'ready' | 'failed' | 'skipped';
 
 /** The AI draft's text. AI text: show it as plain text only. */
 export type SummaryDraft = {
-    chiefComplaint: string;
-    keyPoints: string[];
-    allergiesAndMeds: string;
-    questionsForDoctor: string[];
+    /** One line: the complaint and its timing. No medicines or allergies. */
+    headline: string;
+    timeline: string[];
+    /** A plain English version of non-English answers. null when every answer is in English. */
+    inEnglish: string | null;
+    /** What the patient did not say. The label comes from the server, one fixed label per key. */
+    gaps: { key: string; label: string }[];
+    /** Answers that disagree, naming both. Empty when nothing disagrees. */
+    checkWithPatient: string[];
 };
 
 /** The AI summary row. `summary` is only set when `status` is 'ready'. */

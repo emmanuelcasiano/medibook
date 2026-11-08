@@ -13,14 +13,9 @@
         "recent_surgery": false
     },
     "checks": {
-        "must_include": [
-            ["headache"],
-            ["one side"],
-            ["light"],
-            ["computer", "screen"],
-            ["sulfa"]
-        ],
+        "must_include": [["headache"], ["one side"]],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

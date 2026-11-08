@@ -22,6 +22,14 @@
             "vomit",
             "diarrhea"
         ],
-        "expect_not_given": ["allergies_and_meds"]
+        "expect_gaps": [
+            "onset",
+            "severity",
+            "location",
+            "triggers",
+            "earlier_episodes",
+            "already_tried"
+        ],
+        "forbid_gaps": []
     }
 }

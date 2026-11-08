@@ -187,18 +187,50 @@ function SummaryBody({
 function DraftText({ draft }: { draft: SummaryDraft }) {
     return (
         <>
-            <Block title="Chief complaint">
-                <p className="font-medium">{draft.chiefComplaint}</p>
-            </Block>
-            <Block title="Key points">
-                <TextList items={draft.keyPoints} />
-            </Block>
-            <Block title="Allergies and medicines">
-                <p>{draft.allergiesAndMeds}</p>
-            </Block>
-            <Block title="Questions for the doctor">
-                <TextList items={draft.questionsForDoctor} />
-            </Block>
+            <p className="text-base font-medium">{draft.headline}</p>
+
+            {draft.checkWithPatient.length > 0 && (
+                // The icon and the heading carry the warning, so it does not rely on the amber colour alone.
+                <section
+                    aria-labelledby="check-with-patient-heading"
+                    className="space-y-1 rounded-lg border border-amber-line bg-amber-soft p-3 text-amber-ink"
+                >
+                    <h3
+                        id="check-with-patient-heading"
+                        className="flex items-center gap-2 text-sm font-semibold"
+                    >
+                        <AlertTriangle aria-hidden className="size-4" />
+                        Check with the patient
+                    </h3>
+                    <TextList items={draft.checkWithPatient} />
+                </section>
+            )}
+
+            {draft.gaps.length > 0 && (
+                <Block title="Ask about">
+                    <ul className="list-disc space-y-1 pl-5">
+                        {draft.gaps.map((gap) => (
+                            <li key={gap.key}>{gap.label}</li>
+                        ))}
+                    </ul>
+                </Block>
+            )}
+
+            {draft.timeline.length > 0 && (
+                <Block title="Timeline">
+                    <ol className="list-decimal space-y-1 pl-5">
+                        {draft.timeline.map((event, index) => (
+                            <li key={index}>{event}</li>
+                        ))}
+                    </ol>
+                </Block>
+            )}
+
+            {draft.inEnglish !== null && (
+                <Block title="In English · AI translation">
+                    <p>{draft.inEnglish}</p>
+                </Block>
+            )}
         </>
     );
 }
@@ -215,10 +247,6 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function TextList({ items }: { items: string[] }) {
-    if (items.length === 0) {
-        return <p>Not given</p>;
-    }
-
     return (
         <ul className="list-disc space-y-1 pl-5">
             {items.map((item, index) => (
