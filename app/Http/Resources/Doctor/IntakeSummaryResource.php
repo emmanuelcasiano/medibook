@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\Doctor;
 
+use App\Enums\SummaryGap;
 use App\Enums\SummaryStatus;
 use App\Models\IntakeSummary;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ final class IntakeSummaryResource extends JsonResource
      * @return array{
      *     status: string,
      *     statusLabel: string,
-     *     summary: array{chiefComplaint: string, keyPoints: list<string>, allergiesAndMeds: string, questionsForDoctor: list<string>}|null,
+     *     summary: array{headline: string, timeline: list<string>, inEnglish: string|null, gaps: list<array{key: string, label: string}>, checkWithPatient: list<string>}|null,
      *     model: string|null,
      *     reviewedAt: string|null,
      *     version: string,
@@ -39,10 +40,17 @@ final class IntakeSummaryResource extends JsonResource
             'statusLabel' => $this->status->label(),
             'summary' => $summary === null ? null : [
                 // GenerateIntakeSummary validates this shape before it saves, so every key is there.
-                'chiefComplaint' => $summary['chief_complaint'],
-                'keyPoints' => $summary['key_points'],
-                'allergiesAndMeds' => $summary['allergies_and_meds'],
-                'questionsForDoctor' => $summary['questions_for_doctor'],
+                'headline' => $summary['headline'],
+                'timeline' => $summary['timeline'],
+                'inEnglish' => $summary['in_english'],
+                // The page shows a fixed label per key, never the model's own words (see SummaryGap). A stored key that
+                // is no longer a case (renamed or removed later) is left out, so an old draft can't break the page.
+                'gaps' => array_values(collect($summary['gaps'])
+                    ->map(static fn (string $key): ?SummaryGap => SummaryGap::tryFrom($key))
+                    ->filter()
+                    ->map(static fn (SummaryGap $gap): array => ['key' => $gap->value, 'label' => $gap->label()])
+                    ->all()),
+                'checkWithPatient' => $summary['check_with_patient'],
             ],
             'model' => $this->model,
             'reviewedAt' => $this->reviewed_at?->toIso8601ZuluString(),

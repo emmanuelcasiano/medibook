@@ -21,14 +21,15 @@ use Laravel\Ai\Responses\StructuredTextResponse;
 // job runs at once. Every test fakes IntakeSummarizer, so none can reach a real provider. "Now" is Friday 30 October
 // 2026, 09:00 in Manila.
 
-/** A good model answer. The chief complaint tells the tests which answers it was made from. */
+/** A good model answer. The headline tells the tests which answers it was made from. */
 function jobAiAnswer(string $complaint = 'Dry cough for a few days'): StructuredTextResponse
 {
     $fields = [
-        'chief_complaint' => $complaint,
-        'key_points' => ['Cough at night'],
-        'allergies_and_meds' => 'Not given',
-        'questions_for_doctor' => [],
+        'headline' => $complaint,
+        'timeline' => ['Cough at night'],
+        'in_english' => null,
+        'gaps' => [],
+        'check_with_patient' => [],
     ];
 
     return new StructuredTextResponse($fields, json_encode($fields), new TextUsage(100, 50), new Meta('anthropic', 'test-model'));
@@ -82,7 +83,7 @@ it('turns a pending summary into a ready one', function () {
     $summary = IntakeSummary::query()->sole();
 
     expect($summary->status)->toBe(SummaryStatus::Ready)
-        ->and($summary->summary['chief_complaint'])->toBe('Dry cough for a few days')
+        ->and($summary->summary['headline'])->toBe('Dry cough for a few days')
         ->and($summary->model)->toBe('test-model')
         ->and($summary->input_tokens)->toBe(100)
         ->and($summary->output_tokens)->toBe(50);
@@ -115,7 +116,7 @@ it('makes a new summary from the new answers when the intake is edited', functio
 
     expect($second->id)->not->toBe($first->id)
         ->and($second->status)->toBe(SummaryStatus::Ready)
-        ->and($second->summary['chief_complaint'])->toBe('Second complaint')
+        ->and($second->summary['headline'])->toBe('Second complaint')
         ->and($second->reviewed_by)->toBeNull()
         ->and($second->reviewed_at)->toBeNull();
 

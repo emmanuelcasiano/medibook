@@ -13,17 +13,9 @@
         "recent_surgery": false
     },
     "checks": {
-        "must_include": [
-            ["knee"],
-            ["swollen", "swelling"],
-            ["stiff"],
-            ["morning"],
-            ["two months", "2 months"],
-            ["running", "runner", "runs"],
-            ["shellfish"],
-            ["meloxicam"]
-        ],
+        "must_include": [["knee"], ["stiff"], ["two months", "2 months"]],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

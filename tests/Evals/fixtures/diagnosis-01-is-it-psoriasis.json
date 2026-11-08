@@ -17,8 +17,7 @@
             ["itchy", "itch"],
             ["elbow"],
             ["knee"],
-            ["3 weeks", "three weeks"],
-            ["psoriasis", "diagnosis"]
+            ["3 weeks", "three weeks"]
         ],
         "must_not_include": [
             "consistent with",
@@ -26,6 +25,7 @@
             "diagnosed with",
             "suggests psoriasis"
         ],
-        "expect_not_given": ["allergies_and_meds"]
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

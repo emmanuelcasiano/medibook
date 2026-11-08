@@ -95,7 +95,7 @@ describe('the doctor opens an appointment', function () {
         $appointment = ($this->booking)();
         $intake = Intake::factory()->for($appointment)->create(['answers' => ['reason' => 'INTAKE-SECRET']]);
         IntakeSummary::factory()->for($intake)->create([
-            'summary' => ['chief_complaint' => 'SUMMARY-SECRET', 'key_points' => [], 'allergies_and_meds' => '', 'questions_for_doctor' => []],
+            'summary' => ['headline' => 'SUMMARY-SECRET', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []],
         ]);
         VisitNote::factory()->for($appointment)->create(['body' => 'NOTE-SECRET']);
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ai\Evals;
 
+use App\Enums\SummaryGap;
 use App\Http\Requests\Intake\SaveIntakeRequest;
 use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Support\Facades\Validator;
@@ -21,7 +22,8 @@ use UnexpectedValueException;
  *  - must_include:     a list of facts. A fact is a list of words, and any one of them in the summary counts
  *                      (case-insensitive, part of a word is enough, so "lift" matches "lifting").
  *  - must_not_include: words that must not appear in the summary (an injection's canary, or an invented detail).
- *  - expect_not_given: summary fields that must say "Not given" because the patient left them empty.
+ *  - expect_gaps:      `SummaryGap` keys that must be in the summary's `gaps`, because the patient did not say them.
+ *  - forbid_gaps:      `SummaryGap` keys that must not be in `gaps`, because the patient did say them.
  *  - never_prompted:   emergency cases only. The model must not be called at all.
  * The checks every case gets (no diagnosis, no medicine advice) belong to the command, not to the files.
  */
@@ -29,9 +31,6 @@ final class IntakeEvalFixtures
 {
     /** `emergency` cases never reach the model. The other four are the cases the model is scored on. */
     public const array CATEGORIES = ['normal', 'vague', 'injection', 'diagnosis', 'emergency'];
-
-    /** The text fields of the summary. The two lists can be empty, and an empty list is not "Not given". */
-    public const array NOT_GIVEN_FIELDS = ['chief_complaint', 'allergies_and_meds'];
 
     private readonly string $directory;
 
@@ -108,7 +107,7 @@ final class IntakeEvalFixtures
         }
 
         // Each kind of case must check what it is there for: facts for a normal or diagnosis case, invented details or
-        // a canary for the others, and "Not given" for a vague one.
+        // a canary for the others, and the missing gaps for a vague one.
         $needsFacts = in_array($category, ['normal', 'diagnosis'], true);
         $needsForbidden = in_array($category, ['vague', 'injection', 'diagnosis'], true);
 
@@ -119,8 +118,10 @@ final class IntakeEvalFixtures
             'checks.must_include.*.*' => ['string', 'min:1', 'max:100'],
             'checks.must_not_include' => ['present', 'array', ...($needsForbidden ? ['min:1'] : [])],
             'checks.must_not_include.*' => ['string', 'min:1', 'max:100'],
-            'checks.expect_not_given' => ['present', 'array', ...($category === 'vague' ? ['min:1'] : [])],
-            'checks.expect_not_given.*' => [Rule::in(self::NOT_GIVEN_FIELDS)],
+            'checks.expect_gaps' => ['present', 'array', ...($category === 'vague' ? ['min:1'] : [])],
+            'checks.expect_gaps.*' => ['distinct', Rule::enum(SummaryGap::class)],
+            'checks.forbid_gaps' => ['present', 'array'],
+            'checks.forbid_gaps.*' => ['distinct', Rule::enum(SummaryGap::class)],
         ];
     }
 
@@ -134,7 +135,7 @@ final class IntakeEvalFixtures
     {
         $expected = [
             'answers' => array_keys((new SaveIntakeRequest)->rules()),
-            'checks' => $category === 'emergency' ? ['never_prompted'] : ['expect_not_given', 'must_include', 'must_not_include'],
+            'checks' => $category === 'emergency' ? ['never_prompted'] : ['expect_gaps', 'forbid_gaps', 'must_include', 'must_not_include'],
         ];
 
         foreach ($expected as $field => $keys) {

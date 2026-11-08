@@ -100,19 +100,17 @@ it('only expects facts the patient wrote', function (string $name, array $fixtur
     expect($invented)->toBe([], "{$name} expects facts that are not in the answers");
 })->with(fn () => fixturesIn('normal', 'vague', 'injection', 'diagnosis'));
 
-it('expects "Not given" only where the patient left the field empty', function (string $name, array $fixture) {
-    $answers = $fixture['answers'];
+it('never expects and forbids the same gap', function (string $name, array $fixture) {
+    $both = array_values(array_intersect($fixture['checks']['expect_gaps'], $fixture['checks']['forbid_gaps']));
 
-    // The summary's `allergies_and_meds` covers two answers, so it can only be "Not given" if both are empty.
-    $wrong = collect($fixture['checks']['expect_not_given'])
-        ->filter(fn (string $field): bool => match ($field) {
-            'allergies_and_meds' => filled($answers['allergies']) || filled($answers['medicines']),
-            'chief_complaint' => filled($answers['reason']),
-        })
-        ->values()
-        ->all();
+    expect($both)->toBe([], "{$name} both expects and forbids a gap");
+})->with(fn () => fixturesIn('normal', 'vague', 'injection', 'diagnosis'));
 
-    expect($wrong)->toBe([], "{$name} expects \"Not given\" for a field the patient filled in");
+it('expects an onset gap only where the patient left the duration empty', function (string $name, array $fixture) {
+    $expectsOnset = in_array('onset', $fixture['checks']['expect_gaps'], true);
+
+    expect($expectsOnset && filled($fixture['answers']['duration']))
+        ->toBeFalse("{$name} expects the onset to be missing, but the patient chose a duration");
 })->with(fn () => fixturesIn('normal', 'vague', 'injection', 'diagnosis'));
 
 it('uses a canary the injection really asks for, so the check is not empty', function (string $name, array $fixture) {
@@ -191,8 +189,23 @@ it('rejects a fixture with a bad shape', function (string $field, Closure $break
 
         return $f;
     }],
-    'a Not given field the summary does not have' => ['checks.expect_not_given.0', function (array $f) {
-        $f['checks']['expect_not_given'] = ['key_points'];
+    'an expected gap that is not one of the fixed keys' => ['checks.expect_gaps.0', function (array $f) {
+        $f['checks']['expect_gaps'] = ['diagnosis'];
+
+        return $f;
+    }],
+    'a forbidden gap that is not one of the fixed keys' => ['checks.forbid_gaps.0', function (array $f) {
+        $f['checks']['forbid_gaps'] = ['key_points'];
+
+        return $f;
+    }],
+    'the same gap listed twice' => ['checks.expect_gaps.1', function (array $f) {
+        $f['checks']['expect_gaps'] = ['onset', 'onset'];
+
+        return $f;
+    }],
+    'the old expect_not_given check' => ['checks', function (array $f) {
+        $f['checks']['expect_not_given'] = [];
 
         return $f;
     }],
@@ -214,9 +227,9 @@ it('rejects a fixture with a bad shape', function (string $field, Closure $break
 
         return $f;
     }],
-    'a vague case that expects no Not given field' => ['checks.expect_not_given', function (array $f) {
+    'a vague case that expects no gap' => ['checks.expect_gaps', function (array $f) {
         $f['category'] = 'vague';
-        $f['checks']['expect_not_given'] = [];
+        $f['checks']['expect_gaps'] = [];
 
         return $f;
     }],

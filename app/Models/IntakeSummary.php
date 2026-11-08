@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $intake_id
  * @property SummaryStatus $status
- * @property array{chief_complaint: string, key_points: list<string>, allergies_and_meds: string, questions_for_doctor: list<string>}|null $summary AI draft, encrypted at rest.
+ * @property array{headline: string, timeline: list<string>, in_english: string|null, gaps: list<string>, check_with_patient: list<string>}|null $summary AI draft, encrypted at rest.
  * @property string|null $model
  * @property int|null $input_tokens
  * @property int|null $output_tokens

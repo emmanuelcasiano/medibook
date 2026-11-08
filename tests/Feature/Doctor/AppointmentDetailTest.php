@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Role;
+use App\Enums\SummaryGap;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Intake;
@@ -58,10 +59,11 @@ describe('the page', function () {
         ]);
         $summary = IntakeSummary::factory()->for($intake)->create([
             'summary' => [
-                'chief_complaint' => 'Itchy rash on the arm',
-                'key_points' => ['Started on Friday', 'Has a fever'],
-                'allergies_and_meds' => 'Penicillin allergy. No medicines.',
-                'questions_for_doctor' => ['Is the rash spreading?'],
+                'headline' => 'Itchy rash on the arm since Friday.',
+                'timeline' => ['Started on Friday'],
+                'in_english' => 'Itchy skin on the arm: "makati ang braso ko".',
+                'gaps' => ['severity', 'earlier_episodes'],
+                'check_with_patient' => ["Fever is ticked 'yes', but the symptoms do not mention a fever."],
             ],
             'model' => 'claude-haiku-5-5',
         ]);
@@ -102,10 +104,15 @@ describe('the page', function () {
                     'status' => 'ready',
                     'statusLabel' => 'Ready',
                     'summary' => [
-                        'chiefComplaint' => 'Itchy rash on the arm',
-                        'keyPoints' => ['Started on Friday', 'Has a fever'],
-                        'allergiesAndMeds' => 'Penicillin allergy. No medicines.',
-                        'questionsForDoctor' => ['Is the rash spreading?'],
+                        'headline' => 'Itchy rash on the arm since Friday.',
+                        'timeline' => ['Started on Friday'],
+                        'inEnglish' => 'Itchy skin on the arm: "makati ang braso ko".',
+                        // The page gets a fixed label per key, never the model's own words.
+                        'gaps' => [
+                            ['key' => 'severity', 'label' => 'How bad it is'],
+                            ['key' => 'earlier_episodes', 'label' => 'Earlier episodes'],
+                        ],
+                        'checkWithPatient' => ["Fever is ticked 'yes', but the symptoms do not mention a fever."],
                     ],
                     'model' => 'claude-haiku-5-5',
                     'reviewedAt' => null,
@@ -168,8 +175,8 @@ describe('the page', function () {
             'answers' => ['reason' => 'Cough', 'internal_note' => 'STRAY-ANSWER-KEY'],
         ]);
         IntakeSummary::factory()->for($intake)->create([
-            'summary' => ['chief_complaint' => 'Cough', 'key_points' => [], 'allergies_and_meds' => 'Not given',
-                'questions_for_doctor' => [], 'diagnosis' => 'STRAY-SUMMARY-KEY'],
+            'summary' => ['headline' => 'Cough', 'timeline' => [], 'in_english' => null, 'gaps' => [],
+                'check_with_patient' => [], 'diagnosis' => 'STRAY-SUMMARY-KEY'],
         ]);
 
         ($this->open)($appointment)
@@ -181,6 +188,26 @@ describe('the page', function () {
                 ->where('intake.answers.fever', false))
             ->assertDontSee('STRAY-ANSWER-KEY')
             ->assertDontSee('STRAY-SUMMARY-KEY');
+    });
+
+    it('sends one fixed label for each gap key, and leaves out a stored key that is no longer a gap', function () {
+        $appointment = ($this->booking)();
+        $intake = Intake::factory()->for($appointment)->create();
+        IntakeSummary::factory()->for($intake)->create([
+            'summary' => ['headline' => 'Cough', 'timeline' => [], 'in_english' => null, 'check_with_patient' => [],
+                'gaps' => [...array_column(SummaryGap::cases(), 'value'), 'a_gap_that_was_removed']],
+        ]);
+
+        ($this->open)($appointment)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('summary.summary.gaps', function ($gaps): bool {
+                $gaps = collect($gaps);
+
+                return $gaps->pluck('key')->all() === array_column(SummaryGap::cases(), 'value')
+                    && $gaps->pluck('label')->every(fn ($label): bool => is_string($label) && $label !== '')
+                    && $gaps->pluck('label')->unique()->count() === count(SummaryGap::cases());
+            }))
+            ->assertDontSee('a_gap_that_was_removed');
     });
 
     it('sends the emergency flag as a yes or no', function () {
@@ -260,7 +287,7 @@ describe('denied access', function () {
         $appointment = ($this->booking)();
         $intake = Intake::factory()->for($appointment)->create(['answers' => ['reason' => 'INTAKE-SECRET']]);
         IntakeSummary::factory()->for($intake)->create([
-            'summary' => ['chief_complaint' => 'SUMMARY-SECRET', 'key_points' => [], 'allergies_and_meds' => '', 'questions_for_doctor' => []],
+            'summary' => ['headline' => 'SUMMARY-SECRET', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []],
         ]);
 
         $this->actingAs(userWithRole($role))

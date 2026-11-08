@@ -55,10 +55,11 @@ function logIntakeAnswers(string $reason): array
 function logAiAnswer(): StructuredTextResponse
 {
     $fields = [
-        'chief_complaint' => 'Rash for a few days',
-        'key_points' => ['Itchy'],
-        'allergies_and_meds' => 'Not given',
-        'questions_for_doctor' => [],
+        'headline' => 'Rash for a few days',
+        'timeline' => ['Itchy'],
+        'in_english' => null,
+        'gaps' => [],
+        'check_with_patient' => [],
     ];
 
     return new StructuredTextResponse($fields, json_encode($fields), new TextUsage(100, 50), new Meta('anthropic', 'test-model'));

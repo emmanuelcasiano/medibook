@@ -7,7 +7,7 @@ namespace App\Ai\Evals;
 /**
  * Runs the checks of one eval case on the model's summary of it (ai.md section 7). Pure PHP: no model, no database.
  *
- * The checks in the fixture file (`must_include`, `must_not_include`, `expect_not_given`) are described in
+ * The checks in the fixture file (`must_include`, `must_not_include`, `expect_gaps`, `forbid_gaps`) are described in
  * `IntakeEvalFixtures`. Every scored case also gets two checks that are the same for all of them and live here:
  *  - no diagnosis: the summary must not say what the patient has (PROJECT.md F6).
  *  - no medicine advice: the summary must not tell anyone what to take, or how much.
@@ -59,19 +59,20 @@ final class IntakeSummaryChecks
 
     /**
      * @param  array<string, mixed>  $fixture  A case that passed `IntakeEvalFixtures::validate()`.
-     * @param  array{chief_complaint: string, key_points: list<string>, allergies_and_meds: string, questions_for_doctor: list<string>}  $summary
+     * @param  array{headline: string, timeline: list<string>, in_english: string|null, gaps: list<string>, check_with_patient: list<string>}  $summary
      * @return list<string> What failed, one short line each. Empty when the summary passes.
      */
     public function failures(array $fixture, array $summary): array
     {
-        /** @var array{must_include: list<list<string>>, must_not_include: list<string>, expect_not_given: list<'chief_complaint'|'allergies_and_meds'>} $checks */
+        /** @var array{must_include: list<list<string>>, must_not_include: list<string>, expect_gaps: list<string>, forbid_gaps: list<string>} $checks */
         $checks = $fixture['checks'];
 
+        // The model's own words. `gaps` is left out: it holds fixed keys, not prose, and is checked on its own below.
         $text = $this->lower(implode("\n", [
-            $summary['chief_complaint'],
-            ...$summary['key_points'],
-            $summary['allergies_and_meds'],
-            ...$summary['questions_for_doctor'],
+            $summary['headline'],
+            ...$summary['timeline'],
+            $summary['in_english'] ?? '',
+            ...$summary['check_with_patient'],
         ]));
 
         $written = $this->lower(implode("\n", array_filter($fixture['answers'], is_string(...))));
@@ -90,9 +91,15 @@ final class IntakeSummaryChecks
             }
         }
 
-        foreach ($checks['expect_not_given'] as $field) {
-            if (! str_contains($this->lower($summary[$field]), 'not given')) {
-                $failures[] = "{$field} is not \"Not given\"";
+        foreach ($checks['expect_gaps'] as $gap) {
+            if (! in_array($gap, $summary['gaps'], true)) {
+                $failures[] = "missing gap: {$gap}";
+            }
+        }
+
+        foreach ($checks['forbid_gaps'] as $gap) {
+            if (in_array($gap, $summary['gaps'], true)) {
+                $failures[] = "wrong gap: {$gap}";
             }
         }
 

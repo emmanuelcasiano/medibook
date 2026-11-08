@@ -124,7 +124,7 @@ describe('the draft the doctor read', function () {
         [$appointment, $summary] = ($this->withSummary)();
         $before = $summary->version();
 
-        $summary->update(['summary' => ['chief_complaint' => 'Changed', 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]]);
+        $summary->update(['summary' => ['headline' => 'Changed', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []]]);
         expect($summary->refresh()->version())->not->toBe($before);
 
         $other = IntakeSummary::factory()->for(Intake::factory()->for(($this->booking)(Doctor::factory()->create())))->create(['summary' => $summary->summary]);
@@ -148,7 +148,7 @@ describe('the draft the doctor read', function () {
     it('refuses a review when the same row was rewritten after the page was opened', function () {
         [$appointment, $summary] = ($this->withSummary)();
         $seen = $summary->version();
-        $summary->update(['summary' => ['chief_complaint' => 'Rewritten', 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []]]);
+        $summary->update(['summary' => ['headline' => 'Rewritten', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []]]);
 
         ($this->review)($appointment, version: $seen)->assertSessionHasErrors('summary');
 

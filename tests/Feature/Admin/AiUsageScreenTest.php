@@ -155,7 +155,7 @@ describe('ai usage screen', function () {
             'medicines' => 'None',
         ]]);
         IntakeSummary::factory()->for($intake)->create([
-            'summary' => ['chief_complaint' => 'SECRET-SUMMARY-TEXT', 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []],
+            'summary' => ['headline' => 'SECRET-SUMMARY-TEXT', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []],
             'created_at' => '2026-11-05 02:00:00',
         ]);
 

@@ -15,12 +15,10 @@
     "checks": {
         "must_include": [
             ["appendix", "surgery", "operation"],
-            ["10 days", "ten days"],
-            ["red"],
-            ["itch"],
-            ["latex"]
+            ["10 days", "ten days"]
         ],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

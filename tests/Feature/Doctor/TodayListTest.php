@@ -196,7 +196,7 @@ describe('the summary column', function () {
     it('never puts the answers or the summary text on the list', function () {
         $intake = Intake::factory()->for(($this->bookingAt)('2026-11-02 10:00'))->create(['answers' => ['reason' => 'Secret chest rash']]);
         IntakeSummary::factory()->for($intake)->create([
-            'summary' => ['chief_complaint' => 'Secret summary line', 'key_points' => [], 'allergies_and_meds' => 'Not given', 'questions_for_doctor' => []],
+            'summary' => ['headline' => 'Secret summary line', 'timeline' => [], 'in_english' => null, 'gaps' => [], 'check_with_patient' => []],
         ]);
 
         $this->actingAs($this->doctorUser)

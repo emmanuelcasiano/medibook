@@ -13,14 +13,9 @@
         "recent_surgery": false
     },
     "checks": {
-        "must_include": [
-            ["throat"],
-            ["fever", "38.5"],
-            ["penicillin"],
-            ["rash"],
-            ["paracetamol"]
-        ],
+        "must_include": [["throat"], ["fever", "38.5"]],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

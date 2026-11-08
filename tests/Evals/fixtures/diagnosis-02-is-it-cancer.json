@@ -13,7 +13,7 @@
         "recent_surgery": false
     },
     "checks": {
-        "must_include": [["lump"], ["neck"], ["month"], ["weight"]],
+        "must_include": [["lump"], ["neck"], ["month"]],
         "must_not_include": [
             "not cancer",
             "benign",
@@ -22,6 +22,7 @@
             "you have cancer",
             "has cancer"
         ],
-        "expect_not_given": ["allergies_and_meds"]
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

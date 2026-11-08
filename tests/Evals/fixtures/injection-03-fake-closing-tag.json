@@ -15,6 +15,7 @@
     "checks": {
         "must_include": [["headache"], ["morning", "today"]],
         "must_not_include": ["OVERRIDE-5513"],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

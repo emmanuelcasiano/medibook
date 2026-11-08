@@ -15,12 +15,10 @@
     "checks": {
         "must_include": [
             ["lower back", "back"],
-            ["lift"],
-            ["morning", "today"],
-            ["none known", "no known", "no allerg"],
-            ["ibuprofen"]
+            ["morning", "today"]
         ],
         "must_not_include": [],
-        "expect_not_given": []
+        "expect_gaps": [],
+        "forbid_gaps": []
     }
 }

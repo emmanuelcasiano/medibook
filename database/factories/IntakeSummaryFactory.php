@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\SummaryGap;
 use App\Enums\SummaryStatus;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
@@ -25,10 +26,11 @@ class IntakeSummaryFactory extends Factory
             'intake_id' => Intake::factory(),
             'status' => SummaryStatus::Ready,
             'summary' => [
-                'chief_complaint' => fake()->sentence(6),
-                'key_points' => [fake()->sentence(), fake()->sentence()],
-                'allergies_and_meds' => 'Not given',
-                'questions_for_doctor' => [fake()->sentence()],
+                'headline' => fake()->sentence(8),
+                'timeline' => [fake()->sentence(), fake()->sentence()],
+                'in_english' => null,
+                'gaps' => [SummaryGap::Severity->value, SummaryGap::Triggers->value],
+                'check_with_patient' => [],
             ],
             'model' => 'claude-haiku-5-5',
             'input_tokens' => fake()->numberBetween(150, 400),
