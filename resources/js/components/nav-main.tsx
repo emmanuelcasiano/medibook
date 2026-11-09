@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -12,6 +12,7 @@ import type { NavGroup } from '@/types';
 
 export function NavMain({ groups }: { groups: NavGroup[] }) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { openFollowUps } = usePage().props;
 
     return (
         <>
@@ -41,6 +42,16 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
                                         >
                                             {item.icon && <item.icon />}
                                             <span>{item.title}</span>
+                                            {item.badge === 'followUps' &&
+                                                openFollowUps > 0 && (
+                                                    <span className="ml-auto rounded-full border border-amber-line bg-amber-soft px-1.5 text-xs font-semibold text-amber-ink group-data-[collapsible=icon]:hidden">
+                                                        {openFollowUps}
+                                                        <span className="sr-only">
+                                                            {' '}
+                                                            follow-up to book
+                                                        </span>
+                                                    </span>
+                                                )}
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

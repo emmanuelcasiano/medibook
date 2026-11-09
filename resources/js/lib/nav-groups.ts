@@ -47,6 +47,7 @@ const roleNavGroups: Record<Role, NavGroup[]> = {
                     title: 'My appointments',
                     href: myHome(),
                     icon: CalendarDays,
+                    badge: 'followUps',
                 },
                 {
                     title: 'Book an appointment',

@@ -8,6 +8,7 @@ use App\Http\Controllers\Booking\BookingController;
 use App\Http\Controllers\Booking\SlotController;
 use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
 use App\Http\Controllers\Patient\AppointmentController as PatientAppointmentController;
+use App\Http\Controllers\Patient\FollowUpBookingController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use Database\Seeders\DemoScheduleSeeder;
 
@@ -29,6 +30,7 @@ arch()->preset()->laravel()
         SlotController::class,
         DoctorAppointmentController::class,
         PatientAppointmentController::class,
+        FollowUpBookingController::class,
         StaffAppointmentController::class,
     ]);
 

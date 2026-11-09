@@ -5,6 +5,18 @@ export type AppointmentStatus =
     | 'cancelled'
     | 'no_show';
 
+/** A visit a doctor asked the patient to book, as "My appointments" receives it. Dates are clinic dates ('Y-m-d'). */
+export type MyFollowUp = {
+    ulid: string;
+    service: { name: string; durationMinutes: number };
+    /** null means any doctor will do. */
+    doctor: { name: string; specialty: string } | null;
+    windowStartsOn: string;
+    windowEndsOn: string;
+    /** The doctor's message to this patient, if they wrote one. */
+    note: string | null;
+};
+
 /** One row of "My appointments", as the page receives it. All times are ISO 8601 UTC. */
 export type MyAppointment = {
     ulid: string;

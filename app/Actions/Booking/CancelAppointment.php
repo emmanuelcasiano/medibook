@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Actions\Booking;
 
 use App\Enums\AppointmentStatus;
+use App\Enums\FollowUpStatus;
 use App\Models\Appointment;
+use App\Models\FollowUp;
 use App\Models\User;
 use App\Notifications\AppointmentCancelled;
 use App\Support\AuditLogger;
@@ -42,11 +44,15 @@ final class CancelAppointment
      * A patient who cancels their own booking gets none. `$notify` is false only for MoveAppointment: a move is not a
      * cancel to the patient, who gets the new time instead.
      *
+     * When the booking came from a follow-up (PROJECT.md section 9), the follow-up goes back to `open` in the same
+     * transaction, so the patient can book it again. `$reopenFollowUp` is false only for MoveAppointment, which points
+     * the follow-up at the new booking instead.
+     *
      * @throws AuthorizationException When $actor may not cancel this appointment.
      * @throws ValidationException When the appointment is not `booked`, a patient is inside the 2 hour limit, or
      *                             staff gave no reason or one that is too long.
      */
-    public function handle(User $actor, Appointment $appointment, ?string $reason = null, bool $audit = true, bool $notify = true): Appointment
+    public function handle(User $actor, Appointment $appointment, ?string $reason = null, bool $audit = true, bool $notify = true, bool $reopenFollowUp = true): Appointment
     {
         // Before any lock or write, so a user who may not cancel this booking learns nothing about its state.
         Gate::forUser($actor)->authorize('cancel', $appointment);
@@ -62,7 +68,7 @@ final class CancelAppointment
             throw ValidationException::withMessages(['reason' => sprintf('The reason may not be longer than %d characters.', self::MAX_REASON_LENGTH)]);
         }
 
-        return DB::transaction(function () use ($actor, $appointment, $reason, $audit, $notify): Appointment {
+        return DB::transaction(function () use ($actor, $appointment, $reason, $audit, $notify, $reopenFollowUp): Appointment {
             // Lock and re-read the row. The model in the caller's hand may be stale, and without the lock a cancel
             // and a check-in (or two cancels) running together could both pass the status check below.
             $current = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
@@ -85,6 +91,14 @@ final class CancelAppointment
                 'cancelled_by' => $actor->id,
                 'cancel_reason' => $reason,
             ]);
+
+            // The appointment row is locked above, so no other request is booking or cancelling this one. One UPDATE,
+            // no read first; it touches no row when the booking did not come from a follow-up.
+            if ($reopenFollowUp) {
+                FollowUp::query()
+                    ->where('booked_appointment_id', $current->id)
+                    ->update(['status' => FollowUpStatus::Open->value, 'booked_appointment_id' => null]);
+            }
 
             if ($audit) {
                 $this->audit->record($actor, 'appointment.cancelled', $current, [

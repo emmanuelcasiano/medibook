@@ -13,6 +13,8 @@ declare module '@inertiajs/core' {
             demo: boolean;
             auth: Auth;
             sidebarOpen: boolean;
+            /** How many follow-ups the signed-in patient can book. 0 for every other role. */
+            openFollowUps: number;
             [key: string]: unknown;
         };
     }

@@ -13,6 +13,8 @@ export type NavItem = {
     isActive?: boolean;
     /** A path that keeps the item active on deeper pages, when its own `href` is not the start of them. */
     activePrefix?: string;
+    /** Marks an item that shows a count badge from a shared page prop, when that count is above zero. */
+    badge?: 'followUps';
 };
 
 /** A labelled block of menu items in the sidebar. */

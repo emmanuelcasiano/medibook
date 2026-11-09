@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import DoctorController from '@/actions/App/Http/Controllers/Booking/DoctorController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import BookingController from '@/actions/App/Http/Controllers/Booking/BookingController';
+import FollowUpBookingController from '@/actions/App/Http/Controllers/Patient/FollowUpBookingController';
 import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
 import DayPicker from '@/components/booking/day-picker';
@@ -14,6 +15,7 @@ import type {
     BookableDoctor,
     BookableService,
     BookingDay,
+    BookingFollowUp,
     BookingSlot,
 } from '@/types';
 
@@ -24,6 +26,8 @@ type Props = {
     days: BookingDay[];
     selectedDate: string;
     slots: BookingSlot[];
+    /** Set when the visit is booked from a follow-up. The service and doctor are then fixed, and the days are its window. */
+    followUp?: BookingFollowUp;
 };
 
 export default function BookingSlots({
@@ -32,6 +36,7 @@ export default function BookingSlots({
     days,
     selectedDate,
     slots,
+    followUp,
 }: Props) {
     const { auth, errors } = usePage().props;
 
@@ -49,9 +54,28 @@ export default function BookingSlots({
             : null;
 
     const hrefFor = (date: string) =>
-        doctor === null
-            ? SlotController.any(service, { query: { date } })
-            : SlotController.doctor({ service, doctor }, { query: { date } });
+        followUp !== undefined
+            ? FollowUpBookingController.slots(followUp.ulid, {
+                  query: { date },
+              })
+            : doctor === null
+              ? SlotController.any(service, { query: { date } })
+              : SlotController.doctor({ service, doctor }, { query: { date } });
+
+    const confirmHref = (startsAt: string) => {
+        if (followUp !== undefined) {
+            return FollowUpBookingController.confirm(followUp.ulid, {
+                query: { starts_at: startsAt },
+            });
+        }
+
+        return BookingController.confirm(service, {
+            query:
+                doctor === null
+                    ? { starts_at: startsAt }
+                    : { starts_at: startsAt, doctor_id: doctor.id },
+        });
+    };
 
     const doctorLabel = doctor === null ? 'Any available doctor' : doctor.name;
 
@@ -85,22 +109,37 @@ export default function BookingSlots({
             <Head title={`Choose a time for ${service.name}`} />
 
             <div className="space-y-6">
-                <BookingSteps current={3} />
+                {/* A follow-up has no service or doctor to choose, so the steps for them are left out. */}
+                {followUp === undefined && <BookingSteps current={3} />}
 
                 <PageHeader
-                    title="Pick a day and time"
+                    title={
+                        followUp === undefined
+                            ? 'Pick a day and time'
+                            : 'Book your follow-up'
+                    }
                     description={
                         <>
                             <p>
                                 {service.name} · {service.durationMinutes} min ·{' '}
                                 {doctorLabel}{' '}
-                                <Link
-                                    href={DoctorController.index(service)}
-                                    className="text-foreground underline underline-offset-4"
-                                >
-                                    Change doctor
-                                </Link>
+                                {followUp === undefined && (
+                                    <Link
+                                        href={DoctorController.index(service)}
+                                        className="text-foreground underline underline-offset-4"
+                                    >
+                                        Change doctor
+                                    </Link>
+                                )}
                             </p>
+                            {followUp !== undefined && (
+                                <p>
+                                    Your doctor asked you to come back between{' '}
+                                    {formatClinicDate(followUp.windowStartsOn)}{' '}
+                                    and{' '}
+                                    {formatClinicDate(followUp.windowEndsOn)}.
+                                </p>
+                            )}
                             <p>All times are Manila time.</p>
                         </>
                     }
@@ -193,25 +232,7 @@ export default function BookingSlots({
                                     <Button disabled>Continue</Button>
                                 ) : (
                                     <Button asChild>
-                                        <Link
-                                            href={BookingController.confirm(
-                                                service,
-                                                {
-                                                    query:
-                                                        doctor === null
-                                                            ? {
-                                                                  starts_at:
-                                                                      selectedSlot,
-                                                              }
-                                                            : {
-                                                                  starts_at:
-                                                                      selectedSlot,
-                                                                  doctor_id:
-                                                                      doctor.id,
-                                                              },
-                                                },
-                                            )}
-                                        >
+                                        <Link href={confirmHref(selectedSlot)}>
                                             Continue
                                         </Link>
                                     </Button>

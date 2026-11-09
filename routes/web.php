@@ -16,6 +16,7 @@ use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentContro
 use App\Http\Controllers\Doctor\TodayController;
 use App\Http\Controllers\Doctor\VisitNoteController;
 use App\Http\Controllers\Patient\AppointmentController;
+use App\Http\Controllers\Patient\FollowUpBookingController;
 use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\ScheduleController;
@@ -118,6 +119,13 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
             // One address for the form: PUT creates the intake the first time and replaces its answers after that.
             Route::get('appointments/{appointment}/intake', [IntakeController::class, 'edit'])->name('appointments.intake');
             Route::put('appointments/{appointment}/intake', [IntakeController::class, 'update'])->middleware('throttle:intake')->name('appointments.intake.update');
+
+            // Booking from a follow-up the doctor asked for. `{followUp}` is a ULID, and the Policy lets only its own
+            // patient in while it is open. Same two steps and limiters as the public flow; the service and doctor
+            // come from the follow-up, so the address carries only the time.
+            Route::get('follow-ups/{followUp}/book', [FollowUpBookingController::class, 'slots'])->middleware('throttle:booking-pages')->name('follow-ups.book');
+            Route::get('follow-ups/{followUp}/confirm', [FollowUpBookingController::class, 'confirm'])->middleware('throttle:booking-pages')->name('follow-ups.confirm');
+            Route::post('follow-ups/{followUp}/confirm', [FollowUpBookingController::class, 'store'])->middleware('throttle:booking')->name('follow-ups.store');
         });
     });
 });
