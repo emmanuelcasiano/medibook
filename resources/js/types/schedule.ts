@@ -85,3 +85,24 @@ export type DaySchedule = {
     stepMinutes: number;
     doctors: ScheduleDoctor[];
 };
+
+/** One search result in the walk-in dialog. The server sends these three fields and nothing else about a patient. */
+export type WalkInPatient = {
+    id: number;
+    name: string;
+    email: string;
+};
+
+/**
+ * What the walk-in dialog can offer so far. It asks the server (a JSON request, no page change) when it opens and
+ * whenever the visit type or the doctor changes, so every rule of the slot finders applies and the browser works out
+ * nothing.
+ */
+export type WalkInOptions = {
+    /** Visit types that can be booked now. */
+    services: Array<{ id: number; name: string; durationMinutes: number }>;
+    /** Bookable doctors who offer the picked visit type. Empty until one is picked. */
+    doctors: Array<{ id: number; name: string }>;
+    /** Today's nearest free start times from now, earliest first. Empty until a visit type and a doctor are picked. */
+    slots: BookingSlot[];
+};

@@ -24,11 +24,12 @@ final class FindAvailableSlotsForAnyDoctor
      *
      * @param  CarbonImmutable  $fromDate  Any instant on the first day. It is read as a clinic date.
      * @param  CarbonImmutable  $toDate  Any instant on the last day. It is read as a clinic date.
+     * @param  bool  $ignoreLeadTime  Passed on to FindAvailableSlots. Only the staff walk-in path sets it.
      * @return Collection<int, CarbonImmutable> UTC start times, earliest first, no repeats. Empty if the service is switched off or no bookable doctor offers it.
      *
      * @throws InvalidArgumentException When $toDate is on a day before $fromDate.
      */
-    public function handle(Service $service, CarbonImmutable $fromDate, CarbonImmutable $toDate): Collection
+    public function handle(Service $service, CarbonImmutable $fromDate, CarbonImmutable $toDate, bool $ignoreLeadTime = false): Collection
     {
         $timezone = (string) config('app.clinic_timezone');
 
@@ -45,7 +46,7 @@ final class FindAvailableSlotsForAnyDoctor
         // One query for every bookable doctor who offers the service. A doctor who does not offer it, or whose
         // account is switched off, is never asked.
         return $service->doctors()->bookable()->get()
-            ->flatMap(fn ($doctor): Collection => $this->findSlots->handle($service, $doctor, $fromDate, $toDate))
+            ->flatMap(fn ($doctor): Collection => $this->findSlots->handle($service, $doctor, $fromDate, $toDate, ignoreLeadTime: $ignoreLeadTime))
             ->unique(fn (CarbonImmutable $slot): int => $slot->getTimestamp())
             ->sortBy(fn (CarbonImmutable $slot): int => $slot->getTimestamp())
             ->values();

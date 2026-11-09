@@ -38,11 +38,14 @@ final class FindAvailableSlots
      * @param  Appointment|null  $ignoring  A booking that is about to be moved. It no longer blocks its own time, so
      *                                      the staff move picker can offer a 15 minute shift. Only used for that;
      *                                      the patient pages never pass it.
+     * @param  bool  $ignoreLeadTime  Offer times from now instead of from now plus the lead time. Only the staff walk-in
+     *                                path sets it: a patient who is at the desk can be seen in minutes. A time in the past is
+     *                                still never offered, and every other rule above stays.
      * @return Collection<int, CarbonImmutable> UTC start times, earliest first. Empty if the doctor does not offer the service, or the dates are all in the past or beyond the window.
      *
      * @throws InvalidArgumentException When $toDate is on a day before $fromDate.
      */
-    public function handle(Service $service, Doctor $doctor, CarbonImmutable $fromDate, CarbonImmutable $toDate, ?Appointment $ignoring = null): Collection
+    public function handle(Service $service, Doctor $doctor, CarbonImmutable $fromDate, CarbonImmutable $toDate, ?Appointment $ignoring = null, bool $ignoreLeadTime = false): Collection
     {
         $timezone = (string) config('app.clinic_timezone');
         $firstDay = $fromDate->setTimezone($timezone)->startOfDay();
@@ -70,7 +73,8 @@ final class FindAvailableSlots
         }
 
         // A slot must start at least this long from now, so nobody books a visit that starts in the next minutes.
-        $earliestStart = $now->addHours((int) config('medibook.lead_time_hours'))->getTimestamp();
+        // The walk-in path skips the wait but not the past: `now` itself is the floor.
+        $earliestStart = ($ignoreLeadTime ? $now : $now->addHours((int) config('medibook.lead_time_hours')))->getTimestamp();
 
         // One query for the whole week's pattern, then the loop below only does date math.
         $rangesByWeekday = $doctor->workingHours()->orderBy('starts_at')->get()->groupBy('weekday');
