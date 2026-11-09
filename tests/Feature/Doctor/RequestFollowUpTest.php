@@ -21,8 +21,8 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 
 // "Ask the patient to come back" on "Finish visit" (step L.2): the doctor's finish request can carry a `follow_up`
-// group, and the visit and the follow-up are saved together or not at all. The `follow_up.requested` audit event is
-// step L.5, and the patient and staff screens are L.3 and L.4. "Now" is fixed at Monday 2 November 2026, 09:00 in
+// group, and the visit and the follow-up are saved together or not at all. The `follow_up.requested` audit event is tested in
+// FollowUpAuditTest (step L.5), and the patient and staff screens are L.3 and L.4. "Now" is fixed at Monday 2 November 2026, 09:00 in
 // Manila, so "today" for the clinic is 2026-11-02.
 
 beforeEach(function () {

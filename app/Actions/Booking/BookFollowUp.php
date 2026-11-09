@@ -8,6 +8,7 @@ use App\Enums\FollowUpStatus;
 use App\Models\Appointment;
 use App\Models\FollowUp;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ final class BookFollowUp
     public function __construct(
         private readonly BookAppointment $book,
         private readonly BookAnyDoctor $bookAnyDoctor,
+        private readonly AuditLogger $audit,
     ) {}
 
     /**
@@ -43,7 +45,8 @@ final class BookFollowUp
      * Staff may call it for the patient (step L.4): the follow-up still decides who is booked and with whom, and the
      * patient gets the same confirmation email.
      *
-     * The `follow_up.booked` audit event is step L.5, so only the `appointment.booked` row is written here.
+     * Besides the `appointment.booked` row, it writes one `follow_up.booked` row in the same transaction, naming $actor
+     * (the patient, or the staff member who pressed the button) and the appointment that was made.
      *
      * @throws AuthorizationException When $actor may not book this follow-up.
      * @throws ValidationException When the follow-up is no longer open, the day is outside its window, or
@@ -58,7 +61,7 @@ final class BookFollowUp
         // When staff press the button, the audit row names them and not the patient. A patient booking stays as it was.
         $bookedBy = $actor->isStaff() ? $actor : null;
 
-        return DB::transaction(function () use ($followUp, $startsAt, $bookedBy): Appointment {
+        return DB::transaction(function () use ($actor, $followUp, $startsAt, $bookedBy): Appointment {
             $current = FollowUp::query()->whereKey($followUp->id)->lockForUpdate()->firstOrFail();
 
             if ($current->status !== FollowUpStatus::Open) {
@@ -78,6 +81,12 @@ final class BookFollowUp
             $current->update([
                 'status' => FollowUpStatus::Booked,
                 'booked_appointment_id' => $appointment->id,
+            ]);
+
+            $this->audit->record($actor, 'follow_up.booked', $current, [
+                'status_from' => FollowUpStatus::Open->value,
+                'status_to' => FollowUpStatus::Booked->value,
+                'appointment_id' => $appointment->id,
             ]);
 
             return $appointment;
