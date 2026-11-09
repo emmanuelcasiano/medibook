@@ -40,6 +40,9 @@ final class BookFollowUp
      * Like BookAppointment, this trusts that $startsAt was chosen from the slot finders. The Form Request asks
      * CheckSlotIsOffered; a caller without a Form Request (a job, an AI tool) must do the same.
      *
+     * Staff may call it for the patient (step L.4): the follow-up still decides who is booked and with whom, and the
+     * patient gets the same confirmation email.
+     *
      * The `follow_up.booked` audit event is step L.5, so only the `appointment.booked` row is written here.
      *
      * @throws AuthorizationException When $actor may not book this follow-up.
@@ -48,10 +51,14 @@ final class BookFollowUp
      */
     public function handle(User $actor, FollowUp $followUp, CarbonImmutable $startsAt): Appointment
     {
-        // Before any lock or read, so a user who may not book this follow-up learns nothing about its state.
-        Gate::forUser($actor)->authorize('book', $followUp);
+        // Before any lock or read, so a user who may not book this follow-up learns nothing about its state. Staff book
+        // for the patient (`manage`), a patient books their own (`book`). Any other role has neither, so it is refused.
+        Gate::forUser($actor)->authorize($actor->isStaff() ? 'manage' : 'book', $followUp);
 
-        return DB::transaction(function () use ($followUp, $startsAt): Appointment {
+        // When staff press the button, the audit row names them and not the patient. A patient booking stays as it was.
+        $bookedBy = $actor->isStaff() ? $actor : null;
+
+        return DB::transaction(function () use ($followUp, $startsAt, $bookedBy): Appointment {
             $current = FollowUp::query()->whereKey($followUp->id)->lockForUpdate()->firstOrFail();
 
             if ($current->status !== FollowUpStatus::Open) {
@@ -65,8 +72,8 @@ final class BookFollowUp
             $current->loadMissing(['patient', 'doctor', 'service']);
 
             $appointment = $current->same_doctor
-                ? $this->book->handle($current->patient, $current->doctor, $current->service, $startsAt)
-                : $this->bookAnyDoctor->handle($current->patient, $current->service, $startsAt);
+                ? $this->book->handle($current->patient, $current->doctor, $current->service, $startsAt, actor: $bookedBy)
+                : $this->bookAnyDoctor->handle($current->patient, $current->service, $startsAt, $bookedBy);
 
             $current->update([
                 'status' => FollowUpStatus::Booked,
