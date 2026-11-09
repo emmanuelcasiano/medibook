@@ -10,6 +10,7 @@ use App\Models\FollowUp;
 use App\Models\FollowUpEvent;
 use App\Models\User;
 use App\Notifications\FollowUpReminder;
+use App\Support\AuditLogger;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 final class SendFollowUpReminder
 {
+    public function __construct(private readonly AuditLogger $audit) {}
+
     /**
      * Email the patient a reminder to book $followUp (PROJECT.md section 9). The email holds the doctor, the visit
      * type and the dates, and never the doctor's note: it leaves our servers (PROJECT.md F9). It is queued after the
@@ -26,6 +29,9 @@ final class SendFollowUpReminder
      * Refused when the follow-up is not `open`, when its window is over (the patient can't book it any more, so the
      * email would point at nothing: staff call instead), and when a reminder already went out today (clinic day), so
      * a double click or two staff members can't send two emails. Locked and read again, like the other staff actions.
+     *
+     * It writes one `follow_up.reminded` audit row in the same transaction. The metadata is empty: the patient's address
+     * and the email text stay out of the log.
      *
      * @throws AuthorizationException When $actor may not manage this follow-up.
      * @throws ValidationException When one of the refusals above applies.
@@ -60,6 +66,8 @@ final class SendFollowUpReminder
                 'type' => FollowUpEventType::Reminded,
                 'created_at' => $now,
             ]);
+
+            $this->audit->record($actor, 'follow_up.reminded', $current);
 
             $current->loadMissing('patient')->patient->notify(new FollowUpReminder($current));
 

@@ -10,6 +10,7 @@ use App\Models\Appointment;
 use App\Models\FollowUp;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ final class RequestFollowUp
 {
     /** How far ahead the window may end. The mockup's "In 1 month" ends about 32 days out, so 30 would refuse it. */
     private const int MAX_DAYS_AHEAD = 60;
+
+    public function __construct(private readonly AuditLogger $audit) {}
 
     /**
      * The doctor asks the patient of a finished visit to come back inside a date range (PROJECT.md section 9). It
@@ -39,7 +42,8 @@ final class RequestFollowUp
      * - the visit has no follow-up yet. The table has no unique index on the visit, so the lock is what makes this
      *   check safe against two requests at once.
      *
-     * The `follow_up.requested` audit event is step L.5, so no audit row is written here.
+     * It writes one `follow_up.requested` audit row in the same transaction, so a refused request leaves none. The
+     * metadata holds ids and dates only, never the note.
      *
      * @throws AuthorizationException When $actor is not the appointment's own doctor.
      * @throws ValidationException When a rule above fails. The errors are keyed like the form fields.
@@ -48,7 +52,7 @@ final class RequestFollowUp
     {
         Gate::forUser($actor)->authorize('requestFollowUp', $appointment);
 
-        return DB::transaction(function () use ($appointment, $data): FollowUp {
+        return DB::transaction(function () use ($actor, $appointment, $data): FollowUp {
             $visit = Appointment::query()->whereKey($appointment->id)->lockForUpdate()->firstOrFail();
 
             if ($visit->status !== AppointmentStatus::Completed) {
@@ -85,7 +89,7 @@ final class RequestFollowUp
                 throw ValidationException::withMessages(['appointment' => 'A follow-up was already requested for this visit.']);
             }
 
-            return FollowUp::create([
+            $followUp = FollowUp::create([
                 'patient_id' => $visit->patient_id,
                 'doctor_id' => $visit->doctor_id,
                 'service_id' => $data->serviceId,
@@ -96,6 +100,16 @@ final class RequestFollowUp
                 'note' => $data->note,
                 'status' => FollowUpStatus::Open,
             ]);
+
+            $this->audit->record($actor, 'follow_up.requested', $followUp, [
+                'source_appointment_id' => $visit->id,
+                'service_id' => $data->serviceId,
+                'window_starts_on' => $data->startsOn->toDateString(),
+                'window_ends_on' => $data->endsOn->toDateString(),
+                'same_doctor' => $data->sameDoctor,
+            ]);
+
+            return $followUp;
         });
     }
 }

@@ -31,7 +31,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 // The staff Follow-ups page (step L.4): the list and its states, the side panel, and the three buttons (book for the
 // patient, log a call, send a reminder). The booking rules (three guards, patient limits) are tested in
 // BookAppointmentTest and BookFollowUpTest; here we test who may press each button, what staff are (and are not) told,
-// and the rules the new Actions add. Audit events for follow-ups are step L.5.
+// and the rules the new Actions add. The audit events for follow-ups are tested in FollowUpAuditTest (step L.5).
 // "Now" is Friday 30 October 2026, 09:00 in Manila. The doctor works Mondays 08:00 to 12:00 and Fridays 08:00 to 17:00,
 // and the service is 60 minutes with no buffer. The follow-up window is Monday 2 to Friday 6 November.
 

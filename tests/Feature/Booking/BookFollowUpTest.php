@@ -26,7 +26,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 // Booking from a follow-up (step L.3): the list on "My appointments", the two booking pages and the booking itself.
 // The booking rules (three guards, patient limits) are tested in BookAppointmentTest and ConfirmBookingTest. These
 // tests cover what a follow-up adds: who may use it, that the service and doctor are its own, the window, and that the
-// follow-up is linked on a booking and reopened on a cancel. Staff screens and audit events are L.4 and L.5.
+// follow-up is linked on a booking and reopened on a cancel. The staff screens are L.4 and the audit events are L.5.
 // "Now" is Friday 30 October 2026, 09:00 in Manila. The doctor works Mondays 08:00 to 12:00 and Fridays 08:00 to 17:00,
 // and the service is 60 minutes with no buffer. The follow-up window is Monday 2 to Friday 6 November, so Monday 9
 // November is a day the doctor works that the window does not cover.
