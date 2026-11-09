@@ -21,6 +21,7 @@ use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\FollowUpController as StaffFollowUpController;
 use App\Http\Controllers\Staff\ScheduleController;
+use App\Http\Controllers\Staff\WalkInController;
 use App\Http\Controllers\WelcomeController;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -92,6 +93,13 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::post('appointments/{appointment}/no-show', [StaffAppointmentController::class, 'noShow'])->middleware('throttle:staff-actions')->name('appointments.no-show');
         Route::post('appointments/{appointment}/cancel', [StaffAppointmentController::class, 'cancel'])->middleware('throttle:staff-actions')->name('appointments.cancel');
         Route::post('appointments/{appointment}/move', [StaffAppointmentController::class, 'move'])->middleware('throttle:staff-actions')->name('appointments.move');
+
+        // The "New walk-in" dialog (staff only: the Policy refuses an admin). The two lookups answer JSON for the dialog,
+        // so type-ahead gets its own, higher limiter and can't use up the desk's button allowance. The patient search is a
+        // POST so a name or email never sits in an address. The booking writes under row locks, like the buttons above.
+        Route::post('walk-ins/patients', [WalkInController::class, 'patients'])->middleware('throttle:staff-lookups')->name('walk-ins.patients');
+        Route::get('walk-ins/options', [WalkInController::class, 'options'])->middleware('throttle:staff-lookups')->name('walk-ins.options');
+        Route::post('walk-ins', [WalkInController::class, 'store'])->middleware('throttle:staff-actions')->name('walk-ins.store');
 
         // Follow-ups a doctor asked for (PROJECT.md section 9). An admin may look at the list, like the schedule. The
         // three buttons are staff only: `{followUp}` is a ULID, and the Policy refuses an admin. Each writes under a

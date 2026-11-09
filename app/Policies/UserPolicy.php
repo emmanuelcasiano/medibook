@@ -19,6 +19,15 @@ final class UserPolicy
         return $user->isAdmin();
     }
 
+    /**
+     * Create a patient account for someone at the front desk (the walk-in dialog). Staff only; `create` above stays
+     * admin only and never makes a patient.
+     */
+    public function createPatient(User $user): bool
+    {
+        return $user->isStaff();
+    }
+
     /** An admin can't deactivate themselves, so the clinic can't lock itself out by accident. */
     public function deactivate(User $user, User $target): bool
     {

@@ -19,6 +19,7 @@ import {
 } from '@/components/schedule/status-styles';
 import ViewToggle from '@/components/schedule/view-toggle';
 import WaitingStrip from '@/components/schedule/waiting-strip';
+import WalkInDialog from '@/components/schedule/walk-in-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -227,6 +228,8 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                             options={options}
                             onChange={choose}
                         />
+                        {/* The Policy refuses an admin on the server; the button is only hidden for them. */}
+                        {!viewOnly && <WalkInDialog today={schedule.today} />}
                     </nav>
                 </div>
 

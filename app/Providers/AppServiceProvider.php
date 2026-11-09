@@ -58,6 +58,11 @@ class AppServiceProvider extends ServiceProvider
         // so the cap is higher than for patients: 60 a minute per staff member, and still far too few for a loop.
         RateLimiter::for('staff-actions', fn (Request $request): Limit => Limit::perMinute(60)->by((string) (Auth::id() ?? $request->ip())));
 
+        // The walk-in dialog's search and time lists read rows only, but fire on typing (the page waits a moment after the
+        // last key). 120 a minute per staff member is far above a person typing, and apart from `staff-actions` so a busy
+        // search can't use up the allowance for check-in and cancel.
+        RateLimiter::for('staff-lookups', fn (Request $request): Limit => Limit::perMinute(120)->by((string) (Auth::id() ?? $request->ip())));
+
         // Doctor buttons that write under a row lock ("Mark reviewed", and later visit notes and "Finish visit"). A
         // doctor works through a few patients an hour, so 30 a minute is far above real use and too few for a loop.
         RateLimiter::for('doctor-actions', fn (Request $request): Limit => Limit::perMinute(30)->by((string) (Auth::id() ?? $request->ip())));

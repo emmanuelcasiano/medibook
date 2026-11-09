@@ -24,17 +24,18 @@ final class BookAnyDoctor
      * Doctors are tried in the order of their id. A doctor who looked free a moment ago may have been booked since,
      * so a "time taken" answer from BookAppointment (which checks inside its row lock) moves on to the next one.
      * Any other error (patient limits, a switched-off service) would be the same for every doctor, so it stops here.
-     * `$actor` is passed on to BookAppointment when staff book for the patient (see there).
+     * `$actor` is passed on to BookAppointment when staff book for the patient (see there). `$ignoreLeadTime` is set
+     * only by the staff walk-in path, so the doctors are filtered with the same rule that offered the time.
      *
      * @throws ValidationException With the "time taken" message when no doctor can take the time, or with the
      *                             error from BookAppointment (for example a patient limit).
      */
-    public function handle(User $patient, Service $service, CarbonImmutable $startsAt, ?User $actor = null): Appointment
+    public function handle(User $patient, Service $service, CarbonImmutable $startsAt, ?User $actor = null, bool $ignoreLeadTime = false): Appointment
     {
         $day = $startsAt->setTimezone((string) config('app.clinic_timezone'));
 
         $candidates = $service->doctors()->bookable()->with('user')->orderBy('doctors.id')->get()
-            ->filter(fn ($doctor): bool => $this->findSlots->handle($service, $doctor, $day, $day)
+            ->filter(fn ($doctor): bool => $this->findSlots->handle($service, $doctor, $day, $day, ignoreLeadTime: $ignoreLeadTime)
                 ->contains(fn (CarbonImmutable $slot): bool => $slot->getTimestamp() === $startsAt->getTimestamp()));
 
         foreach ($candidates as $doctor) {

@@ -55,6 +55,16 @@ final class AppointmentPolicy
         return $user->isPatient();
     }
 
+    /**
+     * Book a patient who is at the desk without a booking (staff only). Its own ability, apart from `create`, so the
+     * patient's "book for myself" and the front desk's "book for someone else" can change independently. An admin
+     * sees the schedule but may not write to it.
+     */
+    public function bookWalkIn(User $user): bool
+    {
+        return $user->isStaff();
+    }
+
     public function cancel(User $user, Appointment $appointment): bool
     {
         return ($user->isPatient() && $appointment->patient_id === $user->id) || $user->isStaff();

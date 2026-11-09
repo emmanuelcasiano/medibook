@@ -81,3 +81,21 @@ it('lets only patients book', function (Role $role) {
 it('lets every role open an appointment list, which the controller scopes to the user', function (Role $role) {
     expect(Gate::forUser(userWithRole($role))->allows('viewAny', Appointment::class))->toBeTrue();
 })->with('roles');
+
+it('lets only staff book a walk-in, and not an admin who may look at the schedule', function (Role $role, bool $allowed) {
+    expect(Gate::forUser(userWithRole($role))->allows('bookWalkIn', Appointment::class))->toBe($allowed);
+})->with([
+    'patient' => [Role::Patient, false],
+    'staff' => [Role::Staff, true],
+    'doctor' => [Role::Doctor, false],
+    'admin' => [Role::Admin, false],
+]);
+
+it('lets only staff create a patient account at the desk', function (Role $role, bool $allowed) {
+    expect(Gate::forUser(userWithRole($role))->allows('createPatient', User::class))->toBe($allowed);
+})->with([
+    'patient' => [Role::Patient, false],
+    'staff' => [Role::Staff, true],
+    'doctor' => [Role::Doctor, false],
+    'admin' => [Role::Admin, false],
+]);

@@ -11,6 +11,7 @@ use App\Http\Controllers\Patient\AppointmentController as PatientAppointmentCont
 use App\Http\Controllers\Patient\FollowUpBookingController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\FollowUpController as StaffFollowUpController;
+use App\Http\Controllers\Staff\WalkInController;
 use Database\Seeders\DemoScheduleSeeder;
 
 arch()->preset()->php();
@@ -34,6 +35,7 @@ arch()->preset()->laravel()
         FollowUpBookingController::class,
         StaffAppointmentController::class,
         StaffFollowUpController::class,
+        WalkInController::class,
     ]);
 
 arch('controllers do not query the DB facade')
