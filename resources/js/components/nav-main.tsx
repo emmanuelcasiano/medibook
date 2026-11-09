@@ -11,8 +11,8 @@ import { navItemMatch } from '@/lib/nav-groups';
 import type { NavGroup } from '@/types';
 
 export function NavMain({ groups }: { groups: NavGroup[] }) {
-    const { isCurrentOrParentUrl } = useCurrentUrl();
-    const { openFollowUps } = usePage().props;
+    const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+    const { openFollowUps, followUpsToCall } = usePage().props;
 
     return (
         <>
@@ -21,9 +21,9 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
                     <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
                     <SidebarMenu>
                         {group.items.map((item) => {
-                            const isActive = isCurrentOrParentUrl(
-                                navItemMatch(item),
-                            );
+                            const isActive = item.exact
+                                ? isCurrentUrl(navItemMatch(item))
+                                : isCurrentOrParentUrl(navItemMatch(item));
 
                             return (
                                 <SidebarMenuItem key={item.title}>
@@ -49,6 +49,17 @@ export function NavMain({ groups }: { groups: NavGroup[] }) {
                                                         <span className="sr-only">
                                                             {' '}
                                                             follow-up to book
+                                                        </span>
+                                                    </span>
+                                                )}
+                                            {item.badge === 'followUpsToCall' &&
+                                                followUpsToCall > 0 && (
+                                                    <span className="ml-auto rounded-full border border-danger-line bg-danger-soft px-1.5 text-xs font-semibold text-danger-ink group-data-[collapsible=icon]:hidden">
+                                                        {followUpsToCall}
+                                                        <span className="sr-only">
+                                                            {' '}
+                                                            follow-ups need a
+                                                            call
                                                         </span>
                                                     </span>
                                                 )}

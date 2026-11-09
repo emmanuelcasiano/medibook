@@ -3,6 +3,7 @@ import {
     CalendarPlus,
     ClipboardList,
     Clock,
+    Repeat,
     ScrollText,
     ShieldCheck,
     Sparkles,
@@ -13,6 +14,7 @@ import AiUsageController from '@/actions/App/Http/Controllers/Admin/AiUsageContr
 import AuditLogController from '@/actions/App/Http/Controllers/Admin/AuditLogController';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
+import FollowUpController from '@/actions/App/Http/Controllers/Staff/FollowUpController';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import { services } from '@/routes/booking';
 import { home as doctorHome } from '@/routes/doctor';
@@ -66,6 +68,13 @@ const roleNavGroups: Record<Role, NavGroup[]> = {
                     title: 'Day schedule',
                     href: staffHome(),
                     icon: CalendarDays,
+                    exact: true,
+                },
+                {
+                    title: 'Follow-ups',
+                    href: FollowUpController.index(),
+                    icon: Repeat,
+                    badge: 'followUpsToCall',
                 },
             ],
         },
@@ -113,6 +122,13 @@ const roleNavGroups: Record<Role, NavGroup[]> = {
                     title: 'Schedule (view only)',
                     href: staffHome(),
                     icon: CalendarDays,
+                    exact: true,
+                },
+                {
+                    title: 'Follow-ups (view only)',
+                    href: FollowUpController.index(),
+                    icon: Repeat,
+                    badge: 'followUpsToCall',
                 },
             ],
         },

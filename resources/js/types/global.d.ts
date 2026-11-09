@@ -15,6 +15,8 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             /** How many follow-ups the signed-in patient can book. 0 for every other role. */
             openFollowUps: number;
+            /** How many follow-ups need a phone call. 0 for every role that can't open the staff list. */
+            followUpsToCall: number;
             [key: string]: unknown;
         };
     }

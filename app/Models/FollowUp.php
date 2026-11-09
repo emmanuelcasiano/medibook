@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\FollowUpState;
 use App\Enums\FollowUpStatus;
 use Carbon\CarbonImmutable;
 use Database\Factories\FollowUpFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\RouteKey;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -39,6 +44,7 @@ use Illuminate\Support\Carbon;
  * @property-read Service $service
  * @property-read Appointment $sourceAppointment
  * @property-read Appointment|null $bookedAppointment
+ * @property-read Collection<int, FollowUpEvent> $events
  */
 // `status` and `booked_appointment_id` are fillable because Actions call create()/update() with them.
 // A Form Request must never accept them from user input.
@@ -104,6 +110,51 @@ class FollowUp extends Model
             : null;
     }
 
+    /**
+     * The open follow-ups in the "Needs a call" state, as a query, for the sidebar count. It must say what state() says:
+     * the window has started, and it ends today or tomorrow, or is over. A test keeps the two in step.
+     *
+     * @param  Builder<FollowUp>  $query
+     */
+    #[Scope]
+    protected function needingCall(Builder $query, CarbonImmutable $now): void
+    {
+        $clinicNow = $now->setTimezone((string) config('app.clinic_timezone'));
+
+        $query->where('status', FollowUpStatus::Open->value)
+            // Plain `where`, not `whereDate`: the columns are DATE, and wrapping them in DATE() would stop MySQL from
+            // using the (status, window_ends_on) index. This runs on every staff page for the sidebar count.
+            ->where('window_starts_on', '<=', $clinicNow->toDateString())
+            ->where('window_ends_on', '<=', $clinicNow->addDay()->toDateString());
+    }
+
+    /**
+     * What staff see, worked out from the status and the window days (never stored). Days are clinic days compared as
+     * 'Y-m-d' text, like windowIncludes(), so no timezone can shift one. An open follow-up needs a call when its window
+     * is over, or ends today or tomorrow: the patient is about to run out of days.
+     */
+    public function state(CarbonImmutable $now): FollowUpState
+    {
+        if ($this->status === FollowUpStatus::Booked) {
+            return FollowUpState::Booked;
+        }
+
+        if ($this->status === FollowUpStatus::Dismissed) {
+            return FollowUpState::Dismissed;
+        }
+
+        $clinicNow = $now->setTimezone((string) config('app.clinic_timezone'));
+        $today = $clinicNow->toDateString();
+
+        if ($today < $this->window_starts_on->toDateString()) {
+            return FollowUpState::Waiting;
+        }
+
+        $lastSafeDay = $clinicNow->addDay()->toDateString();
+
+        return $this->window_ends_on->toDateString() <= $lastSafeDay ? FollowUpState::NeedsCall : FollowUpState::OpenNow;
+    }
+
     /** The window in words for an error message: "9 November and 13 November". */
     public function windowLabel(): string
     {
@@ -138,5 +189,11 @@ class FollowUp extends Model
     public function bookedAppointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class, 'booked_appointment_id');
+    }
+
+    /** @return HasMany<FollowUpEvent, $this> */
+    public function events(): HasMany
+    {
+        return $this->hasMany(FollowUpEvent::class);
     }
 }

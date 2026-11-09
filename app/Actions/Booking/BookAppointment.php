@@ -50,10 +50,13 @@ final class BookAppointment
      * The patient gets an AppointmentBooked email (PROJECT.md F9). It is queued after the commit, so a refused
      * booking sends nothing. `$notify` is false only for MoveAppointment, which sends one email for the new time.
      *
+     * `$actor` is who pressed the button when that is not the patient (staff booking a follow-up for them). The audit
+     * row then names the staff member, so "who booked this" stays true. The limits and the email are the patient's.
+     *
      * @throws ValidationException When the service is switched off, the doctor's account is switched off, the doctor
      *                             does not offer the service, the patient is over a limit, or the time is taken.
      */
-    public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt, bool $audit = true, bool $notify = true): Appointment
+    public function handle(User $patient, Doctor $doctor, Service $service, CarbonImmutable $startsAt, bool $audit = true, bool $notify = true, ?User $actor = null): Appointment
     {
         // The database holds UTC, and the query builder writes a date as it is, with no timezone conversion.
         // Without this, a Manila time would be stored and compared as if it were UTC.
@@ -62,7 +65,7 @@ final class BookAppointment
         // The buffer keeps the doctor free for the next patient, so it blocks the slot like the visit does.
         $blockedUntil = $endsAt->addMinutes($service->buffer_minutes);
 
-        return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil, $audit, $notify): Appointment {
+        return DB::transaction(function () use ($patient, $doctor, $service, $startsAt, $endsAt, $blockedUntil, $audit, $notify, $actor): Appointment {
             // Lock the patient row first. The doctor lock below can't stop one patient from booking two different
             // doctors at the same moment, so without this both requests could pass the limit checks. Always patient
             // then doctor, in that order, so two transactions can never wait on each other.
@@ -138,7 +141,7 @@ final class BookAppointment
 
             if ($audit) {
                 // Ids and the start time only: enough to answer "who booked what", with no health text.
-                $this->audit->record($patient, 'appointment.booked', $appointment, [
+                $this->audit->record($actor ?? $patient, 'appointment.booked', $appointment, [
                     'doctor_id' => $doctor->id,
                     'service_id' => $service->id,
                     'starts_at' => $startsAt->toIso8601ZuluString(),

@@ -19,6 +19,7 @@ use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\FollowUpBookingController;
 use App\Http\Controllers\Patient\IntakeController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
+use App\Http\Controllers\Staff\FollowUpController as StaffFollowUpController;
 use App\Http\Controllers\Staff\ScheduleController;
 use App\Http\Controllers\WelcomeController;
 use App\Models\User;
@@ -91,6 +92,14 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::post('appointments/{appointment}/no-show', [StaffAppointmentController::class, 'noShow'])->middleware('throttle:staff-actions')->name('appointments.no-show');
         Route::post('appointments/{appointment}/cancel', [StaffAppointmentController::class, 'cancel'])->middleware('throttle:staff-actions')->name('appointments.cancel');
         Route::post('appointments/{appointment}/move', [StaffAppointmentController::class, 'move'])->middleware('throttle:staff-actions')->name('appointments.move');
+
+        // Follow-ups a doctor asked for (PROJECT.md section 9). An admin may look at the list, like the schedule. The
+        // three buttons are staff only: `{followUp}` is a ULID, and the Policy refuses an admin. Each writes under a
+        // row lock, so they share the front-desk limiter.
+        Route::get('follow-ups', [StaffFollowUpController::class, 'index'])->name('follow-ups.index');
+        Route::post('follow-ups/{followUp}/book', [StaffFollowUpController::class, 'book'])->middleware('throttle:staff-actions')->name('follow-ups.book');
+        Route::post('follow-ups/{followUp}/call', [StaffFollowUpController::class, 'call'])->middleware('throttle:staff-actions')->name('follow-ups.call');
+        Route::post('follow-ups/{followUp}/remind', [StaffFollowUpController::class, 'remind'])->middleware('throttle:staff-actions')->name('follow-ups.remind');
     });
 
     // The doctor's own patients only: the Today list is scoped to the signed-in doctor, and `{appointment}` (a ULID)

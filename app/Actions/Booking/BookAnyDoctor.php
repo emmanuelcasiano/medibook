@@ -24,11 +24,12 @@ final class BookAnyDoctor
      * Doctors are tried in the order of their id. A doctor who looked free a moment ago may have been booked since,
      * so a "time taken" answer from BookAppointment (which checks inside its row lock) moves on to the next one.
      * Any other error (patient limits, a switched-off service) would be the same for every doctor, so it stops here.
+     * `$actor` is passed on to BookAppointment when staff book for the patient (see there).
      *
      * @throws ValidationException With the "time taken" message when no doctor can take the time, or with the
      *                             error from BookAppointment (for example a patient limit).
      */
-    public function handle(User $patient, Service $service, CarbonImmutable $startsAt): Appointment
+    public function handle(User $patient, Service $service, CarbonImmutable $startsAt, ?User $actor = null): Appointment
     {
         $day = $startsAt->setTimezone((string) config('app.clinic_timezone'));
 
@@ -38,7 +39,7 @@ final class BookAnyDoctor
 
         foreach ($candidates as $doctor) {
             try {
-                return $this->book->handle($patient, $doctor, $service, $startsAt);
+                return $this->book->handle($patient, $doctor, $service, $startsAt, actor: $actor);
             } catch (ValidationException $e) {
                 if (($e->errors()['starts_at'] ?? null) !== [BookAppointment::TIME_TAKEN_MESSAGE]) {
                     throw $e;
