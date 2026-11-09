@@ -87,6 +87,7 @@ describe('services page', function () {
         'patient' => [Role::Patient],
         'staff' => [Role::Staff],
         'doctor' => [Role::Doctor],
+        'nurse' => [Role::Nurse],
         'admin' => [Role::Admin],
     ]);
 });

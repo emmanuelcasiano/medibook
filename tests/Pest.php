@@ -55,7 +55,7 @@ expect()->extend('toBeOne', function () {
 */
 
 /**
- * A user with the given role. Staff, doctors and admins get 2FA, because they need it to reach the app
+ * A user with the given role. Staff, doctors, nurses and admins get 2FA, because they need it to reach the app
  * (pass `twoFactor: false` to test the redirect). A doctor also gets a doctor profile.
  */
 function userWithRole(Role $role, bool $twoFactor = true): User

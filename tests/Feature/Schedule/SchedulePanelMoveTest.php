@@ -347,6 +347,7 @@ describe('moving', function () {
         ($this->unchanged)();
     })->with([
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'doctor' => Role::Doctor,
         'patient' => Role::Patient,
     ]);

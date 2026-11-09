@@ -79,6 +79,7 @@ it('refuses everyone but staff before it writes anything', function (Role $role)
 })->with([
     'patient' => [Role::Patient],
     'doctor' => [Role::Doctor],
+    'nurse' => [Role::Nurse],
     'admin' => [Role::Admin],
 ]);
 

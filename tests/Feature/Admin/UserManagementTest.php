@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\Role;
+use App\Models\AuditLog;
 use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -72,7 +73,7 @@ describe('creating a user', function () {
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/users/create')
-                ->where('roles', fn ($roles) => collect($roles)->pluck('value')->sort()->values()->all() === ['admin', 'doctor', 'staff']));
+                ->where('roles', fn ($roles) => collect($roles)->pluck('value')->sort()->values()->all() === ['admin', 'doctor', 'nurse', 'staff']));
     });
 
     it('limits how fast users can be created', function () {
@@ -103,7 +104,7 @@ describe('creating a user', function () {
             ->and(Doctor::query()->where('user_id', $doctor->id)->value('specialty'))->toBe('Pediatrics');
     });
 
-    it('lets an admin create staff and admin accounts without a doctor profile', function (string $role) {
+    it('lets an admin create staff, nurse and admin accounts without a doctor profile', function (string $role) {
         $this->actingAs(userWithRole(Role::Admin))
             ->post(route('admin.users.store'), newUserInput(['role' => $role, 'specialty' => null, 'email' => "$role@example.test"]))
             ->assertRedirect(route('admin.users.index'));
@@ -112,7 +113,22 @@ describe('creating a user', function () {
 
         expect($user->role->value)->toBe($role)
             ->and(Doctor::query()->where('user_id', $user->id)->exists())->toBeFalse();
-    })->with(['staff', 'admin']);
+    })->with(['staff', 'nurse', 'admin']);
+
+    it('writes user.created with the nurse role when an admin creates a nurse', function () {
+        $admin = userWithRole(Role::Admin);
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.store'), newUserInput(['role' => 'nurse', 'specialty' => null]));
+
+        $nurse = User::query()->where('email', 'maria.santos@example.test')->firstOrFail();
+        $log = AuditLog::query()->where('action', 'user.created')->sole();
+
+        expect($nurse->role)->toBe(Role::Nurse)
+            ->and($log->actor_id)->toBe($admin->id)
+            ->and($log->subject_id)->toBe($nurse->id)
+            ->and($log->metadata)->toEqual(['role' => 'nurse']);
+    });
 
     it('can log in once created, and is then asked for 2FA', function () {
         $this->actingAs(userWithRole(Role::Admin))->post(route('admin.users.store'), newUserInput(['role' => 'staff', 'specialty' => null]));
@@ -183,6 +199,16 @@ describe('deactivating a user', function () {
 
         Auth::logout();
         $this->post(route('login.store'), ['email' => $target->email, 'password' => 'password']);
+        $this->assertGuest();
+    });
+
+    it('locks a deactivated nurse out of the nurse area', function () {
+        $nurse = userWithRole(Role::Nurse);
+
+        $this->actingAs(userWithRole(Role::Admin))->patch(route('admin.users.deactivate', $nurse));
+
+        Auth::logout();
+        $this->actingAs($nurse->fresh())->get(route('nurse.home'))->assertRedirect(route('login'));
         $this->assertGuest();
     });
 

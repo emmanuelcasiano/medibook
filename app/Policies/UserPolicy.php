@@ -13,7 +13,7 @@ final class UserPolicy
         return $user->isAdmin();
     }
 
-    /** Create a staff, doctor or admin account. Patients register themselves. */
+    /** Create a staff, doctor, nurse or admin account. Patients register themselves. */
     public function create(User $user): bool
     {
         return $user->isAdmin();

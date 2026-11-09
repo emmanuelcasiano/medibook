@@ -174,6 +174,7 @@ describe('the list', function () {
         'guest' => null,
         'patient' => Role::Patient,
         'doctor' => Role::Doctor,
+        'nurse' => Role::Nurse,
     ]);
 
     it('rejects a state that does not exist', function () {
@@ -314,7 +315,7 @@ describe('book for the patient', function () {
 
         expect($followUp->refresh()->status)->toBe(FollowUpStatus::Open)
             ->and(Appointment::query()->where('status', AppointmentStatus::Booked)->count())->toBe(0);
-    })->with([Role::Admin, Role::Patient, Role::Doctor]);
+    })->with([Role::Admin, Role::Patient, Role::Doctor, Role::Nurse]);
 
     it('needs a time from the list', function (array $input) {
         $followUp = ($this->makeFollowUp)();
@@ -413,7 +414,7 @@ describe('log a call', function () {
 
         expect(FollowUpEvent::query()->count())->toBe(0)
             ->and($followUp->refresh()->status)->toBe(FollowUpStatus::Open);
-    })->with([Role::Admin, Role::Patient, Role::Doctor]);
+    })->with([Role::Admin, Role::Patient, Role::Doctor, Role::Nurse]);
 
     it('takes one outcome from the fixed list and no free text', function (array $input) {
         $followUp = ($this->makeFollowUp)();
@@ -547,7 +548,7 @@ describe('send a reminder', function () {
         Notification::assertNothingSent();
         expect(FollowUpEvent::query()->count())->toBe(0)
             ->and($followUp->refresh()->last_reminded_at)->toBeNull();
-    })->with([Role::Admin, Role::Patient, Role::Doctor]);
+    })->with([Role::Admin, Role::Patient, Role::Doctor, Role::Nurse]);
 
     it('refuses a follow-up that is booked, dismissed or past its dates', function (string $state) {
         Notification::fake();
@@ -575,7 +576,7 @@ describe('the actions on their own', function () {
 
         expect(FollowUpEvent::query()->count())->toBe(0)
             ->and($followUp->refresh()->status)->toBe(FollowUpStatus::Open);
-    })->with([Role::Admin, Role::Doctor]);
+    })->with([Role::Admin, Role::Doctor, Role::Nurse]);
 
     it('read the follow-up again under the lock, so a stale copy cannot be acted on', function () {
         $followUp = ($this->makeFollowUp)();

@@ -297,10 +297,11 @@ it('does not flag the appointment when a refused caller sends an emergency phras
         ->and(IntakeSummary::query()->count())->toBe(0);
 });
 
-it('refuses staff, an admin and a doctor, even the appointment\'s own doctor', function (string $who) {
+it('refuses staff, an admin, a nurse and a doctor, even the appointment\'s own doctor', function (string $who) {
     $actor = match ($who) {
         'staff' => userWithRole(Role::Staff),
         'admin' => userWithRole(Role::Admin),
+        'nurse' => userWithRole(Role::Nurse),
         'another doctor' => userWithRole(Role::Doctor),
         'own doctor' => User::query()->findOrFail(Doctor::query()->findOrFail($this->appointment->doctor_id)->user_id),
     };
@@ -308,7 +309,7 @@ it('refuses staff, an admin and a doctor, even the appointment\'s own doctor', f
     expect(fn () => saveIntakeAs($actor, $this->appointment, intakeAnswers()))->toThrow(AuthorizationException::class);
 
     expect(Intake::query()->count())->toBe(0);
-})->with(['staff', 'admin', 'another doctor', 'own doctor']);
+})->with(['staff', 'admin', 'nurse', 'another doctor', 'own doctor']);
 
 it('closes the form once the appointment is no longer booked', function (string $state) {
     $appointment = Appointment::factory()->for($this->patient, 'patient')->{$state}()->startingIn(days: 2)->create();

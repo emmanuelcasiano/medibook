@@ -9,6 +9,7 @@ const accounts: { role: Role; hint: string }[] = [
     { role: 'patient', hint: 'Book, intake, cancel' },
     { role: 'staff', hint: 'Run the day schedule' },
     { role: 'doctor', hint: 'Intake and AI draft' },
+    { role: 'nurse', hint: 'Triage queue' },
     { role: 'admin', hint: 'Setup and audit log' },
 ];
 

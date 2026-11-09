@@ -231,6 +231,7 @@ describe('checking in', function () {
             ->and($this->started->fresh()->checked_in_at)->toBeNull();
     })->with([
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'doctor' => Role::Doctor,
         'patient' => Role::Patient,
     ]);
@@ -318,6 +319,7 @@ describe('marking a no-show', function () {
         expect($this->started->fresh()->status)->toBe(AppointmentStatus::Booked);
     })->with([
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'doctor' => Role::Doctor,
         'patient' => Role::Patient,
     ]);
@@ -414,6 +416,7 @@ describe('cancelling', function () {
             ->and($this->upcoming->fresh()->cancel_reason)->toBeNull();
     })->with([
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'doctor' => Role::Doctor,
         'patient' => Role::Patient,
     ]);

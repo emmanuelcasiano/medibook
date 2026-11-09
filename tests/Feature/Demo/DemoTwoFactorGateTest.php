@@ -6,14 +6,15 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\DemoMode;
 
-// The three roles that need 2FA, and the screen each one opens.
+// The four roles that need 2FA, and the screen each one opens.
 dataset('two_factor_roles', [
     'staff' => [Role::Staff, 'staff.home'],
     'doctor' => [Role::Doctor, 'doctor.home'],
+    'nurse' => [Role::Nurse, 'nurse.home'],
     'admin' => [Role::Admin, 'admin.users.index'],
 ]);
 
-it('lets the demo staff, doctor and admin past the 2FA gate in demo mode', function (Role $role, string $routeName) {
+it('lets the demo staff, doctor, nurse and admin past the 2FA gate in demo mode', function (Role $role, string $routeName) {
     config()->set('medibook.demo.enabled', true);
 
     $this->actingAs(demoUser($role))->get(route($routeName))->assertOk();

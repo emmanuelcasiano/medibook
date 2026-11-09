@@ -15,6 +15,7 @@ use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
 use App\Http\Controllers\Doctor\TodayController;
 use App\Http\Controllers\Doctor\VisitNoteController;
+use App\Http\Controllers\Nurse\HomeController;
 use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\FollowUpBookingController;
 use App\Http\Controllers\Patient\IntakeController;
@@ -46,7 +47,7 @@ Route::post('demo/login/{role}', DemoLoginController::class)
     ->middleware(['demo-mode', 'guest', 'throttle:demo-login'])
     ->name('demo.login');
 
-// Every app route needs a signed-in, verified user. `two-factor` sends staff, doctors and admins to the 2FA
+// Every app route needs a signed-in, verified user. `two-factor` sends staff, doctors, nurses and admins to the 2FA
 // setup page until it is on. `role:` closes a whole group to other roles; Policies check each action inside it.
 Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
     // There is no dashboard page: each role has its own work screen. The name stays, because Fortify's `home` and
@@ -119,6 +120,12 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::post('appointments/{appointment}/complete', [DoctorAppointmentController::class, 'complete'])->middleware('throttle:doctor-actions')->name('appointments.complete');
         // One note per appointment, so there is one URL and PUT: the first save creates it and later saves edit it.
         Route::put('appointments/{appointment}/visit-note', [VisitNoteController::class, 'update'])->middleware('throttle:doctor-actions')->name('appointments.visit-note.update');
+    });
+
+    // The nurse's triage area. Part 1 is an empty home page: the nurse has no Policy ability on any model yet, so this
+    // group check is the lock, and the nurse is refused by every other group and Policy by default.
+    Route::middleware('role:nurse')->prefix('nurse')->name('nurse.')->group(function () {
+        Route::get('/', HomeController::class)->name('home');
     });
 
     Route::middleware('role:patient')->group(function () {

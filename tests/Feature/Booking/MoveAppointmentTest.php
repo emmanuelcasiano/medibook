@@ -229,6 +229,7 @@ it('turns away everyone but staff and changes nothing', function (Role $role) {
     ($this->unchanged)();
 })->with([
     'admin' => Role::Admin,
+    'nurse' => Role::Nurse,
     'doctor' => Role::Doctor,
     'patient' => Role::Patient,
 ]);

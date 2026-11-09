@@ -139,13 +139,13 @@ describe('confirm page', function () {
             ->assertSessionHas('url.intended', $url);
     });
 
-    it('is closed to staff, doctors and admins', function (Role $role) {
+    it('is closed to staff, doctors, nurses and admins', function (Role $role) {
         $service = confirmService();
 
         $this->actingAs(userWithRole($role))
             ->get(confirmUrl($service, confirmDoctor($service)))
             ->assertForbidden();
-    })->with([Role::Staff, Role::Doctor, Role::Admin]);
+    })->with([Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 
     it('is a 404 for a switched-off service', function () {
         $service = Service::factory()->lasting(60)->inactive()->create();
@@ -539,7 +539,7 @@ describe('booking', function () {
         expect(Appointment::query()->count())->toBe(0);
     });
 
-    it('is closed to staff, doctors and admins, and books nothing', function (Role $role) {
+    it('is closed to staff, doctors, nurses and admins, and books nothing', function (Role $role) {
         $service = confirmService();
         $doctor = confirmDoctor($service);
 
@@ -548,7 +548,7 @@ describe('booking', function () {
             ->assertForbidden();
 
         expect(Appointment::query()->count())->toBe(0);
-    })->with([Role::Staff, Role::Doctor, Role::Admin]);
+    })->with([Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 
     it('limits how often a patient can send a booking', function () {
         $service = confirmService();
@@ -607,12 +607,12 @@ describe('confirmation page', function () {
             ->assertInertia(fn (Assert $page) => $page->where('appointment.doctor.name', 'Dr. Santos'));
     });
 
-    it('is closed to another patient, and to staff, doctors and admins', function (?Role $role) {
+    it('is closed to another patient, and to staff, doctors, nurses and admins', function (?Role $role) {
         $appointment = Appointment::factory()->create();
         $viewer = $role === null ? patientUser() : userWithRole($role);
 
         $this->actingAs($viewer)->get(route('my.appointments.confirmation', $appointment))->assertForbidden();
-    })->with([null, Role::Staff, Role::Doctor, Role::Admin]);
+    })->with([null, Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 
     it('sends a guest to log in', function () {
         $this->get(route('my.appointments.confirmation', Appointment::factory()->create()))->assertRedirect(route('login'));

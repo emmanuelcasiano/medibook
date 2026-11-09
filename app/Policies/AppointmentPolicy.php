@@ -13,10 +13,13 @@ use App\Models\User;
  */
 final class AppointmentPolicy
 {
-    /** Every role has an appointment list. The controller scopes each list to the user. */
+    /**
+     * The roles that have an appointment list. The controller scopes each list to the user. The roles are named on
+     * purpose, not "everyone": a role added later, like the nurse, starts with no access until it is listed here.
+     */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->isPatient() || $user->isStaff() || $user->isDoctor() || $user->isAdmin();
     }
 
     /**

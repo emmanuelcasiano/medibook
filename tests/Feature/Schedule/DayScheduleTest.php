@@ -84,6 +84,7 @@ describe('who may open it', function () {
     })->with([
         'patient' => Role::Patient,
         'doctor' => Role::Doctor,
+        'nurse' => Role::Nurse,
     ]);
 
     it('sends a guest to the login page', function () {
@@ -424,6 +425,7 @@ describe('the check-in time', function () {
     })->with([
         'patient' => Role::Patient,
         'doctor' => Role::Doctor,
+        'nurse' => Role::Nurse,
     ]);
 });
 

@@ -130,7 +130,7 @@ describe('the form page', function () {
             ->get($this->formUrl)
             ->assertForbidden()
             ->assertDontSee('Secret chest rash');
-    })->with([Role::Staff, Role::Doctor, Role::Admin]);
+    })->with([Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 
     it('sends a guest to log in', function () {
         $this->get($this->formUrl)->assertRedirect(route('login'));
@@ -412,7 +412,7 @@ describe('saving the form', function () {
                 ->assertForbidden();
 
             expect(Intake::query()->count())->toBe(0);
-        })->with([Role::Staff, Role::Doctor, Role::Admin]);
+        })->with([Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 
         it('answers 403 once the patient is checked in, and the answers stay as they were', function () {
             $intake = Intake::factory()->for($this->appointment)->create(['answers' => ['reason' => 'Before check-in']]);

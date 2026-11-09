@@ -9,7 +9,7 @@ use App\Models\User;
 use RuntimeException;
 
 /**
- * The one place that knows whether the app runs as the public demo (PROJECT.md F12) and which four users the
+ * The one place that knows whether the app runs as the public demo (PROJECT.md F12) and which five users the
  * one-click logins may open. Everything else asks here, so "demo mode" can't mean two things in two files.
  */
 final class DemoMode
@@ -24,6 +24,7 @@ final class DemoMode
         'patient' => 'patient@medibook.test',
         'staff' => 'staff@medibook.test',
         'doctor' => 'doctor@medibook.test',
+        'nurse' => 'nurse@medibook.test',
         'admin' => 'admin@medibook.test',
     ];
 

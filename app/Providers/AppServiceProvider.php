@@ -68,7 +68,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('doctor-actions', fn (Request $request): Limit => Limit::perMinute(30)->by((string) (Auth::id() ?? $request->ip())));
 
         // The one-click demo login is open to every guest (no password), and each click starts a session. It is per IP
-        // because the visitor has no account yet. 20 a minute covers a reviewer trying all four roles, and no more.
+        // because the visitor has no account yet. 20 a minute covers a reviewer trying all five roles, and no more.
         RateLimiter::for('demo-login', fn (Request $request): Limit => Limit::perMinute(20)->by((string) $request->ip()));
 
         // Sign-up and password reset are open to every guest and write a row or send an email. Per IP, because the

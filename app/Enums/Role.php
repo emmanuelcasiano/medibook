@@ -9,6 +9,7 @@ enum Role: string
     case Patient = 'patient';
     case Staff = 'staff';
     case Doctor = 'doctor';
+    case Nurse = 'nurse';
     case Admin = 'admin';
 
     /** Roles that need 2FA (PROJECT.md section 3). */
@@ -24,6 +25,7 @@ enum Role: string
             self::Patient => 'my.home',
             self::Staff => 'staff.home',
             self::Doctor => 'doctor.home',
+            self::Nurse => 'nurse.home',
             self::Admin => 'admin.users.index',
         };
     }

@@ -139,7 +139,7 @@ return [
     | own database.
     |
     | enabled: APP_DEMO. When on: the login page offers one-click logins for the
-    |          four seeded demo users (App\Support\DemoMode::ACCOUNTS), those users
+    |          five seeded demo users (App\Support\DemoMode::ACCOUNTS), those users
     |          skip the 2FA gate, every page shows the fake-data banner, and the
     |          database is rebuilt every night with `migrate:fresh --seed`.
     |          The demo password is public, so this must stay off for real data.

@@ -41,6 +41,7 @@ it('creates a user with the right role', function (string $state, Role $role) {
     ['patient', Role::Patient],
     ['staff', Role::Staff],
     ['doctor', Role::Doctor],
+    ['nurse', Role::Nurse],
     ['admin', Role::Admin],
 ]);
 
@@ -48,6 +49,7 @@ it('gives only patients a birth date', function () {
     expect(User::factory()->patient()->create()->birth_date)->not->toBeNull()
         ->and(User::factory()->staff()->create()->birth_date)->toBeNull()
         ->and(User::factory()->doctor()->create()->birth_date)->toBeNull()
+        ->and(User::factory()->nurse()->create()->birth_date)->toBeNull()
         ->and(User::factory()->admin()->create()->birth_date)->toBeNull();
 });
 

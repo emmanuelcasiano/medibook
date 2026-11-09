@@ -8,17 +8,18 @@ use App\Enums\Role;
 dataset('privileged_roles', [
     'staff' => [Role::Staff, 'staff.home'],
     'doctor' => [Role::Doctor, 'doctor.home'],
+    'nurse' => [Role::Nurse, 'nurse.home'],
     'admin' => [Role::Admin, 'admin.users.index'],
 ]);
 
-it('sends staff, doctors and admins without 2FA to the 2FA setup page', function (Role $role, string $routeName) {
+it('sends staff, doctors, nurses and admins without 2FA to the 2FA setup page', function (Role $role, string $routeName) {
     $user = userWithRole($role, twoFactor: false);
 
     $this->actingAs($user)->get(route($routeName))->assertRedirect(route('security.edit'));
     $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('security.edit'));
 })->with('privileged_roles');
 
-it('lets staff, doctors and admins in once 2FA is on', function (Role $role, string $routeName) {
+it('lets staff, doctors, nurses and admins in once 2FA is on', function (Role $role, string $routeName) {
     $this->actingAs(userWithRole($role))->get(route($routeName))->assertOk();
 })->with('privileged_roles');
 
@@ -39,7 +40,7 @@ it('keeps the settings pages open, so the 2FA setup page can be reached', functi
         ->withSession(['auth.password_confirmed_at' => time()])
         ->get(route('security.edit'))
         ->assertOk();
-})->with(['staff' => Role::Staff, 'doctor' => Role::Doctor, 'admin' => Role::Admin]);
+})->with(['staff' => Role::Staff, 'doctor' => Role::Doctor, 'nurse' => Role::Nurse, 'admin' => Role::Admin]);
 
 it('does not count a started but unconfirmed 2FA setup', function () {
     $admin = userWithRole(Role::Admin, twoFactor: false);
