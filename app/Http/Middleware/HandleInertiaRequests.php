@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Actions\Booking\ListMyFollowUps;
 use App\Support\DemoMode;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -46,6 +47,11 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // How many follow-ups the signed-in patient can book. A number only, for the dot in the sidebar. The closure
+            // runs when a page is rendered, not on a redirect, and other roles pay for no query.
+            'openFollowUps' => fn (): int => $request->user()?->isPatient()
+                ? app(ListMyFollowUps::class)->query($request->user())->count()
+                : 0,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

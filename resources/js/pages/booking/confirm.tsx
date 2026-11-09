@@ -1,6 +1,7 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { ClipboardList } from 'lucide-react';
 import BookingController from '@/actions/App/Http/Controllers/Booking/BookingController';
+import FollowUpBookingController from '@/actions/App/Http/Controllers/Patient/FollowUpBookingController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
@@ -18,23 +19,35 @@ export default function BookingConfirm({
     startsAt,
     endsAt,
     cancelUntil,
+    followUp,
 }: Props) {
     const { errors } = usePage().props;
     const doctorLabel = doctor === null ? 'Any available doctor' : doctor.name;
     const backHref =
-        doctor === null
-            ? SlotController.any(service)
-            : SlotController.doctor({ service, doctor });
+        followUp !== undefined
+            ? FollowUpBookingController.slots(followUp.ulid)
+            : doctor === null
+              ? SlotController.any(service)
+              : SlotController.doctor({ service, doctor });
+    // A follow-up posts to its own address, which takes the service and doctor from the follow-up itself.
+    const formAction =
+        followUp !== undefined
+            ? FollowUpBookingController.store.form(followUp.ulid)
+            : BookingController.store.form(service);
 
     return (
         <>
             <Head title="Confirm your booking" />
 
             <div className="space-y-6">
-                <BookingSteps current={4} />
+                {followUp === undefined && <BookingSteps current={4} />}
 
                 <PageHeader
-                    title="Check and confirm"
+                    title={
+                        followUp === undefined
+                            ? 'Check and confirm'
+                            : 'Check and confirm your follow-up'
+                    }
                     description="All times are Manila time. Nothing is booked until you press Confirm."
                 />
 
@@ -43,12 +56,14 @@ export default function BookingConfirm({
                 <div role="alert">
                     {(errors.starts_at ||
                         errors.doctor_id ||
-                        errors.service_id) && (
+                        errors.service_id ||
+                        errors.follow_up) && (
                         <AlertError
                             errors={[
                                 errors.starts_at,
                                 errors.doctor_id,
                                 errors.service_id,
+                                errors.follow_up,
                             ].flatMap((error) =>
                                 typeof error === 'string' ? [error] : [],
                             )}
@@ -61,7 +76,11 @@ export default function BookingConfirm({
                     right and stays in view while the form is read. */}
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
                     <BookingSummary
-                        heading="Your booking"
+                        heading={
+                            followUp === undefined
+                                ? 'Your booking'
+                                : 'Your follow-up'
+                        }
                         service={service}
                         doctorName={doctorLabel}
                         doctorSpecialty={doctor?.specialty}
@@ -72,7 +91,7 @@ export default function BookingConfirm({
                     />
 
                     <Form
-                        {...BookingController.store.form(service)}
+                        {...formAction}
                         className="space-y-6 lg:col-start-1 lg:row-start-1"
                     >
                         {({ processing }) => (
@@ -82,7 +101,8 @@ export default function BookingConfirm({
                                     name="starts_at"
                                     value={startsAt}
                                 />
-                                {doctor !== null && (
+                                {/* A follow-up names its own doctor on the server, so the form never sends one. */}
+                                {doctor !== null && followUp === undefined && (
                                     <input
                                         type="hidden"
                                         name="doctor_id"

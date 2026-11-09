@@ -7,10 +7,13 @@ namespace App\Http\Controllers\Patient;
 use App\Actions\Booking\BookAppointment;
 use App\Actions\Booking\CancelAppointment;
 use App\Actions\Booking\ListMyAppointments;
+use App\Actions\Booking\ListMyFollowUps;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Booking\CancelAppointmentRequest;
 use App\Http\Resources\Booking\MyAppointmentResource;
+use App\Http\Resources\Booking\MyFollowUpResource;
 use App\Models\Appointment;
+use App\Models\FollowUp;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -21,13 +24,19 @@ use Inertia\Response;
 final class AppointmentController extends Controller
 {
     /** "My appointments": the signed-in patient's own bookings, upcoming and past. */
-    public function index(#[CurrentUser] User $patient, ListMyAppointments $list): Response
+    public function index(#[CurrentUser] User $patient, ListMyAppointments $list, ListMyFollowUps $listFollowUps): Response
     {
         Gate::authorize('viewAny', Appointment::class);
+        Gate::authorize('viewAny', FollowUp::class);
 
         $appointments = $list->handle($patient);
 
         return Inertia::render('my/appointments/index', [
+            // Visits a doctor asked the patient to book. They include the doctor's note, which only this patient may read.
+            'followUps' => $listFollowUps->handle($patient)
+                ->map(fn (FollowUp $followUp): array => (new MyFollowUpResource($followUp))->resolve())
+                ->values()
+                ->all(),
             'upcoming' => $appointments['upcoming']
                 ->map(fn (Appointment $appointment): array => (new MyAppointmentResource($appointment))->resolve())
                 ->values()

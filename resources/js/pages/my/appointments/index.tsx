@@ -2,17 +2,20 @@ import { Head, Link } from '@inertiajs/react';
 import { CalendarDays, Info, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import AppointmentCard from '@/components/appointments/appointment-card';
+import FollowUpCard from '@/components/appointments/follow-up-card';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { services as bookingServices } from '@/routes/booking';
 import { home as myHome } from '@/routes/my';
-import type { MyAppointment, Paginated } from '@/types';
+import type { MyAppointment, MyFollowUp, Paginated } from '@/types';
 
 /** How many past visits show before "Show all on this page". The server's paging is not changed. */
 const PAST_PREVIEW = 5;
 
 type Props = {
+    /** Visits a doctor asked the patient to book. Empty when there is none. */
+    followUps: MyFollowUp[];
     upcoming: MyAppointment[];
     past: Paginated<MyAppointment>;
     /** How many hours before a visit a patient can still cancel. */
@@ -24,6 +27,7 @@ type Props = {
 };
 
 export default function MyAppointments({
+    followUps,
     upcoming,
     past,
     cancelHours,
@@ -101,6 +105,32 @@ export default function MyAppointments({
                         )}
                     </div>
                 </div>
+
+                {followUps.length > 0 && (
+                    <section
+                        aria-labelledby="follow-ups-heading"
+                        className="space-y-3"
+                    >
+                        <h2
+                            id="follow-ups-heading"
+                            className="text-lg font-semibold"
+                        >
+                            Follow-ups to book{' '}
+                            <span className="text-muted-foreground">
+                                ({followUps.length})
+                            </span>
+                        </h2>
+                        <ul className="space-y-3">
+                            {followUps.map((followUp) => (
+                                <FollowUpCard
+                                    key={followUp.ulid}
+                                    followUp={followUp}
+                                    canBook={canBook}
+                                />
+                            ))}
+                        </ul>
+                    </section>
+                )}
 
                 <section
                     aria-labelledby="upcoming-heading"

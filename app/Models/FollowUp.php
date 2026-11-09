@@ -80,6 +80,36 @@ class FollowUp extends Model
         ];
     }
 
+    /**
+     * Whether $instant falls on a day of the window. The window is in clinic days, so the instant is turned into its
+     * clinic date first, and the dates are compared as 'Y-m-d' text so no timezone can shift a day.
+     */
+    public function windowIncludes(CarbonImmutable $instant): bool
+    {
+        $day = $instant->setTimezone((string) config('app.clinic_timezone'))->toDateString();
+
+        return $day >= $this->window_starts_on->toDateString() && $day <= $this->window_ends_on->toDateString();
+    }
+
+    /**
+     * The doctor this follow-up must be booked with, when it names one and that doctor can still take this service.
+     * Null means "Any doctor" (`same_doctor` is false) or a doctor who can't be booked now: check `same_doctor` to
+     * tell them apart. It goes through the service's own list, so a doctor taken off the service, or whose account is
+     * off, is never returned. The `service` relation must be loaded first (strict mode).
+     */
+    public function bookableDoctor(): ?Doctor
+    {
+        return $this->same_doctor
+            ? $this->service->doctors()->bookable()->with('user')->find($this->doctor_id)
+            : null;
+    }
+
+    /** The window in words for an error message: "9 November and 13 November". */
+    public function windowLabel(): string
+    {
+        return $this->window_starts_on->format('j F').' and '.$this->window_ends_on->format('j F');
+    }
+
     /** @return BelongsTo<User, $this> */
     public function patient(): BelongsTo
     {

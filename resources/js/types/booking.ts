@@ -34,6 +34,15 @@ export type BookingDraft = {
     endsAt: string;
     /** The last moment the patient can cancel on their own. */
     cancelUntil: string;
+    /** Set when the visit is booked from a follow-up the doctor asked for. */
+    followUp?: { ulid: string };
+};
+
+/** The follow-up a patient is booking from. Dates are clinic dates ('Y-m-d'). Never the doctor's note. */
+export type BookingFollowUp = {
+    ulid: string;
+    windowStartsOn: string;
+    windowEndsOn: string;
 };
 
 /** A booking just made, as the "You're booked" page receives it. The doctor is known now, even after "Any doctor". */

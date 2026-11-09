@@ -6,6 +6,7 @@ namespace App\Actions\Booking;
 
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\FollowUp;
 use App\Models\User;
 use App\Notifications\AppointmentBooked;
 use App\Support\AuditLogger;
@@ -63,7 +64,7 @@ final class MoveAppointment
             // Locks and re-reads the row, and refuses anything that is not `booked`. The row it returns is the
             // current one, so everything below reads from it and not from the caller's possibly stale model.
             try {
-                $old = $this->cancel->handle($actor, $appointment, $this->reason($startsAt), audit: false, notify: false)
+                $old = $this->cancel->handle($actor, $appointment, $this->reason($startsAt), audit: false, notify: false, reopenFollowUp: false)
                     ->loadMissing(['patient', 'service']);
             } catch (ValidationException) {
                 // For staff the only refusal left is the status (the reason is ours and the 2 hour rule is for
@@ -83,6 +84,10 @@ final class MoveAppointment
             }
 
             $new = $this->book->handle($old->patient, $doctor, $old->service, $startsAt, audit: false, notify: false);
+
+            // A follow-up booked into the old row stays `booked`, now pointing at the new one. The cancel above was told
+            // not to reopen it, and a refused move rolls all of this back.
+            FollowUp::query()->where('booked_appointment_id', $old->id)->update(['booked_appointment_id' => $new->id]);
 
             $this->audit->record($actor, 'appointment.moved', $new, [
                 'from_appointment_id' => $old->id,
