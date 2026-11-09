@@ -117,6 +117,7 @@ it('refuses everyone but staff and writes nothing', function (string $who) {
         'another patient' => User::factory()->patient()->create(),
         'the appointment\'s own doctor' => $this->doctor->user,
         'an admin' => userWithRole(Role::Admin),
+        'a nurse' => userWithRole(Role::Nurse),
     };
 
     expect(fn () => noShowAs($actor, $appointment))->toThrow(AuthorizationException::class);

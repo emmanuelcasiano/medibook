@@ -5,6 +5,7 @@ export const roleLabels: Record<Role, string> = {
     patient: 'Patient',
     staff: 'Staff',
     doctor: 'Doctor',
+    nurse: 'Nurse',
     admin: 'Admin',
 };
 
@@ -13,6 +14,7 @@ const tones: Record<Role, string> = {
     patient: 'bg-teal-soft text-teal-ink',
     staff: 'bg-info-soft text-info-ink',
     doctor: 'bg-violet-soft text-violet-ink',
+    nurse: 'bg-amber-soft text-amber-ink',
     admin: 'bg-foreground text-background',
 };
 

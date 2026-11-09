@@ -259,6 +259,7 @@ describe('opening an appointment', function () {
     })->with([
         'staff' => Role::Staff,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'patient' => Role::Patient,
     ]);
 

@@ -16,7 +16,7 @@ final class CreateStaffUser
     public function __construct(private readonly AuditLogger $audit) {}
 
     /**
-     * Create a staff, doctor or admin account. A doctor also gets their doctor profile.
+     * Create a staff, doctor, nurse or admin account. A doctor also gets their doctor profile.
      * The caller has already authorized this (UserPolicy::create). `user.created` is written to the audit log in the
      * same transaction, with the role and no email or password.
      */
@@ -25,7 +25,7 @@ final class CreateStaffUser
         // Patients register themselves with a birth date. This Action must never make one, or an admin
         // form could create a patient without the data the registration rules require.
         if ($role === Role::Patient) {
-            throw new InvalidArgumentException('CreateStaffUser creates staff, doctor and admin accounts only.');
+            throw new InvalidArgumentException('CreateStaffUser creates staff, doctor, nurse and admin accounts only.');
         }
 
         if ($role === Role::Doctor && ($specialty === null || $specialty === '')) {

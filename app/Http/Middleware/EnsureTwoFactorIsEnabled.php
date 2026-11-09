@@ -11,10 +11,10 @@ use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Staff, doctors and admins can reach clinic screens only after 2FA is confirmed (PROJECT.md section 3).
+ * Staff, doctors, nurses and admins can reach clinic screens only after 2FA is confirmed (PROJECT.md section 3).
  * It is attached to the app route groups, not to the settings routes, so they can still reach the setup page.
  *
- * The four seeded demo users skip it, in demo mode only: a visitor can't set up 2FA for an account that every
+ * The five seeded demo users skip it, in demo mode only: a visitor can't set up 2FA for an account that every
  * visitor shares, and `DemoMode::isDemoUser` is false for every other user and whenever APP_DEMO is off.
  */
 final class EnsureTwoFactorIsEnabled

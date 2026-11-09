@@ -14,6 +14,7 @@ dataset('role_homes', [
     'patient' => [Role::Patient, 'my.home'],
     'staff' => [Role::Staff, 'staff.home'],
     'doctor' => [Role::Doctor, 'doctor.home'],
+    'nurse' => [Role::Nurse, 'nurse.home'],
     'admin' => [Role::Admin, 'admin.users.index'],
 ]);
 

@@ -14,6 +14,7 @@ it('lets only staff and admins open the day schedule', function (Role $role, boo
     'patient' => [Role::Patient, false],
     'staff' => [Role::Staff, true],
     'doctor' => [Role::Doctor, false],
+    'nurse' => [Role::Nurse, false],
     'admin' => [Role::Admin, true],
 ]);
 
@@ -23,6 +24,7 @@ it('lets only staff learn whether an intake is empty and a booking is flagged', 
     'patient' => [Role::Patient, false],
     'staff' => [Role::Staff, true],
     'doctor' => [Role::Doctor, false],
+    'nurse' => [Role::Nurse, false],
     'admin' => [Role::Admin, false],
 ]);
 
@@ -78,8 +80,8 @@ it('lets only patients book', function (Role $role) {
     expect(Gate::forUser(userWithRole($role))->allows('create', Appointment::class))->toBe($role === Role::Patient);
 })->with('roles');
 
-it('lets every role open an appointment list, which the controller scopes to the user', function (Role $role) {
-    expect(Gate::forUser(userWithRole($role))->allows('viewAny', Appointment::class))->toBeTrue();
+it('lets every role with an appointment list open it, which the controller scopes to the user, and not the nurse', function (Role $role) {
+    expect(Gate::forUser(userWithRole($role))->allows('viewAny', Appointment::class))->toBe($role !== Role::Nurse);
 })->with('roles');
 
 it('lets only staff book a walk-in, and not an admin who may look at the schedule', function (Role $role, bool $allowed) {
@@ -88,6 +90,7 @@ it('lets only staff book a walk-in, and not an admin who may look at the schedul
     'patient' => [Role::Patient, false],
     'staff' => [Role::Staff, true],
     'doctor' => [Role::Doctor, false],
+    'nurse' => [Role::Nurse, false],
     'admin' => [Role::Admin, false],
 ]);
 
@@ -97,5 +100,6 @@ it('lets only staff create a patient account at the desk', function (Role $role,
     'patient' => [Role::Patient, false],
     'staff' => [Role::Staff, true],
     'doctor' => [Role::Doctor, false],
+    'nurse' => [Role::Nurse, false],
     'admin' => [Role::Admin, false],
 ]);

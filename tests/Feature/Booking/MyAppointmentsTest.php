@@ -430,7 +430,7 @@ describe('cancelling is refused', function () {
         ($this->unchanged)($appointment);
     });
 
-    it('answers 403 to staff, doctors and admins, and changes nothing', function (Role $role) {
+    it('answers 403 to staff, doctors, nurses and admins, and changes nothing', function (Role $role) {
         $appointment = ($this->bookingIn)(24);
 
         // Staff can cancel any booking, but from their own schedule in step 7.3, not from the patient pages.
@@ -443,6 +443,7 @@ describe('cancelling is refused', function () {
         'staff' => Role::Staff,
         'doctor' => Role::Doctor,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
     ]);
 
     it('sends a guest to the login page', function () {

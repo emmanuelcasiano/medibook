@@ -12,10 +12,11 @@ it('answers each role helper for exactly one role', function (Role $role) {
     expect($user->isPatient())->toBe($role === Role::Patient)
         ->and($user->isStaff())->toBe($role === Role::Staff)
         ->and($user->isDoctor())->toBe($role === Role::Doctor)
+        ->and($user->isNurse())->toBe($role === Role::Nurse)
         ->and($user->isAdmin())->toBe($role === Role::Admin);
 })->with('roles');
 
-it('needs 2FA setup only for staff, doctors and admins who have not confirmed 2FA', function (Role $role, bool $hasTwoFactor, bool $expected) {
+it('needs 2FA setup only for staff, doctors, nurses and admins who have not confirmed 2FA', function (Role $role, bool $hasTwoFactor, bool $expected) {
     $user = User::factory()->state(['role' => $role])->when($hasTwoFactor, fn ($factory) => $factory->withTwoFactor())->make();
 
     expect($user->needsTwoFactorSetup())->toBe($expected);
@@ -23,8 +24,10 @@ it('needs 2FA setup only for staff, doctors and admins who have not confirmed 2F
     'patient without 2FA' => [Role::Patient, false, false],
     'staff without 2FA' => [Role::Staff, false, true],
     'doctor without 2FA' => [Role::Doctor, false, true],
+    'nurse without 2FA' => [Role::Nurse, false, true],
     'admin without 2FA' => [Role::Admin, false, true],
     'staff with 2FA' => [Role::Staff, true, false],
+    'nurse with 2FA' => [Role::Nurse, true, false],
     'admin with 2FA' => [Role::Admin, true, false],
 ]);
 
@@ -39,5 +42,6 @@ it('finds the doctor profile id for a doctor and null for everyone else', functi
 
     expect($doctor->doctorId())->toBe(Doctor::query()->where('user_id', $doctor->id)->value('id'))
         ->and(userWithRole(Role::Staff)->doctorId())->toBeNull()
+        ->and(userWithRole(Role::Nurse)->doctorId())->toBeNull()
         ->and(userWithRole(Role::Patient)->doctorId())->toBeNull();
 });

@@ -30,6 +30,7 @@ it('seeds one demo login per role', function (string $email, Role $role) {
     ['patient@medibook.test', Role::Patient],
     ['staff@medibook.test', Role::Staff],
     ['doctor@medibook.test', Role::Doctor],
+    ['nurse@medibook.test', Role::Nurse],
     ['admin@medibook.test', Role::Admin],
 ]);
 

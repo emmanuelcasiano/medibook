@@ -34,14 +34,14 @@ describe('intake answers', function () {
             ->and(Gate::forUser(userWithRole(Role::Doctor))->allows('view', $intake))->toBeFalse();
     });
 
-    it('can never be read by staff or admins (least privilege)', function (Role $role) {
+    it('can never be read by staff, nurses or admins (least privilege)', function (Role $role) {
         [$intake] = appointmentWithIntake();
 
         $user = userWithRole($role);
 
         expect(Gate::forUser($user)->denies('view', $intake))->toBeTrue()
             ->and(Gate::forUser($user)->denies('viewSummary', $intake))->toBeTrue();
-    })->with([Role::Staff, Role::Admin]);
+    })->with([Role::Staff, Role::Nurse, Role::Admin]);
 
     it('can be edited by the owning patient only until check-in', function () {
         [$intake, $appointment, $patient] = appointmentWithIntake();
@@ -86,11 +86,11 @@ describe('visit notes', function () {
             ->and(Gate::forUser(userWithRole(Role::Doctor))->denies('update', $note))->toBeTrue();
     });
 
-    it('can not be read by patients, staff or admins', function (Role $role) {
+    it('can not be read by patients, staff, nurses or admins', function (Role $role) {
         $note = VisitNote::factory()->create();
 
         expect(Gate::forUser(userWithRole($role))->denies('view', $note))->toBeTrue();
-    })->with([Role::Patient, Role::Staff, Role::Admin]);
+    })->with([Role::Patient, Role::Staff, Role::Nurse, Role::Admin]);
 
     it('can be started for an appointment by its own doctor only', function () {
         $appointment = Appointment::factory()->checkedIn()->create();
@@ -98,6 +98,22 @@ describe('visit notes', function () {
 
         expect(Gate::forUser($ownDoctor)->allows('create', [VisitNote::class, $appointment]))->toBeTrue()
             ->and(Gate::forUser(userWithRole(Role::Doctor))->denies('create', [VisitNote::class, $appointment]))->toBeTrue()
+            ->and(Gate::forUser(userWithRole(Role::Nurse))->denies('create', [VisitNote::class, $appointment]))->toBeTrue()
             ->and(Gate::forUser(userWithRole(Role::Admin))->denies('create', [VisitNote::class, $appointment]))->toBeTrue();
+    });
+});
+
+describe('the nurse', function () {
+    it('can not read the AI summary or do anything with an intake, a visit note or an appointment', function () {
+        [$intake, $appointment] = appointmentWithIntake();
+        $note = VisitNote::factory()->create();
+        $nurse = Gate::forUser(userWithRole(Role::Nurse));
+
+        expect($nurse->denies('viewSummary', $intake))->toBeTrue()
+            ->and($nurse->denies('reviewSummary', $intake))->toBeTrue()
+            ->and($nurse->denies('update', $intake))->toBeTrue()
+            ->and($nurse->denies('update', $note))->toBeTrue()
+            ->and($nurse->denies('create', [Intake::class, $appointment]))->toBeTrue()
+            ->and($nurse->denies('view', $appointment))->toBeTrue();
     });
 });

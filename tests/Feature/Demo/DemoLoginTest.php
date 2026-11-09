@@ -16,7 +16,7 @@ it('signs a visitor in as the demo user of the role and lands on that role\'s sc
     $this->post(route('demo.login', $role->value))->assertRedirect(route($role->homeRoute()));
 
     $this->assertAuthenticatedAs($user);
-    // Staff, doctor and admin have no 2FA here, so a 200 shows the gate lets the demo user through.
+    // Staff, doctor, nurse and admin have no 2FA here, so a 200 shows the gate lets the demo user through.
     $this->get(route($role->homeRoute()))->assertOk();
 })->with('roles');
 
@@ -37,7 +37,7 @@ it('shows the demo logins and the banner only when demo mode is on', function (b
         ->assertInertia(fn (Assert $page) => $page->where('demo', $demo));
 })->with([true, false]);
 
-it('is a 404 for a role that is not one of the four', function () {
+it('is a 404 for a role that is not one of the five', function () {
     config()->set('medibook.demo.enabled', true);
 
     $this->post('/demo/login/superadmin')->assertNotFound();

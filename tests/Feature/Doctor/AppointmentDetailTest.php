@@ -300,6 +300,7 @@ describe('denied access', function () {
     })->with([
         'staff' => Role::Staff,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'patient' => Role::Patient,
     ]);
 

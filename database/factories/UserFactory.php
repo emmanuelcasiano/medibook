@@ -47,7 +47,7 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => ['role' => Role::Patient]);
     }
 
-    /** Staff, doctors and admins don't give a birth date at registration. */
+    /** Staff, doctors, nurses and admins don't give a birth date at registration. */
     public function staff(): static
     {
         return $this->state(fn (array $attributes) => ['role' => Role::Staff, 'birth_date' => null]);
@@ -56,6 +56,11 @@ class UserFactory extends Factory
     public function doctor(): static
     {
         return $this->state(fn (array $attributes) => ['role' => Role::Doctor, 'birth_date' => null]);
+    }
+
+    public function nurse(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => Role::Nurse, 'birth_date' => null]);
     }
 
     public function admin(): static

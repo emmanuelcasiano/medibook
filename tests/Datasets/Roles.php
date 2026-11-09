@@ -12,4 +12,5 @@ dataset('non_admins', [
     'patient' => Role::Patient,
     'staff' => Role::Staff,
     'doctor' => Role::Doctor,
+    'nurse' => Role::Nurse,
 ]);

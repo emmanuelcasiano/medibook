@@ -217,6 +217,7 @@ describe('who may call it', function () {
     })->with([
         'patient' => [Role::Patient],
         'doctor' => [Role::Doctor],
+        'nurse' => [Role::Nurse],
         'admin' => [Role::Admin],
     ]);
 
@@ -224,6 +225,7 @@ describe('who may call it', function () {
         $account = match ($kind) {
             'staff' => userWithRole(Role::Staff),
             'doctor' => userWithRole(Role::Doctor),
+            'nurse' => userWithRole(Role::Nurse),
             'switched-off patient' => User::factory()->patient()->create(['is_active' => false]),
         };
 
@@ -231,7 +233,7 @@ describe('who may call it', function () {
             ->toThrow(ValidationException::class, 'Pick a patient from the list.');
 
         expect(Appointment::query()->count())->toBe(0);
-    })->with(['staff', 'doctor', 'switched-off patient']);
+    })->with(['staff', 'doctor', 'nurse', 'switched-off patient']);
 });
 
 describe('the clinic day', function () {

@@ -94,7 +94,7 @@ export default function BookingLayout({
                         className="flex items-center gap-2"
                     >
                         {auth.user ? (
-                            // Patients already have "My appointments" above. Staff, doctors and admins are sent to
+                            // Patients already have "My appointments" above. Staff, doctors, nurses and admins are sent to
                             // their own screen by `/dashboard`.
                             auth.user.role !== 'patient' && (
                                 <Button asChild variant="secondary">

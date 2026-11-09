@@ -10,6 +10,7 @@ dataset('role_route_groups', [
     'admin area' => ['admin.users.index', [Role::Admin]],
     'staff area' => ['staff.home', [Role::Staff, Role::Admin]],
     'doctor area' => ['doctor.home', [Role::Doctor]],
+    'nurse area' => ['nurse.home', [Role::Nurse]],
     'patient area' => ['my.home', [Role::Patient]],
 ]);
 
@@ -29,6 +30,7 @@ it('sends guests to the login page', function (string $routeName) {
     'admin area' => 'admin.users.index',
     'staff area' => 'staff.home',
     'doctor area' => 'doctor.home',
+    'nurse area' => 'nurse.home',
     'patient area' => 'my.home',
     'dashboard' => 'dashboard',
 ]);
@@ -73,5 +75,6 @@ it('keeps unverified users out of every route group', function (string $routeNam
     'admin area' => ['admin.users.index', Role::Admin],
     'staff area' => ['staff.home', Role::Staff],
     'doctor area' => ['doctor.home', Role::Doctor],
+    'nurse area' => ['nurse.home', Role::Nurse],
     'patient area' => ['my.home', Role::Patient],
 ]);

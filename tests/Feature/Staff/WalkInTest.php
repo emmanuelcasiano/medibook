@@ -261,6 +261,7 @@ describe('validation', function () {
         $account = match ($kind) {
             'staff' => userWithRole(Role::Staff),
             'doctor' => userWithRole(Role::Doctor),
+            'nurse' => userWithRole(Role::Nurse),
             'switched-off' => User::factory()->patient()->create(['is_active' => false]),
             'missing' => null,
         };
@@ -270,7 +271,7 @@ describe('validation', function () {
             ->assertSessionHasErrors(['patient_id' => 'Pick a patient from the list.']);
 
         expect(Appointment::query()->count())->toBe(0);
-    })->with(['staff', 'doctor', 'switched-off', 'missing']);
+    })->with(['staff', 'doctor', 'nurse', 'switched-off', 'missing']);
 
     it('refuses a visit type or doctor the dialog could not have offered', function (string $field, string $kind, string $message) {
         $other = Service::factory()->create();
@@ -348,6 +349,7 @@ describe('who may use it', function () {
     })->with([
         'a patient' => [Role::Patient],
         'a doctor' => [Role::Doctor],
+        'a nurse' => [Role::Nurse],
         'an admin, who may look at the schedule' => [Role::Admin],
         'a guest' => [null],
     ]);
@@ -374,6 +376,7 @@ describe('what a refusal leaves behind', function () {
     })->with([
         'a patient' => [Role::Patient],
         'a doctor' => [Role::Doctor],
+        'a nurse' => [Role::Nurse],
         'an admin' => [Role::Admin],
     ]);
 

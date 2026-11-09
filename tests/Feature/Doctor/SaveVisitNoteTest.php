@@ -212,6 +212,7 @@ describe('the page', function () {
     })->with([
         'staff' => Role::Staff,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'patient' => Role::Patient,
     ]);
 
@@ -321,6 +322,7 @@ describe('denied access', function () {
     })->with([
         'staff' => Role::Staff,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'patient' => Role::Patient,
     ]);
 
@@ -332,6 +334,7 @@ describe('denied access', function () {
     })->with([
         'staff' => Role::Staff,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'patient' => Role::Patient,
     ]);
 
@@ -371,6 +374,7 @@ describe('denied access', function () {
     })->with([
         'staff' => Role::Staff,
         'admin' => Role::Admin,
+        'nurse' => Role::Nurse,
         'patient' => Role::Patient,
         // A doctor, but not this appointment's doctor.
         'another doctor' => Role::Doctor,

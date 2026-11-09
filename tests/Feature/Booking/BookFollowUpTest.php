@@ -252,9 +252,9 @@ describe('the time picker', function () {
         }
     });
 
-    it('refuses staff, doctors and admins', function (Role $role) {
+    it('refuses staff, doctors, nurses and admins', function (Role $role) {
         $this->actingAs(userWithRole($role))->get(route('my.follow-ups.book', ($this->makeFollowUp)()))->assertForbidden();
-    })->with([Role::Staff, Role::Doctor, Role::Admin]);
+    })->with([Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 });
 
 describe('the confirm page', function () {
@@ -406,7 +406,7 @@ describe('booking from a follow-up', function () {
         expect(Appointment::query()->count())->toBe($before);
     })->with(['booked', 'dismissed']);
 
-    it('refuses staff, doctors and admins', function (Role $role) {
+    it('refuses staff, doctors, nurses and admins', function (Role $role) {
         $followUp = ($this->makeFollowUp)();
 
         $this->actingAs(userWithRole($role))
@@ -414,7 +414,7 @@ describe('booking from a follow-up', function () {
             ->assertForbidden();
 
         expect($followUp->fresh()->status)->toBe(FollowUpStatus::Open);
-    })->with([Role::Staff, Role::Doctor, Role::Admin]);
+    })->with([Role::Staff, Role::Doctor, Role::Nurse, Role::Admin]);
 });
 
 describe('what the follow-up booking refuses', function () {

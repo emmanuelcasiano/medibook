@@ -17,7 +17,7 @@ export default function AdminUsersIndex({ users }: Props) {
             <div className="space-y-6 p-4">
                 <PageHeader
                     title="Users"
-                    description="Create staff, doctor and admin accounts, or deactivate an account. Patients register themselves."
+                    description="Create staff, doctor, nurse and admin accounts, or deactivate an account. Patients register themselves."
                     actions={
                         <Button asChild>
                             <Link href={UserController.create()}>Add user</Link>

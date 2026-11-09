@@ -25,6 +25,7 @@ class UserSeeder extends Seeder
         User::factory()->staff()->create(['name' => 'Demo Staff', 'email' => DemoMode::ACCOUNTS['staff']]);
         // The doctor profile (specialty, hours, services) is added by DoctorSeeder.
         User::factory()->doctor()->create(['name' => 'Dr. Demo Doctor', 'email' => self::DEMO_DOCTOR_EMAIL]);
+        User::factory()->nurse()->create(['name' => 'Demo Nurse', 'email' => DemoMode::ACCOUNTS['nurse']]);
         User::factory()->admin()->create(['name' => 'Demo Admin', 'email' => DemoMode::ACCOUNTS['admin']]);
 
         User::factory()->patient()->count(30)->create();

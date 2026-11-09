@@ -3,6 +3,7 @@ import {
     CalendarPlus,
     ClipboardList,
     Clock,
+    HeartPulse,
     Repeat,
     ScrollText,
     ShieldCheck,
@@ -19,6 +20,7 @@ import UserController from '@/actions/App/Http/Controllers/Admin/UserController'
 import { services } from '@/routes/booking';
 import { home as doctorHome } from '@/routes/doctor';
 import { home as myHome } from '@/routes/my';
+import { home as nurseHome } from '@/routes/nurse';
 import { edit as profileEdit } from '@/routes/profile';
 import { home as staffHome } from '@/routes/staff';
 import type { NavGroup, NavItem, Role } from '@/types';
@@ -84,6 +86,13 @@ const roleNavGroups: Record<Role, NavGroup[]> = {
         {
             label: 'Visits',
             items: [{ title: 'Today', href: doctorHome(), icon: Clock }],
+        },
+        accountGroup,
+    ],
+    nurse: [
+        {
+            label: 'Clinic',
+            items: [{ title: 'Triage', href: nurseHome(), icon: HeartPulse }],
         },
         accountGroup,
     ],

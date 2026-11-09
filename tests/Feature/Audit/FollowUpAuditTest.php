@@ -157,7 +157,7 @@ describe('follow_up.requested', function () {
 
         expect(AuditLog::query()->count())->toBe(0)
             ->and(FollowUp::query()->count())->toBe(0);
-    })->with([Role::Doctor, Role::Staff, Role::Admin, Role::Patient]);
+    })->with([Role::Doctor, Role::Staff, Role::Nurse, Role::Admin, Role::Patient]);
 
     it('writes none when a follow-up already exists for the visit', function () {
         $visit = ($this->visit)();
@@ -230,7 +230,7 @@ describe('follow_up.booked', function () {
         expect(fn () => app(BookFollowUp::class)->handle($actor, $followUp, $this->monday))->toThrow(AuthorizationException::class);
 
         expect(AuditLog::query()->count())->toBe(0);
-    })->with([Role::Patient, Role::Doctor, Role::Admin]);
+    })->with([Role::Patient, Role::Doctor, Role::Nurse, Role::Admin]);
 });
 
 describe('follow_up.reminded', function () {
@@ -272,7 +272,7 @@ describe('follow_up.reminded', function () {
         expect(fn () => app(SendFollowUpReminder::class)->handle(userWithRole($role), $followUp))->toThrow(AuthorizationException::class);
 
         expect(AuditLog::query()->count())->toBe(0);
-    })->with([Role::Admin, Role::Doctor, Role::Patient]);
+    })->with([Role::Admin, Role::Doctor, Role::Nurse, Role::Patient]);
 });
 
 describe('follow_up.dismissed', function () {
@@ -316,7 +316,7 @@ describe('follow_up.dismissed', function () {
 
         expect(AuditLog::query()->count())->toBe(0)
             ->and($followUp->refresh()->status)->toBe(FollowUpStatus::Open);
-    })->with([Role::Admin, Role::Doctor, Role::Patient]);
+    })->with([Role::Admin, Role::Doctor, Role::Nurse, Role::Patient]);
 });
 
 describe('a guest', function () {
