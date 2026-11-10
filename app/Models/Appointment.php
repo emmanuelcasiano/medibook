@@ -35,6 +35,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $cancelled_by
  * @property string|null $cancel_reason
  * @property CarbonImmutable|null $checked_in_at
+ * @property CarbonImmutable|null $vitals_taken_at A mark only: the nurse took vitals. It carries no reading, so staff may see it.
  * @property CarbonImmutable|null $reminder_sent_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -51,7 +52,7 @@ use Illuminate\Support\Carbon;
     'starts_at', 'ends_at', 'blocked_until',
     'status', 'emergency_flag',
     'cancelled_at', 'cancelled_by', 'cancel_reason',
-    'checked_in_at', 'reminder_sent_at',
+    'checked_in_at', 'vitals_taken_at', 'reminder_sent_at',
 ])]
 // Private records are addressed by ULID, so IDs in URLs can't be counted up (/appointments/1, /2, ...).
 // A Policy is still the real protection.
@@ -83,6 +84,7 @@ class Appointment extends Model
             'emergency_flag' => 'boolean',
             'cancelled_at' => 'immutable_datetime',
             'checked_in_at' => 'immutable_datetime',
+            'vitals_taken_at' => 'immutable_datetime',
             'reminder_sent_at' => 'immutable_datetime',
         ];
     }
@@ -130,6 +132,12 @@ class Appointment extends Model
     public function intake(): HasOne
     {
         return $this->hasOne(Intake::class);
+    }
+
+    /** @return HasOne<VitalsRecord, $this> */
+    public function vitals(): HasOne
+    {
+        return $this->hasOne(VitalsRecord::class);
     }
 
     /** @return HasMany<VisitNote, $this> */

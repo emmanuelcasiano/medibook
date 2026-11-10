@@ -22,6 +22,7 @@ final class LogMasker implements ProcessorInterface
     private const array SENSITIVE_KEYS = [
         'answers',
         'symptoms',
+        'readings',
         'notes',
         'email',
         'phone',

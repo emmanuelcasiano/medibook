@@ -21,6 +21,7 @@ use App\Actions\Doctor\CompleteAppointment;
 use App\Actions\Doctor\MarkSummaryReviewed;
 use App\Actions\Doctor\SaveVisitNote;
 use App\Actions\Intake\SaveIntake;
+use App\Actions\Triage\RecordVitals;
 use App\Ai\Agents\IntakeSummarizer;
 use App\Enums\Role;
 use App\Jobs\SummarizeIntake;
@@ -33,6 +34,7 @@ use App\Models\Service;
 use App\Models\TimeOff;
 use App\Models\User;
 use App\Models\VisitNote;
+use App\Models\VitalsRecord;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -560,5 +562,60 @@ describe('the admin routes pass the signed-in user as the actor', function () {
         ])->assertForbidden();
 
         expect(AuditLog::count())->toBe(0);
+    });
+});
+
+describe('the nurse vitals Actions', function () {
+    beforeEach(function () {
+        $this->nurse = userWithRole(Role::Nurse);
+        $this->checkedIn = Appointment::factory()->checkedIn()->create();
+        $this->readings = ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7];
+    });
+
+    it('writes vitals.saved with the mode only, for a first save and for a correction', function () {
+        $record = app(RecordVitals::class)->handle($this->nurse, $this->checkedIn, $this->readings);
+
+        $created = ($this->rows)('vitals.saved')->sole();
+        expect($created->actor_id)->toBe($this->nurse->id)
+            ->and($created->subject_type)->toBe(VitalsRecord::class)
+            ->and($created->subject_id)->toBe($record->id)
+            ->and($created->metadata)->toBe(['mode' => 'created']);
+
+        app(RecordVitals::class)->handle($this->nurse, $this->checkedIn, [...$this->readings, 'pulse' => 90]);
+
+        $rows = ($this->rows)('vitals.saved');
+        expect($rows)->toHaveCount(2)
+            ->and($rows->last()->subject_id)->toBe($record->id)
+            ->and($rows->last()->metadata)->toBe(['mode' => 'updated']);
+    });
+
+    it('keeps every reading out of the audit log', function () {
+        app(RecordVitals::class)->handle($this->nurse, $this->checkedIn, $this->readings);
+
+        // The decimals can't turn up by chance in an id or a time, unlike a whole number.
+        expect(($this->logText)())->not->toContain('39.4')
+            ->not->toContain('83.7')
+            ->not->toContain('systolic')
+            ->not->toContain('readings');
+    });
+
+    it('writes vitals.viewed with no metadata when the nurse opens a form that holds readings', function () {
+        $record = VitalsRecord::factory()->forAppointment($this->checkedIn)->create(['readings' => $this->readings]);
+
+        $this->actingAs($this->nurse)->get(route('nurse.appointments.vitals.edit', $this->checkedIn))->assertOk();
+
+        $viewed = ($this->rows)('vitals.viewed')->sole();
+        expect($viewed->actor_id)->toBe($this->nurse->id)
+            ->and($viewed->subject_type)->toBe(VitalsRecord::class)
+            ->and($viewed->subject_id)->toBe($record->id)
+            ->and($viewed->metadata)->toBeNull();
+    });
+
+    it('writes nothing when the save is refused', function () {
+        $completed = Appointment::factory()->completed()->create();
+
+        expect(fn () => app(RecordVitals::class)->handle($this->nurse, $completed, $this->readings))
+            ->toThrow(AuthorizationException::class)
+            ->and(AuditLog::count())->toBe(0);
     });
 });

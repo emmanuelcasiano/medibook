@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\User;
+use App\Models\VitalsRecord;
 use App\Support\LogMasker;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Context;
@@ -26,6 +27,9 @@ use Monolog\LogRecord;
 
 /** A string no real log line would hold. If it shows up in the file, an answer leaked. */
 const LEAK_MARKER = 'ZEBRA-RASH-MARKER';
+
+/** A full set of vital signs. The decimals and the key name can't turn up by chance in a log line, unlike a whole number. */
+const LEAK_VITALS = ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7];
 
 function logRecord(array $context = [], array $extra = [], string $message = 'Something happened'): LogRecord
 {
@@ -102,7 +106,7 @@ describe('the processor', function () {
         $record = (new LogMasker)(logRecord([$key => 'a value', 'intake_id' => 7]));
 
         expect($record->context)->toBe([$key => LogMasker::HIDDEN, 'intake_id' => 7]);
-    })->with(['answers', 'symptoms', 'notes', 'email', 'phone', 'password', 'password_confirmation', 'current_password', 'birth_date']);
+    })->with(['answers', 'symptoms', 'readings', 'notes', 'email', 'phone', 'password', 'password_confirmation', 'current_password', 'birth_date']);
 
     it('hides a key whatever its case', function () {
         $record = (new LogMasker)(logRecord(['Email' => 'a@example.test', 'PASSWORD' => 'secret']));
@@ -156,6 +160,22 @@ describe('the configured channels', function () {
             ->and($log)->toContain('"answers":"[hidden]"')
             ->and($log)->toContain('"intake_id":42')
             ->not->toContain(LEAK_MARKER);
+    });
+
+    // Vital signs are health data (the nurse's vitals feature). A record is logged by its readings or as a whole model.
+    it('hides the readings of a vitals record, both as an array and as a model', function () {
+        $record = VitalsRecord::factory()->create(['readings' => LEAK_VITALS]);
+
+        Log::info('Vitals probe', ['readings' => $record->readings, 'record' => $record, 'appointment_id' => $record->appointment_id]);
+
+        $log = writtenLogs($this->logDir);
+
+        expect($log)->toContain('Vitals probe')
+            ->and($log)->toContain('"readings":"[hidden]"')
+            ->and($log)->toContain('"appointment_id":'.$record->appointment_id)
+            ->not->toContain('39.4')
+            ->not->toContain('83.7')
+            ->not->toContain('systolic');
     });
 
     it('hides the keys on a single channel and on a daily channel', function (string $channel) {
@@ -243,5 +263,28 @@ describe('a full flow', function () {
             ->not->toContain('Rash on both arms')
             ->not->toContain($patient->email)
             ->not->toContain($patient->name);
+    });
+
+    // The vitals flow itself writes few log lines (the audit trail is a table, not the log), so this proves that nothing in
+    // the flow sends a reading to the file, while the tests above prove that the masker would hide one if it did.
+    it('leaves no vital sign in the log after a nurse records, corrects and reopens them', function () {
+        $nurse = userWithRole(Role::Nurse);
+        $appointment = Appointment::factory()->checkedIn()->create();
+        $save = fn (array $readings) => $this->actingAs($nurse)->put(route('nurse.appointments.vitals.update', $appointment), $readings);
+
+        $save(LEAK_VITALS)->assertRedirect(route('nurse.home'));
+        $save([...LEAK_VITALS, 'pulse' => 150])->assertRedirect(route('nurse.home'));
+        // A refused entry, which carries the values back as old input.
+        $save([...LEAK_VITALS, 'oxygen_saturation' => 500])->assertSessionHasErrors('oxygen_saturation');
+        $this->actingAs($nurse)->get(route('nurse.appointments.vitals.edit', $appointment))->assertOk();
+
+        $log = writtenLogs($this->logDir);
+
+        expect(VitalsRecord::query()->sole()->readings['pulse'])->toBe(150)
+            ->and($log)->not->toContain('39.4')
+            ->not->toContain('83.7')
+            ->not->toContain('systolic')
+            ->not->toContain($appointment->patient->name)
+            ->not->toContain($appointment->patient->email);
     });
 });

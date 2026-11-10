@@ -18,8 +18,9 @@ use Illuminate\Support\Facades\Gate;
  * minutes from clinic midnight, so the grid can place a block without doing time zone math in the browser.
  *
  * Only the patient's name is sent: no email, birth date, intake or summary. The check-in time is sent too: a moment
- * in time says nothing about health. Staff (not admins) also get two booleans
- * per booking, `intakeMissing` and `emergencyFlag`. Call `->resolve()` to get the plain array for an Inertia prop.
+ * in time says nothing about health. Staff (not admins) also get three booleans
+ * per booking, `intakeMissing`, `emergencyFlag` and `vitalsTaken`. The last says only that the nurse took vitals: no
+ * reading is loaded or sent. Call `->resolve()` to get the plain array for an Inertia prop.
  *
  * @mixin DaySchedule
  */
@@ -92,6 +93,9 @@ final class DayScheduleResource extends JsonResource
             // worth a warning only while the booking is still `booked`.
             $row['intakeMissing'] = $appointment->status === AppointmentStatus::Booked && ! $appointment->intake_exists;
             $row['emergencyFlag'] = $appointment->emergency_flag;
+            // The mark that the nurse took vitals: a yes/no from `vitals_taken_at`, which holds a time and never a reading.
+            // Only while the patient is checked in, because after that the mark has nothing left to tell the desk.
+            $row['vitalsTaken'] = $appointment->status === AppointmentStatus::CheckedIn && $appointment->vitals_taken_at !== null;
         }
 
         return $row;

@@ -15,7 +15,8 @@ use App\Http\Controllers\DemoLoginController;
 use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
 use App\Http\Controllers\Doctor\TodayController;
 use App\Http\Controllers\Doctor\VisitNoteController;
-use App\Http\Controllers\Nurse\HomeController;
+use App\Http\Controllers\Nurse\HomeController as NurseHomeController;
+use App\Http\Controllers\Nurse\VitalsController;
 use App\Http\Controllers\Patient\AppointmentController;
 use App\Http\Controllers\Patient\FollowUpBookingController;
 use App\Http\Controllers\Patient\IntakeController;
@@ -122,10 +123,15 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::put('appointments/{appointment}/visit-note', [VisitNoteController::class, 'update'])->middleware('throttle:doctor-actions')->name('appointments.visit-note.update');
     });
 
-    // The nurse's triage area. Part 1 is an empty home page: the nurse has no Policy ability on any model yet, so this
-    // group check is the lock, and the nurse is refused by every other group and Policy by default.
+    // The nurse's triage area: the queue of checked-in patients and the vitals form. The nurse is refused by every other
+    // group and Policy by default. `{appointment}` is a ULID, and the Policy lets the nurse in only while it is checked in.
     Route::middleware('role:nurse')->prefix('nurse')->name('nurse.')->group(function () {
-        Route::get('/', HomeController::class)->name('home');
+        Route::get('/', NurseHomeController::class)->name('home');
+
+        // One address for the form: PUT creates the record the first time and corrects it after that. The save locks the
+        // appointment row, so it is capped per signed-in nurse.
+        Route::get('appointments/{appointment}/vitals', [VitalsController::class, 'edit'])->name('appointments.vitals.edit');
+        Route::put('appointments/{appointment}/vitals', [VitalsController::class, 'update'])->middleware('throttle:nurse-actions')->name('appointments.vitals.update');
     });
 
     Route::middleware('role:patient')->group(function () {

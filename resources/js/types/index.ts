@@ -8,3 +8,4 @@ export type * from './intake';
 export type * from './navigation';
 export type * from './schedule';
 export type * from './ui';
+export type * from './vitals';

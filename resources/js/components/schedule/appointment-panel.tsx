@@ -141,7 +141,10 @@ export default function AppointmentPanel({
         schedule.date === schedule.today,
     );
     const hasFlags =
-        appointment.emergencyFlag || appointment.intakeMissing || late !== null;
+        appointment.emergencyFlag ||
+        appointment.intakeMissing ||
+        appointment.vitalsTaken ||
+        late !== null;
 
     // The sheet labels itself with its title, so the heading needs no id.
     const heading = (

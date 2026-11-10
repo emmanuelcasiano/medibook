@@ -1,4 +1,4 @@
-import { ClipboardX, Siren } from 'lucide-react';
+import { ClipboardX, HeartPulse, Siren } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ScheduleAppointment } from '@/types';
 
@@ -14,11 +14,12 @@ type Props = {
 
 export const emergencyText = 'Emergency flag';
 export const intakeMissingText = 'Intake not filled in yet';
+export const vitalsTakenText = 'Vitals taken';
 
 /**
- * The two flags staff watch for: the emergency flag (red) and "intake not filled in yet" (amber). The server sends
- * them to staff only, so for an admin both are missing and nothing is drawn. The meaning is always in words (a
- * screen reader text, a title, or visible text), never in the color alone.
+ * The flags staff watch for: the emergency flag (red), "intake not filled in yet" (amber) and "vitals taken" (teal, a
+ * plain yes with no value). The server sends them to staff only, so for an admin they are missing and nothing is
+ * drawn. The meaning is always in words (a screen reader text, a title, or visible text), never in the color alone.
  */
 export default function AppointmentFlags({
     appointment,
@@ -37,6 +38,12 @@ export default function AppointmentFlags({
             text: intakeMissingText,
             Icon: ClipboardX,
             tone: 'text-amber-700 dark:text-amber-400',
+        },
+        appointment.vitalsTaken && {
+            key: 'vitals',
+            text: vitalsTakenText,
+            Icon: HeartPulse,
+            tone: 'text-teal-ink',
         },
     ].filter((flag) => flag !== false && flag !== undefined);
 
