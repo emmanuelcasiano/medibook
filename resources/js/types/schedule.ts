@@ -17,12 +17,14 @@ export type ScheduleAppointment = {
     statusLabel: string;
     /** ISO 8601 UTC. When the patient was checked in at the front desk, or `null` while they have not been. */
     checkedInAt: string | null;
-    // The next two are sent to staff only, never to an admin (the keys are missing, not false). They are yes/no facts
-    // and nothing more: no intake answers reach the schedule.
+    // The next three are sent to staff only, never to an admin (the keys are missing, not false). They are yes/no facts
+    // and nothing more: no intake answers and no vital sign reach the schedule.
     /** The booking is still `booked` and the patient has not filled in the intake form. */
     intakeMissing?: boolean;
     /** The intake form had an emergency word (set from Day 8). */
     emergencyFlag?: boolean;
+    /** The patient is checked in and the nurse has taken their vitals. A mark only: the readings are never sent. */
+    vitalsTaken?: boolean;
 };
 
 /** One column of the schedule. */

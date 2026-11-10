@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use App\Models\Intake;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\VitalsRecord;
 use App\Models\WorkingHour;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -328,9 +329,10 @@ describe('what the page may learn', function () {
             ->assertOk()
             ->assertDontSee('ana.private@example.test');
 
-        // `intakeMissing` and `emergencyFlag` are two yes/no facts for staff; see "the intake and emergency flags".
+        // `intakeMissing`, `emergencyFlag` and `vitalsTaken` are three yes/no facts for staff; see "the intake and
+        // emergency flags" and "the vitals mark".
         expect(collect($response->inertiaProps('schedule.doctors.0.appointments.0'))->keys()->sort()->values()->all())->toBe([
-            'checkedInAt', 'durationMinutes', 'emergencyFlag', 'endsAt', 'intakeMissing', 'offsetMinutes', 'patientName', 'serviceName', 'startsAt', 'status', 'statusLabel', 'ulid',
+            'checkedInAt', 'durationMinutes', 'emergencyFlag', 'endsAt', 'intakeMissing', 'offsetMinutes', 'patientName', 'serviceName', 'startsAt', 'status', 'statusLabel', 'ulid', 'vitalsTaken',
         ]);
     });
 
@@ -411,7 +413,7 @@ describe('the check-in time', function () {
         $row = $response->inertiaProps('schedule.doctors.0.appointments.0');
 
         expect($row['checkedInAt'])->toBe('2026-11-02T00:52:30Z')
-            ->and(array_keys($row))->not->toContain('intakeMissing')->not->toContain('emergencyFlag');
+            ->and(array_keys($row))->not->toContain('intakeMissing')->not->toContain('emergencyFlag')->not->toContain('vitalsTaken');
     });
 
     it('sends the time to nobody who may not open the schedule', function (Role $role) {
@@ -427,6 +429,50 @@ describe('the check-in time', function () {
         'doctor' => Role::Doctor,
         'nurse' => Role::Nurse,
     ]);
+});
+
+describe('the vitals mark', function () {
+    /** The `vitalsTaken` fact of the one booking on the page, as a staff member sees it. */
+    $markFor = function (Appointment $booking): bool {
+        $response = test()->actingAs(schedStaff())->get(route('staff.home', ['date' => SCHED_DAY]))->assertOk();
+
+        return collect($response->inertiaProps('schedule.doctors'))
+            ->flatMap(fn (array $doctor): array => $doctor['appointments'])
+            ->firstWhere('ulid', $booking->ulid)['vitalsTaken'];
+    };
+
+    it('tells staff that vitals were taken on a checked-in booking, and not before they were', function () use ($markFor) {
+        $doctor = schedDoctor('Dr. Reyes');
+        $waiting = schedBooking($doctor, '2026-11-02 09:00', 'checkedIn');
+        $done = schedBooking($doctor, '2026-11-02 10:00', 'checkedIn');
+        VitalsRecord::factory()->forAppointment($done)->create();
+
+        expect($markFor($waiting))->toBeFalse()
+            ->and($markFor($done))->toBeTrue();
+    });
+
+    it('says no for a booking that is not checked in', function (string $state) use ($markFor) {
+        $booking = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00', $state);
+        $booking->forceFill(['vitals_taken_at' => now()])->save();
+
+        expect($markFor($booking))->toBeFalse();
+    })->with(['booked', 'completed', 'noShow']);
+
+    it('sends the mark and never a reading, to staff or in the page source', function () {
+        $booking = schedBooking(schedDoctor('Dr. Reyes'), '2026-11-02 09:00', 'checkedIn');
+        VitalsRecord::factory()->forAppointment($booking)->create([
+            'readings' => ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7],
+        ]);
+
+        $this->actingAs(schedStaff())
+            ->get(route('staff.home', ['date' => SCHED_DAY, 'appointment' => $booking->ulid]))
+            ->assertOk()
+            // The decimals can't turn up by chance in an id or a time, unlike a whole number.
+            ->assertDontSee('39.4')
+            ->assertDontSee('83.7')
+            ->assertDontSee('systolic')
+            ->assertDontSee('readings');
+    });
 });
 
 describe('the intake and emergency flags', function () {

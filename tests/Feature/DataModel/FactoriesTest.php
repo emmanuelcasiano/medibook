@@ -14,6 +14,7 @@ use App\Models\Service;
 use App\Models\TimeOff;
 use App\Models\User;
 use App\Models\VisitNote;
+use App\Models\VitalsRecord;
 use App\Models\WorkingHour;
 use Illuminate\Database\Eloquent\MassAssignmentException;
 
@@ -31,6 +32,7 @@ it('has a working factory for every model', function (string $model) {
     Intake::class,
     IntakeSummary::class,
     VisitNote::class,
+    VitalsRecord::class,
     FollowUp::class,
     AuditLog::class,
 ]);
@@ -104,6 +106,24 @@ it('gives a visit note the doctor of its appointment', function () {
     $note = VisitNote::factory()->create();
 
     expect($note->doctor_id)->toBe($note->appointment->doctor_id);
+});
+
+it('records vitals by a nurse on a checked-in appointment, with the readings in range', function () {
+    $record = VitalsRecord::factory()->create();
+
+    expect($record->recordedBy->role)->toBe(Role::Nurse)
+        ->and($record->appointment->status)->toBe(AppointmentStatus::CheckedIn)
+        ->and($record->appointment->vitals_taken_at)->toBeNull()
+        ->and($record->readings['systolic'])->toBeGreaterThan($record->readings['diastolic']);
+});
+
+it('marks the appointment as vitals taken when the record is made for it', function () {
+    $appointment = Appointment::factory()->checkedIn()->create();
+
+    $record = VitalsRecord::factory()->forAppointment($appointment)->create();
+
+    expect($record->appointment_id)->toBe($appointment->id)
+        ->and($appointment->fresh()->vitals_taken_at)->not->toBeNull();
 });
 
 it('stores an audit log with a created_at and no updated_at', function () {

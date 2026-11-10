@@ -67,6 +67,10 @@ class AppServiceProvider extends ServiceProvider
         // doctor works through a few patients an hour, so 30 a minute is far above real use and too few for a loop.
         RateLimiter::for('doctor-actions', fn (Request $request): Limit => Limit::perMinute(30)->by((string) (Auth::id() ?? $request->ip())));
 
+        // The nurse's vitals save locks the appointment row and writes an encrypted blob. A nurse sees a patient every few
+        // minutes and corrects a typo now and then, so 30 a minute is far above real use and too few for a loop.
+        RateLimiter::for('nurse-actions', fn (Request $request): Limit => Limit::perMinute(30)->by((string) (Auth::id() ?? $request->ip())));
+
         // The one-click demo login is open to every guest (no password), and each click starts a session. It is per IP
         // because the visitor has no account yet. 20 a minute covers a reviewer trying all five roles, and no more.
         RateLimiter::for('demo-login', fn (Request $request): Limit => Limit::perMinute(20)->by((string) $request->ip()));

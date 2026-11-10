@@ -144,8 +144,8 @@ function bookingAt(Doctor $doctor, Service $service, string $startsAt, string $s
 }
 
 /**
- * The staff schedule prop without the two keys only staff get (`intakeMissing`, `emergencyFlag`), so staff and admin
- * can be compared on everything else.
+ * The staff schedule prop without the three keys only staff get (`intakeMissing`, `emergencyFlag`, `vitalsTaken`), so
+ * staff and admin can be compared on everything else.
  *
  * @param  array<string, mixed>  $schedule
  * @return array<string, mixed>
@@ -154,7 +154,7 @@ function withoutIntakeStatus(array $schedule): array
 {
     foreach ($schedule['doctors'] as $d => $doctor) {
         foreach ($doctor['appointments'] as $a => $appointment) {
-            unset($schedule['doctors'][$d]['appointments'][$a]['intakeMissing'], $schedule['doctors'][$d]['appointments'][$a]['emergencyFlag']);
+            unset($schedule['doctors'][$d]['appointments'][$a]['intakeMissing'], $schedule['doctors'][$d]['appointments'][$a]['emergencyFlag'], $schedule['doctors'][$d]['appointments'][$a]['vitalsTaken']);
         }
     }
 
