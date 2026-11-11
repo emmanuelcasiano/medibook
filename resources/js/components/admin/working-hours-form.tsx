@@ -1,8 +1,9 @@
 import { Link, useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { FormEvent } from 'react';
-import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
+import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
+import WeekSummary from '@/components/admin/week-summary';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,205 +108,235 @@ export default function WorkingHoursForm({ doctor, ranges }: Props) {
     const listError = form.errors.ranges;
 
     return (
-        <form onSubmit={submit} className="grid gap-6">
-            <div className="grid gap-4">
-                {DAYS.map((day) => {
-                    const rows = form.data.ranges
-                        .map((range, index) => ({ range, index }))
-                        .filter(({ range }) => range.weekday === day.weekday);
+        <form
+            onSubmit={submit}
+            className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]"
+        >
+            <div className="grid gap-6">
+                <div className="divide-y rounded-xl border bg-card shadow-xs">
+                    {DAYS.map((day) => {
+                        const rows = form.data.ranges
+                            .map((range, index) => ({ range, index }))
+                            .filter(
+                                ({ range }) => range.weekday === day.weekday,
+                            );
 
-                    return (
-                        <fieldset
-                            key={day.weekday}
-                            className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[10rem_1fr]"
-                        >
-                            <legend className="sr-only">{day.name}</legend>
+                        return (
+                            <fieldset
+                                key={day.weekday}
+                                className="flex flex-wrap items-start gap-x-4 gap-y-3 px-5 py-4"
+                            >
+                                <legend className="sr-only">{day.name}</legend>
 
-                            <div className="flex items-start justify-between gap-3 md:flex-col md:justify-start">
-                                <h3 className="font-medium" aria-hidden="true">
+                                <h3
+                                    className="w-28 shrink-0 pt-2.5 font-semibold"
+                                    aria-hidden="true"
+                                >
                                     {day.name}
                                 </h3>
-                                {rows.length === 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        Closed
-                                    </p>
-                                )}
-                            </div>
 
-                            <div className="grid gap-3">
-                                {rows.length > 0 && (
-                                    <ul className="grid gap-3">
-                                        {rows.map(
-                                            ({ range, index }, position) => {
-                                                const label = `${day.name} range ${position + 1}`;
-                                                const startError =
-                                                    form.errors[
-                                                        `ranges.${index}.starts_at`
-                                                    ];
-                                                const endError =
-                                                    form.errors[
-                                                        `ranges.${index}.ends_at`
-                                                    ];
-                                                const rowError =
-                                                    form.errors[
-                                                        `ranges.${index}.weekday`
-                                                    ] ??
-                                                    form.errors[
-                                                        `ranges.${index}`
-                                                    ];
+                                <div className="grid min-w-64 flex-1 gap-3">
+                                    {rows.length === 0 ? (
+                                        <p className="pt-2.5 text-sm text-muted-foreground">
+                                            Closed
+                                        </p>
+                                    ) : (
+                                        <ul className="grid gap-3">
+                                            {rows.map(
+                                                (
+                                                    { range, index },
+                                                    position,
+                                                ) => {
+                                                    const label = `${day.name} range ${position + 1}`;
+                                                    const startError =
+                                                        form.errors[
+                                                            `ranges.${index}.starts_at`
+                                                        ];
+                                                    const endError =
+                                                        form.errors[
+                                                            `ranges.${index}.ends_at`
+                                                        ];
+                                                    const rowError =
+                                                        form.errors[
+                                                            `ranges.${index}.weekday`
+                                                        ] ??
+                                                        form.errors[
+                                                            `ranges.${index}`
+                                                        ];
 
-                                                return (
-                                                    <li
-                                                        key={index}
-                                                        className="grid gap-2"
-                                                    >
-                                                        <div className="flex flex-wrap items-end gap-3">
-                                                            <div className="grid gap-1.5">
-                                                                <Label
-                                                                    htmlFor={`start-${index}`}
-                                                                >
-                                                                    From
-                                                                    <span className="sr-only">
-                                                                        {' '}
-                                                                        ({label}
-                                                                        )
-                                                                    </span>
-                                                                </Label>
-                                                                <Input
-                                                                    id={`start-${index}`}
-                                                                    type="time"
-                                                                    required
-                                                                    className="w-32"
-                                                                    value={
-                                                                        range.starts_at
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        changeRange(
+                                                    return (
+                                                        <li
+                                                            key={index}
+                                                            className="grid gap-2"
+                                                        >
+                                                            <div className="flex flex-wrap items-end gap-3">
+                                                                <div className="grid gap-1.5">
+                                                                    <Label
+                                                                        htmlFor={`start-${index}`}
+                                                                    >
+                                                                        From
+                                                                        <span className="sr-only">
+                                                                            {' '}
+                                                                            (
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                            )
+                                                                        </span>
+                                                                    </Label>
+                                                                    <Input
+                                                                        id={`start-${index}`}
+                                                                        type="time"
+                                                                        required
+                                                                        className="w-32"
+                                                                        value={
+                                                                            range.starts_at
+                                                                        }
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            changeRange(
+                                                                                index,
+                                                                                'starts_at',
+                                                                                event
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        aria-invalid={
+                                                                            startError
+                                                                                ? true
+                                                                                : undefined
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                                <div className="grid gap-1.5">
+                                                                    <Label
+                                                                        htmlFor={`end-${index}`}
+                                                                    >
+                                                                        To
+                                                                        <span className="sr-only">
+                                                                            {' '}
+                                                                            (
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                            )
+                                                                        </span>
+                                                                    </Label>
+                                                                    <Input
+                                                                        id={`end-${index}`}
+                                                                        type="time"
+                                                                        required
+                                                                        className="w-32"
+                                                                        value={
+                                                                            range.ends_at
+                                                                        }
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            changeRange(
+                                                                                index,
+                                                                                'ends_at',
+                                                                                event
+                                                                                    .target
+                                                                                    .value,
+                                                                            )
+                                                                        }
+                                                                        aria-invalid={
+                                                                            endError
+                                                                                ? true
+                                                                                : undefined
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-11"
+                                                                    onClick={() =>
+                                                                        removeRange(
                                                                             index,
-                                                                            'starts_at',
-                                                                            event
-                                                                                .target
-                                                                                .value,
                                                                         )
                                                                     }
-                                                                    aria-invalid={
-                                                                        startError
-                                                                            ? true
-                                                                            : undefined
-                                                                    }
-                                                                />
-                                                            </div>
-                                                            <div className="grid gap-1.5">
-                                                                <Label
-                                                                    htmlFor={`end-${index}`}
                                                                 >
-                                                                    To
+                                                                    <Trash2 />
                                                                     <span className="sr-only">
-                                                                        {' '}
-                                                                        ({label}
-                                                                        )
+                                                                        Remove{' '}
+                                                                        {label}
                                                                     </span>
-                                                                </Label>
-                                                                <Input
-                                                                    id={`end-${index}`}
-                                                                    type="time"
-                                                                    required
-                                                                    className="w-32"
-                                                                    value={
-                                                                        range.ends_at
-                                                                    }
-                                                                    onChange={(
-                                                                        event,
-                                                                    ) =>
-                                                                        changeRange(
-                                                                            index,
-                                                                            'ends_at',
-                                                                            event
-                                                                                .target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    aria-invalid={
-                                                                        endError
-                                                                            ? true
-                                                                            : undefined
-                                                                    }
-                                                                />
+                                                                </Button>
                                                             </div>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() =>
-                                                                    removeRange(
-                                                                        index,
-                                                                    )
+                                                            <InputError
+                                                                message={
+                                                                    startError
                                                                 }
-                                                            >
-                                                                <Trash2 />
-                                                                Remove
-                                                                <span className="sr-only">
-                                                                    {' '}
-                                                                    {label}
-                                                                </span>
-                                                            </Button>
-                                                        </div>
-                                                        <InputError
-                                                            message={startError}
-                                                        />
-                                                        <InputError
-                                                            message={endError}
-                                                        />
-                                                        <InputError
-                                                            message={rowError}
-                                                        />
-                                                    </li>
-                                                );
-                                            },
-                                        )}
-                                    </ul>
-                                )}
-
-                                <div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addRange(day.weekday)}
-                                    >
-                                        <Plus />
-                                        Add hours
-                                        <span className="sr-only">
-                                            {' '}
-                                            on {day.name}
-                                        </span>
-                                    </Button>
+                                                            />
+                                                            <InputError
+                                                                message={
+                                                                    endError
+                                                                }
+                                                            />
+                                                            <InputError
+                                                                message={
+                                                                    rowError
+                                                                }
+                                                            />
+                                                        </li>
+                                                    );
+                                                },
+                                            )}
+                                        </ul>
+                                    )}
                                 </div>
-                            </div>
-                        </fieldset>
-                    );
-                })}
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => addRange(day.weekday)}
+                                >
+                                    <Plus />
+                                    Add hours
+                                    <span className="sr-only">
+                                        {' '}
+                                        on {day.name}
+                                    </span>
+                                </Button>
+                            </fieldset>
+                        );
+                    })}
+                </div>
+
+                <InputError message={listError} />
+
+                <p className="text-sm text-muted-foreground">
+                    Times are clinic time. Add two ranges for a day with a lunch
+                    break, for example 08:00 to 12:00 and 13:00 to 17:00. A day
+                    with no range is closed. Bookings that already exist are not
+                    changed.
+                </p>
+
+                <div className="flex items-center gap-3">
+                    <Button type="submit" disabled={form.processing}>
+                        {form.processing && <Spinner />}
+                        Save working hours
+                    </Button>
+                    <Button asChild variant="ghost">
+                        <Link href={DoctorController.index()}>Cancel</Link>
+                    </Button>
+                    {form.isDirty && (
+                        <p
+                            role="status"
+                            className="text-sm font-medium text-amber-ink"
+                        >
+                            Unsaved changes
+                        </p>
+                    )}
+                </div>
             </div>
 
-            <InputError message={listError} />
-
-            <p className="text-sm text-muted-foreground">
-                Times are clinic time. Add two ranges for a day with a lunch
-                break, for example 08:00 to 12:00 and 13:00 to 17:00. A day with
-                no range is closed. Bookings that already exist are not changed.
-            </p>
-
-            <div className="flex items-center gap-3">
-                <Button type="submit" disabled={form.processing}>
-                    {form.processing && <Spinner />}
-                    Save working hours
-                </Button>
-                <Button asChild variant="ghost">
-                    <Link href={DoctorController.index()}>Back to doctors</Link>
-                </Button>
-            </div>
+            <WeekSummary ranges={form.data.ranges} days={DAYS} />
         </form>
     );
 }

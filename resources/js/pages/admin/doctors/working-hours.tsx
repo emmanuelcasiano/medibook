@@ -14,7 +14,7 @@ export default function AdminDoctorsWorkingHours({ doctor, ranges }: Props) {
         <>
             <Head title={`Working hours of ${doctor.name}`} />
 
-            <div className="max-w-4xl space-y-6 p-4">
+            <div className="max-w-6xl space-y-6 p-4">
                 <PageHeader
                     title={`Working hours: ${doctor.name}`}
                     description="Set the times this doctor sees patients on each weekday. Patients can book only inside these times."

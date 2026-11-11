@@ -2,8 +2,10 @@ import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
+import StatePill from '@/components/admin/state-pill';
+import DoctorAvatar from '@/components/booking/doctor-avatar';
+import { ActionsTd, DataTable, Pager, Td, Th } from '@/components/data-table';
 import PageHeader from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AdminDoctorListItem, Paginated } from '@/types';
 
@@ -22,159 +24,97 @@ export default function AdminDoctorsIndex({ doctors }: Props) {
                     description="Set each doctor's specialty, bio, services, working hours and time off. A new doctor is added on the Users page."
                 />
 
-                <div className="overflow-x-auto rounded-xl border bg-card">
-                    <table className="w-full text-sm">
-                        <caption className="sr-only">
-                            All doctors of the clinic
-                        </caption>
-                        <thead className="bg-muted/50 text-left">
-                            <tr>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Doctor
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Specialty
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Services
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 text-right font-medium"
-                                >
-                                    <span className="sr-only">Actions</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {doctors.data.map((doctor) => (
-                                <tr key={doctor.id}>
-                                    <td className="px-4 py-3">
-                                        <div className="flex flex-wrap items-center gap-2">
+                <DataTable caption="All doctors of the clinic">
+                    <thead>
+                        <tr>
+                            <Th>Doctor</Th>
+                            <Th>Specialty</Th>
+                            <Th>Services</Th>
+                            <Th srOnly>Actions</Th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {doctors.data.map((doctor) => (
+                            <tr key={doctor.id}>
+                                <Td>
+                                    <div className="flex items-center gap-3">
+                                        <DoctorAvatar
+                                            name={doctor.name}
+                                            className="size-10 text-sm"
+                                        />
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                             <span className="font-medium">
                                                 {doctor.name}
                                             </span>
                                             {!doctor.isActive && (
-                                                <Badge variant="outline">
+                                                <StatePill tone="warning">
                                                     Account inactive
-                                                </Badge>
+                                                </StatePill>
                                             )}
                                         </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {doctor.specialty}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        {doctor.servicesCount === 0
-                                            ? 'None yet'
-                                            : doctor.servicesCount}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex justify-end gap-2">
-                                            {doctor.can.update && (
-                                                <>
-                                                    <Button
-                                                        asChild
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        <Link
-                                                            href={WorkingHourController.edit(
-                                                                doctor.id,
-                                                            )}
-                                                        >
-                                                            Working hours
-                                                            <span className="sr-only">
-                                                                {' '}
-                                                                of {doctor.name}
-                                                            </span>
-                                                        </Link>
-                                                    </Button>
-                                                    <Button
-                                                        asChild
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        <Link
-                                                            href={TimeOffController.index(
-                                                                doctor.id,
-                                                            )}
-                                                        >
-                                                            Time off
-                                                            <span className="sr-only">
-                                                                {' '}
-                                                                of {doctor.name}
-                                                            </span>
-                                                        </Link>
-                                                    </Button>
-                                                    <Button
-                                                        asChild
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        <Link
-                                                            href={DoctorController.edit(
-                                                                doctor.id,
-                                                            )}
-                                                        >
-                                                            Edit
-                                                            <span className="sr-only">
-                                                                {' '}
-                                                                {doctor.name}
-                                                            </span>
-                                                        </Link>
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                    </div>
+                                </Td>
+                                <Td>{doctor.specialty}</Td>
+                                <Td className="whitespace-nowrap">
+                                    {doctor.servicesCount === 0 ? (
+                                        <span className="text-muted-foreground">
+                                            None yet
+                                        </span>
+                                    ) : (
+                                        doctor.servicesCount
+                                    )}
+                                </Td>
+                                <ActionsTd>
+                                    {doctor.can.update && (
+                                        <>
+                                            <Button asChild variant="outline">
+                                                <Link
+                                                    href={WorkingHourController.edit(
+                                                        doctor.id,
+                                                    )}
+                                                >
+                                                    Working hours
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        of {doctor.name}
+                                                    </span>
+                                                </Link>
+                                            </Button>
+                                            <Button asChild variant="outline">
+                                                <Link
+                                                    href={TimeOffController.index(
+                                                        doctor.id,
+                                                    )}
+                                                >
+                                                    Time off
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        of {doctor.name}
+                                                    </span>
+                                                </Link>
+                                            </Button>
+                                            <Button asChild variant="outline">
+                                                <Link
+                                                    href={DoctorController.edit(
+                                                        doctor.id,
+                                                    )}
+                                                >
+                                                    Edit
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        {doctor.name}
+                                                    </span>
+                                                </Link>
+                                            </Button>
+                                        </>
+                                    )}
+                                </ActionsTd>
+                            </tr>
+                        ))}
+                    </tbody>
+                </DataTable>
 
-                <nav
-                    className="flex items-center justify-between text-sm"
-                    aria-label="Pagination"
-                >
-                    <p className="text-muted-foreground">
-                        {doctors.from !== null
-                            ? `Showing ${doctors.from} to ${doctors.to} of ${doctors.total}`
-                            : 'No doctors yet'}
-                    </p>
-                    <div className="flex gap-2">
-                        {doctors.prev_page_url ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link
-                                    href={doctors.prev_page_url}
-                                    preserveScroll
-                                >
-                                    Previous
-                                </Link>
-                            </Button>
-                        ) : null}
-                        {doctors.next_page_url ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link
-                                    href={doctors.next_page_url}
-                                    preserveScroll
-                                >
-                                    Next
-                                </Link>
-                            </Button>
-                        ) : null}
-                    </div>
-                </nav>
+                <Pager paginator={doctors} empty="No doctors yet" />
             </div>
         </>
     );
