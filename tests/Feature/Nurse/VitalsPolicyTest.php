@@ -5,13 +5,14 @@ declare(strict_types=1);
 use App\Enums\Role;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\User;
 use App\Models\VitalsRecord;
 use Illuminate\Support\Facades\Gate;
 
 // The whole matrix of VitalsRecordPolicy, checked on the Policy itself, so a failure names the rule that is wrong. The
 // routes have their own denied-access tests in RecordVitalsTest and VitalsQueueTest, which prove the endpoints call it.
-// The Policy is deny by default: the nurse may record and correct only while the patient is checked in, and nobody may
-// read the values yet (that comes with the doctor's view, so there is no `view` ability to test).
+// The Policy is deny by default: the nurse may record and correct only while the patient is checked in, and only the
+// treating doctor may read the values (the doctor's page has its own route tests in AppointmentDetailTest).
 
 describe('viewing the queue', function () {
     it('is allowed to the nurse only', function (Role $role, bool $allowed) {
@@ -56,9 +57,30 @@ describe('recording and correcting', function () {
 });
 
 describe('reading the values', function () {
-    it('has no ability yet, so nobody is allowed, the nurse included', function (Role $role) {
-        $record = VitalsRecord::factory()->create();
+    it('is allowed to the appointment\'s own doctor, in every status', function (string $state) {
+        $appointment = Appointment::factory()->{$state}()->create();
+        $ownDoctor = User::query()->findOrFail(Doctor::query()->findOrFail($appointment->doctor_id)->user_id);
 
-        expect(Gate::forUser(userWithRole($role))->allows('view', $record))->toBeFalse();
-    })->with(Role::cases());
+        expect(Gate::forUser($ownDoctor)->allows('view', [VitalsRecord::class, $appointment]))->toBeTrue();
+    })->with(['booked', 'checkedIn', 'completed', 'cancelled', 'noShow']);
+
+    it('is refused to another doctor', function () {
+        $appointment = Appointment::factory()->checkedIn()->create();
+
+        expect(Gate::forUser(userWithRole(Role::Doctor))->allows('view', [VitalsRecord::class, $appointment]))->toBeFalse();
+    });
+
+    it('is refused to the nurse, the one who took the readings included', function () {
+        $appointment = Appointment::factory()->checkedIn()->create();
+        $record = VitalsRecord::factory()->forAppointment($appointment)->create();
+
+        expect(Gate::forUser($record->recordedBy)->allows('view', [VitalsRecord::class, $appointment]))->toBeFalse();
+    });
+
+    it('is refused to the patient of the appointment, staff and admins', function (Role $role) {
+        $appointment = Appointment::factory()->checkedIn()->create();
+        $user = $role === Role::Patient ? $appointment->patient : userWithRole($role);
+
+        expect(Gate::forUser($user)->allows('view', [VitalsRecord::class, $appointment]))->toBeFalse();
+    })->with([Role::Patient, Role::Staff, Role::Admin]);
 });

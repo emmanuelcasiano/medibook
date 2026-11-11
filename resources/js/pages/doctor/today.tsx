@@ -3,6 +3,7 @@ import {
     CalendarDays,
     ChevronRight,
     Clock,
+    HeartPulse,
     Info,
     Sparkles,
 } from 'lucide-react';
@@ -125,6 +126,16 @@ export default function DoctorToday({ date, appointments }: Props) {
                                             status={appointment.summaryStatus}
                                             label={appointment.summaryLabel}
                                         />
+                                        {/* A mark in words with an icon, never a value and never color alone. */}
+                                        {appointment.vitalsTaken && (
+                                            <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                                                <HeartPulse
+                                                    aria-hidden
+                                                    className="size-4"
+                                                />
+                                                Vitals taken
+                                            </span>
+                                        )}
                                         <ChevronRight
                                             aria-hidden
                                             className="ml-auto size-4 text-muted-foreground"

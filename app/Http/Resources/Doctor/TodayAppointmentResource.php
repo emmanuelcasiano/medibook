@@ -13,7 +13,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * One row of the doctor's "Today" list, as the page receives it. The caller must load `patient`, `service` and
  * `intake.summary` first (strict mode throws on a lazy load). First name only: no surname, email or birth date, and
- * no intake or summary text, only whether they exist and the summary status. Call `->resolve()` to get the plain
+ * no intake or summary text, only whether they exist and the summary status. Vitals are a yes/no from the plain
+ * `vitals_taken_at` mark, never a reading, and the vitals row is not loaded. Call `->resolve()` to get the plain
  * array for an Inertia prop.
  *
  * @mixin Appointment
@@ -32,6 +33,7 @@ final class TodayAppointmentResource extends JsonResource
      *     intakeFilled: bool,
      *     summaryStatus: string|null,
      *     summaryLabel: string,
+     *     vitalsTaken: bool,
      * }
      */
     public function toArray(Request $request): array
@@ -49,6 +51,7 @@ final class TodayAppointmentResource extends JsonResource
             'intakeFilled' => $this->intake !== null,
             'summaryStatus' => $summary?->status->value,
             'summaryLabel' => $this->summaryLabel($summary),
+            'vitalsTaken' => $this->vitals_taken_at !== null,
         ];
     }
 

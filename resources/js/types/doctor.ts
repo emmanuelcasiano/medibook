@@ -1,5 +1,6 @@
 import type { AppointmentStatus } from './appointments';
 import type { SavedIntake } from './intake';
+import type { VitalsReadings } from './vitals';
 
 /** One row of the doctor's "Today" list, as the page receives it. Times are ISO 8601 UTC. */
 export type TodayAppointment = {
@@ -17,6 +18,8 @@ export type TodayAppointment = {
     summaryStatus: SummaryStatus | null;
     /** The summary column in words, so it never depends on color alone. */
     summaryLabel: string;
+    /** Whether the nurse has taken vitals. A yes/no mark only, never a reading. */
+    vitalsTaken: boolean;
 };
 
 /** The header of the doctor's appointment page. Times are ISO 8601 UTC. */
@@ -58,6 +61,15 @@ export type FollowUpService = {
 export type DoctorIntake = SavedIntake & {
     /** null when the patient left "how long" blank. */
     durationLabel: string | null;
+};
+
+/** The nurse's vital signs for this visit, read-only. Health data: only the treating doctor ever gets it. */
+export type DoctorVitals = {
+    readings: VitalsReadings;
+    /** The nurse who took (or last corrected) them. */
+    recordedByName: string;
+    /** ISO 8601 UTC. When they were last saved. */
+    recordedAt: string;
 };
 
 /** The doctor's own private note. Health text: show it as plain text only. */
