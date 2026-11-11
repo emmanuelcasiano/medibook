@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Admin\CreateStaffUser;
 use App\Actions\Admin\DeactivateUser;
+use App\Actions\Admin\ListUsers;
 use App\Actions\Admin\ReactivateUser;
 use App\Actions\Admin\UpdateUser;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\IndexUserRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
@@ -21,14 +23,13 @@ use Inertia\Response;
 
 final class UserController extends Controller
 {
-    public function index(): Response
+    public function index(IndexUserRequest $request, ListUsers $list): Response
     {
         Gate::authorize('viewAny', User::class);
 
-        $users = User::query()
-            ->orderBy('name')
-            ->orderBy('id')
-            ->paginate(15)
+        $users = $list->handle($request->search(), $request->role(), $request->active())
+            // Keep the filters in the "next" and "previous" links.
+            ->withQueryString()
             ->through(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -44,7 +45,13 @@ final class UserController extends Controller
                 ],
             ]);
 
-        return Inertia::render('admin/users/index', ['users' => $users]);
+        return Inertia::render('admin/users/index', [
+            'users' => $users,
+            'filters' => $request->filters(),
+            'roles' => collect(Role::cases())
+                ->map(fn (Role $role): array => ['value' => $role->value, 'label' => $role->label()])
+                ->values(),
+        ]);
     }
 
     public function create(): Response
