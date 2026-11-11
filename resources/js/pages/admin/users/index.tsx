@@ -107,6 +107,33 @@ export default function AdminUsersIndex({ users }: Props) {
                                             )}
                                         </Form>
                                     )}
+                                    {user.can.reactivate && (
+                                        <Form
+                                            {...UserController.reactivate.form(
+                                                user.id,
+                                            )}
+                                            onBefore={() =>
+                                                window.confirm(
+                                                    `Reactivate ${user.name}? They will be able to log in again.`,
+                                                )
+                                            }
+                                            options={{ preserveScroll: true }}
+                                        >
+                                            {({ processing }) => (
+                                                <Button
+                                                    type="submit"
+                                                    variant="outline"
+                                                    disabled={processing}
+                                                >
+                                                    Reactivate
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        {user.name}
+                                                    </span>
+                                                </Button>
+                                            )}
+                                        </Form>
+                                    )}
                                 </ActionsTd>
                             </tr>
                         ))}

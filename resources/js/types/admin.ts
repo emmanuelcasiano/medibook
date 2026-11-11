@@ -10,7 +10,7 @@ export type AdminUserListItem = {
     roleLabel: string;
     isActive: boolean;
     twoFactorEnabled: boolean;
-    can: { deactivate: boolean };
+    can: { deactivate: boolean; reactivate: boolean };
 };
 
 export type RoleOption = {

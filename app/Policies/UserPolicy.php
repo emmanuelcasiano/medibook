@@ -33,4 +33,10 @@ final class UserPolicy
     {
         return $user->isAdmin() && $user->id !== $target->id;
     }
+
+    /** Admin only, and only for an account that is off. An active account has nothing to reactivate. */
+    public function reactivate(User $user, User $target): bool
+    {
+        return $user->isAdmin() && ! $target->is_active;
+    }
 }
