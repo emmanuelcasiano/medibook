@@ -5,10 +5,12 @@ declare(strict_types=1);
 use App\Enums\Role;
 use App\Enums\SummaryGap;
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Doctor;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
 use App\Models\User;
+use App\Models\VitalsRecord;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -18,6 +20,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 // each role is tried once through the route, to prove the controller calls the Policy. "Mark reviewed" is tested in
 // MarkSummaryReviewedTest (step 10.3). Visit notes and "Finish visit" are steps 10.4 and 10.5, and the view audit rows
 // (`intake.viewed` and the others) are tested in tests/Feature/Audit/ViewAuditEventsTest.php (step 11.3).
+// The Vitals card (nurse vitals, part 3) is read-only too, so it has no validation test either. The vitals Policy matrix
+// is in VitalsPolicyTest, and the `vitals.viewed` rows are in ViewAuditEventsTest.
 // The AI label ("AI draft. The doctor must review.") is React, so it is checked in the browser, not here.
 // "Now" is fixed at Monday 2 November 2026, 09:00 in Manila.
 
@@ -274,7 +278,99 @@ describe('the intake and the summary states', function () {
     });
 });
 
+describe('the vitals card', function () {
+    // Readings that can't turn up by chance in a page: three decimals-or-large values, and key names only vitals have.
+    $readings = ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7];
+
+    it('gives the treating doctor the readings, the nurse who took them and when', function () use ($readings) {
+        $appointment = ($this->booking)(attributes: ['status' => 'checked_in']);
+        VitalsRecord::factory()->forAppointment($appointment)
+            ->for(User::factory()->nurse()->create(['name' => 'Nora Reyes']), 'recordedBy')
+            ->create(['readings' => $readings, 'recorded_at' => CarbonImmutable::parse('2026-11-02 08:40', 'Asia/Manila')->utc()]);
+
+        // Exactly these three keys: no nurse id or email, no record id, no appointment id.
+        ($this->open)($appointment)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('vitals', [
+                'readings' => $readings,
+                'recordedByName' => 'Nora Reyes',
+                'recordedAt' => '2026-11-02T00:40:00Z',
+            ]));
+    });
+
+    it('sends null when the nurse has not recorded vitals yet', function () {
+        ($this->open)(($this->booking)(attributes: ['status' => 'checked_in']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('vitals', null));
+    });
+
+    it('still shows the readings after the visit is finished', function () use ($readings) {
+        $appointment = ($this->booking)(attributes: ['status' => 'completed']);
+        VitalsRecord::factory()->forAppointment($appointment)->create(['readings' => $readings]);
+
+        ($this->open)($appointment)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('vitals.readings', $readings));
+    });
+
+    it('never shows the doctor another appointment\'s readings', function () use ($readings) {
+        $mine = ($this->booking)(attributes: ['status' => 'checked_in']);
+        // Another doctor's patient, so it can't take the same slot.
+        VitalsRecord::factory()->forAppointment(($this->booking)(null, Doctor::factory()->create(), ['status' => 'checked_in']))->create(['readings' => $readings]);
+
+        ($this->open)($mine)
+            ->assertInertia(fn (Assert $page) => $page->where('vitals', null))
+            ->assertDontSee('39.4');
+    });
+
+    it('shows the corrected readings after the nurse fixes a typo', function () use ($readings) {
+        $appointment = ($this->booking)(attributes: ['status' => 'checked_in']);
+        $record = VitalsRecord::factory()->forAppointment($appointment)->create(['readings' => $readings]);
+        $record->update(['readings' => [...$readings, 'pulse' => 88]]);
+
+        ($this->open)($appointment)
+            ->assertInertia(fn (Assert $page) => $page->where('vitals.readings.pulse', 88));
+    });
+});
+
 describe('denied access', function () {
+    it('answers 403 to every role but the treating doctor, and sends no reading', function (string $who) {
+        $appointment = ($this->booking)(attributes: ['status' => 'checked_in']);
+        // A nurse who can sign in (the role routes need 2FA), who is the one that recorded the readings.
+        $nurse = userWithRole(Role::Nurse);
+        VitalsRecord::factory()->forAppointment($appointment)->for($nurse, 'recordedBy')->create([
+            'readings' => ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7],
+        ]);
+
+        $user = match ($who) {
+            'the nurse who took them' => $nurse,
+            'another nurse' => userWithRole(Role::Nurse),
+            'another doctor' => userWithRole(Role::Doctor),
+            'the patient' => $appointment->patient,
+            'staff' => userWithRole(Role::Staff),
+            'admin' => userWithRole(Role::Admin),
+        };
+
+        // A refused request answers with the error page, which has no page props. So the check is that nothing of the
+        // readings (the numbers or the key names) is anywhere in the body, and that no view row was written.
+        $this->actingAs($user)
+            ->get(route('doctor.appointments.show', $appointment))
+            ->assertForbidden()
+            ->assertDontSee('39.4')
+            ->assertDontSee('83.7')
+            ->assertDontSee('systolic')
+            ->assertDontSee('oxygen_saturation');
+
+        expect(AuditLog::query()->where('action', 'vitals.viewed')->count())->toBe(0);
+    })->with([
+        'the nurse who took them',
+        'another nurse',
+        'another doctor',
+        'the patient',
+        'staff',
+        'admin',
+    ]);
+
     it('answers 403 when a doctor opens another doctor\'s appointment, and sends none of its content', function () {
         $theirs = ($this->booking)(User::factory()->patient()->create(['name' => 'Rosa Dimaculangan']), Doctor::factory()->create());
         Intake::factory()->for($theirs)->create(['answers' => ['reason' => 'OTHER-DOCTORS-SECRET']]);

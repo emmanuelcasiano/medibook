@@ -10,10 +10,12 @@ use App\Models\Intake;
 use App\Models\IntakeSummary;
 use App\Models\User;
 use App\Models\VisitNote;
+use App\Models\VitalsRecord;
 use Illuminate\Support\Facades\Event;
 
 // Step 11.3: opening the doctor's appointment page writes a view row for each piece of health data on it
-// (PROJECT.md F10): `intake.viewed`, `summary.viewed` (a ready AI draft only) and `notes.viewed`. The page takes no
+// (PROJECT.md F10): `vitals.viewed` (nurse vitals, part 3), `intake.viewed`, `summary.viewed` (a ready AI draft only)
+// and `notes.viewed`. The nurse's own `vitals.viewed` (opening the form that holds readings) is in ActionAuditTest. The page takes no
 // input, so there is no validation test: the edge cases (a missing part, a draft that is not ready, text in the row)
 // stand in for it. Who may open the page is in AppointmentDetailTest; here each refused role is tried once to prove
 // that a refused request leaves no row. The change events (`intake.saved`, `notes.saved`...) are step 11.2.
@@ -55,6 +57,33 @@ describe('the doctor opens an appointment', function () {
             ])
             ->and($rows->pluck('metadata')->every(fn (array $meta): bool => $meta === ['appointment_id' => $appointment->id]))->toBeTrue()
             ->and($rows->pluck('ip_hash')->every(fn (?string $hash): bool => $hash !== null && strlen($hash) === 64))->toBeTrue();
+    });
+
+    it('writes `vitals.viewed` for the vitals, first, and keeps the readings out of the row', function () {
+        $appointment = ($this->booking)();
+        $vitals = VitalsRecord::factory()->forAppointment($appointment)->create([
+            'readings' => ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7],
+        ]);
+        $intake = Intake::factory()->for($appointment)->create();
+
+        ($this->open)($appointment)->assertOk();
+
+        $rows = ($this->views)();
+
+        expect($rows->pluck('action')->all())->toBe(['vitals.viewed', 'intake.viewed'])
+            ->and($rows->first()->actor_id)->toBe($this->doctorUser->id)
+            ->and([$rows->first()->subject_type, $rows->first()->subject_id])->toBe([$vitals->getMorphClass(), $vitals->id])
+            ->and($rows->first()->metadata)->toBe(['appointment_id' => $appointment->id])
+            ->and($rows->first()->ip_hash)->toHaveLength(64)
+            ->and(json_encode(AuditLog::query()->get()->toArray()))->not->toContain('39.4')
+            ->not->toContain('83.7')
+            ->not->toContain('systolic');
+    });
+
+    it('writes no vitals row when the nurse has not recorded any', function () {
+        ($this->open)(($this->booking)())->assertOk();
+
+        expect(($this->views)())->toHaveCount(0);
     });
 
     it('writes a new row on every open', function () {
@@ -138,6 +167,7 @@ describe('the page and the log stay together', function () {
 describe('denied access', function () {
     it('writes no view row when another doctor opens the appointment', function () {
         $theirs = ($this->booking)(Doctor::factory()->create());
+        VitalsRecord::factory()->forAppointment($theirs)->create();
         $intake = Intake::factory()->for($theirs)->create();
         IntakeSummary::factory()->for($intake)->create();
         VisitNote::factory()->for($theirs)->create();
@@ -149,6 +179,7 @@ describe('denied access', function () {
 
     it('writes no view row when staff, an admin or a patient is refused', function (Role $role) {
         $appointment = ($this->booking)();
+        VitalsRecord::factory()->forAppointment($appointment)->create();
         $intake = Intake::factory()->for($appointment)->create();
         IntakeSummary::factory()->for($intake)->create();
         VisitNote::factory()->for($appointment)->create();

@@ -14,9 +14,11 @@ use App\Http\Resources\Doctor\AppointmentDetailResource;
 use App\Http\Resources\Doctor\IntakeDetailResource;
 use App\Http\Resources\Doctor\IntakeSummaryResource;
 use App\Http\Resources\Doctor\VisitNoteResource;
+use App\Http\Resources\Doctor\VitalsRecordResource;
 use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\VitalsRecord;
 use App\Support\AuditLogger;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,13 +35,15 @@ final class AppointmentController extends Controller
      * and the AI draft next to them. The page always gets the raw answers, so a pending, failed or skipped summary
      * never leaves the doctor without the patient's own words.
      *
-     * Three checks, from the outside in. The appointment Policy refuses every other doctor, staff, admin and patient
-     * (403). Then the intake Policy and the summary Policy, because the answers and the draft are health data and
-     * have their own rules (staff and admins never get them). The intake, summary and note props are built only after
-     * their check has passed. The birth date is never sent: only the age in years.
+     * Four checks, from the outside in. The appointment Policy refuses every other doctor, staff, admin and patient
+     * (403). Then the vitals Policy (the nurse's readings are for the treating doctor only, so a nurse, who may not
+     * open this page anyway, never gets them even if a route changed), then the intake Policy and the summary Policy,
+     * because the answers and the draft are health data and have their own rules (staff and admins never get them).
+     * The vitals, intake, summary and note props are built only after their check has passed. The birth date is never
+     * sent: only the age in years.
      *
-     * Every open writes a view row for each piece of health data the page really carries (PROJECT.md F10): the intake
-     * answers, a ready AI draft, the doctor's note. The rows are written after the last check has passed, so a refused
+     * Every open writes a view row for each piece of health data the page really carries (PROJECT.md F10): the vitals,
+     * the intake answers, a ready AI draft, the doctor's note. The rows are written after the last check has passed, so a refused
      * request leaves none, and before the page is built, so no content goes out without its row. If the write fails,
      * the page fails with it (the content is not shown without a trace). The rows hold the appointment id and nothing
      * else, never the health text.
@@ -47,12 +51,16 @@ final class AppointmentController extends Controller
     public function show(Request $request, Appointment $appointment, AuditLogger $audit): Response
     {
         Gate::authorize('view', $appointment);
+        // Before anything is loaded, so a refused request does not even read the encrypted readings.
+        Gate::authorize('view', [VitalsRecord::class, $appointment]);
 
         // Column lists keep the page to what it shows. `birth_date` is loaded so the age can be worked out; it is not
         // in any prop. A fixed number of queries, whatever the patient's history.
         $appointment->load([
             'patient:id,name,birth_date',
             'service:id,name',
+            'vitals',
+            'vitals.recordedBy:id,name',
             'intake',
             'intake.summary',
             'visitNotes',
@@ -80,6 +88,13 @@ final class AppointmentController extends Controller
 
         $viewed = ['appointment_id' => $appointment->id];
         $doctor = $request->user();
+
+        // No record means the nurse has not taken them yet: nothing was shown, so there is nothing to log.
+        $vitals = $appointment->vitals;
+
+        if ($vitals !== null) {
+            $audit->record($doctor, 'vitals.viewed', $vitals, $viewed);
+        }
 
         if ($intake !== null) {
             $audit->record($doctor, 'intake.viewed', $intake, $viewed);
@@ -109,6 +124,7 @@ final class AppointmentController extends Controller
                     ->map(fn (Service $service): array => ['id' => $service->id, 'name' => $service->name, 'durationMinutes' => $service->duration_minutes])
                     ->all()
                 : [],
+            'vitals' => $vitals === null ? null : (new VitalsRecordResource($vitals))->resolve(),
             'intake' => $intake === null ? null : (new IntakeDetailResource($intake))->resolve(),
             'summary' => $summary === null ? null : (new IntakeSummaryResource($summary))->resolve(),
             'visitNote' => $note === null ? null : (new VisitNoteResource($note))->resolve(),

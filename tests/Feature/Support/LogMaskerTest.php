@@ -287,4 +287,26 @@ describe('a full flow', function () {
             ->not->toContain($appointment->patient->name)
             ->not->toContain($appointment->patient->email);
     });
+
+    // The doctor's page is where the readings are finally shown, so it is the flow most likely to leak one. Refused roles
+    // are walked too: a 403 page must not log the values it refused to show.
+    it('leaves no vital sign in the log after the doctor opens the page, and after refused roles try', function () {
+        $doctorUser = userWithRole(Role::Doctor);
+        $appointment = Appointment::factory()->for(Doctor::query()->where('user_id', $doctorUser->id)->firstOrFail())->checkedIn()->create();
+        VitalsRecord::factory()->forAppointment($appointment)->create(['readings' => LEAK_VITALS]);
+        $url = route('doctor.appointments.show', $appointment);
+
+        $this->actingAs($doctorUser)->get($url)->assertOk();
+        $this->actingAs(userWithRole(Role::Doctor))->get($url)->assertForbidden();
+        $this->actingAs(userWithRole(Role::Nurse))->get($url)->assertForbidden();
+        $this->actingAs($appointment->patient)->get($url)->assertForbidden();
+
+        $log = writtenLogs($this->logDir);
+
+        expect($log)->not->toContain('39.4')
+            ->not->toContain('83.7')
+            ->not->toContain('systolic')
+            ->not->toContain($appointment->patient->name)
+            ->not->toContain($appointment->patient->email);
+    });
 });

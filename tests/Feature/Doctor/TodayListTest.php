@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use App\Models\Intake;
 use App\Models\IntakeSummary;
 use App\Models\User;
+use App\Models\VitalsRecord;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -70,6 +71,7 @@ describe('the list', function () {
                     'intakeFilled' => false,
                     'summaryStatus' => null,
                     'summaryLabel' => 'No intake yet',
+                    'vitalsTaken' => false,
                 ]))
             // The surname, email and birth date are not anywhere in the page, not even in the page source.
             ->assertDontSee('Santos')
@@ -204,6 +206,44 @@ describe('the summary column', function () {
             ->assertOk()
             ->assertDontSee('Secret chest rash')
             ->assertDontSee('Secret summary line');
+    });
+});
+
+describe('the vitals mark', function () {
+    it('marks a row whose vitals were taken, and no other, without a single reading', function () {
+        $taken = ($this->bookingAt)('2026-11-02 09:00', 'checkedIn');
+        $waiting = ($this->bookingAt)('2026-11-02 10:00', 'checkedIn');
+        VitalsRecord::factory()->forAppointment($taken)->create([
+            'readings' => ['systolic' => 187, 'diastolic' => 121, 'pulse' => 143, 'temperature' => 39.4, 'oxygen_saturation' => 91, 'weight' => 83.7],
+        ]);
+
+        $this->actingAs($this->doctorUser)
+            ->get(route('doctor.home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('appointments.0.ulid', $taken->ulid)
+                ->where('appointments.0.vitalsTaken', true)
+                ->where('appointments.1.ulid', $waiting->ulid)
+                ->where('appointments.1.vitalsTaken', false)
+                // The list carries the boolean and nothing else about vitals.
+                ->missing('appointments.0.vitals')
+                ->missing('appointments.0.readings'))
+            ->assertDontSee('39.4')
+            ->assertDontSee('83.7')
+            ->assertDontSee('systolic');
+    });
+
+    it('does not read or decrypt the vitals row for the list', function () {
+        $appointment = ($this->bookingAt)('2026-11-02 09:00', 'checkedIn');
+        VitalsRecord::factory()->forAppointment($appointment)->create();
+
+        // Strict mode throws on a lazy load, so a list that touched `vitals` without loading it would fail here. The
+        // mark is the plain `vitals_taken_at` column.
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($this->doctorUser)->get(route('doctor.home'))->assertOk();
+
+        expect(collect(DB::getQueryLog())->pluck('query')->filter(fn (string $sql): bool => str_contains($sql, 'vitals_records')))->toBeEmpty();
     });
 });
 

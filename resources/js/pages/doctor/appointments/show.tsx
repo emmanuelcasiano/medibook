@@ -5,6 +5,7 @@ import FinishVisitForm from '@/components/doctor/finish-visit-form';
 import IntakeAnswersCard from '@/components/doctor/intake-answers-card';
 import SummaryCard from '@/components/doctor/summary-card';
 import VisitNoteCard from '@/components/doctor/visit-note-card';
+import VitalsCard from '@/components/doctor/vitals-card';
 import { Alert, AlertTitle } from '@/components/ui/alert';
 import StatusBadge from '@/components/status-badge';
 import {
@@ -16,6 +17,7 @@ import { home as doctorHome } from '@/routes/doctor';
 import type {
     DoctorAppointment,
     DoctorIntake,
+    DoctorVitals,
     FollowUpService,
     IntakeSummary,
     VisitNote,
@@ -23,6 +25,8 @@ import type {
 
 type Props = {
     appointment: DoctorAppointment;
+    /** null until the nurse records the vitals. Read-only here: the doctor never edits them. */
+    vitals: DoctorVitals | null;
     /** null when the patient has not filled in the form. */
     intake: DoctorIntake | null;
     /** null when there is no intake, or an intake with no summary row. */
@@ -37,6 +41,7 @@ type Props = {
 
 export default function DoctorAppointmentShow({
     appointment,
+    vitals,
     intake,
     summary,
     visitNote,
@@ -133,6 +138,9 @@ export default function DoctorAppointmentShow({
                         />
                     )}
                 </section>
+
+                {/* Before the answers: the doctor wants the readings in hand before the visit starts. */}
+                <VitalsCard vitals={vitals} />
 
                 <div className="grid items-start gap-6 lg:grid-cols-2">
                     <IntakeAnswersCard intake={intake} />
