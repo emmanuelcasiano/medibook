@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Admin\CreateStaffUser;
 use App\Actions\Admin\DeactivateUser;
 use App\Actions\Admin\ReactivateUser;
+use App\Actions\Admin\UpdateUser;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
@@ -36,6 +38,7 @@ final class UserController extends Controller
                 'isActive' => $user->is_active,
                 'twoFactorEnabled' => $user->hasEnabledTwoFactorAuthentication(),
                 'can' => [
+                    'update' => Gate::allows('update', $user),
                     'deactivate' => $user->is_active && Gate::allows('deactivate', $user),
                     'reactivate' => Gate::allows('reactivate', $user),
                 ],
@@ -75,6 +78,33 @@ final class UserController extends Controller
             'name' => $user->name,
             'role' => strtolower($user->role->label()),
         ])]);
+
+        return to_route('admin.users.index');
+    }
+
+    public function edit(User $user): Response
+    {
+        Gate::authorize('update', $user);
+
+        return Inertia::render('admin/users/edit', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roleLabel' => $user->role->label(),
+            ],
+        ]);
+    }
+
+    public function update(UpdateUserRequest $request, #[CurrentUser] User $actor, User $user, UpdateUser $update): RedirectResponse
+    {
+        Gate::authorize('update', $user);
+
+        $data = $request->validated();
+
+        $update->handle($actor, $user, $data['name'], $data['email']);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been updated.', ['name' => $user->name])]);
 
         return to_route('admin.users.index');
     }

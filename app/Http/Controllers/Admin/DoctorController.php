@@ -70,6 +70,8 @@ final class DoctorController extends Controller
                 'serviceIds' => $doctor->services()->pluck('services.id')->map(fn ($id): int => (int) $id)->all(),
             ],
             'services' => $services,
+            // The link to the user account screen (name and email). Hidden when the Policy would refuse it.
+            'userId' => Gate::allows('update', $doctor->user) ? $doctor->user_id : null,
         ]);
     }
 

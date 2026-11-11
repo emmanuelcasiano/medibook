@@ -28,6 +28,15 @@ final class UserPolicy
         return $user->isStaff();
     }
 
+    /**
+     * Edit another user's name and email. Admin only, and not yourself (Profile settings is for your own account), so an
+     * admin can't lock themselves out with a mistyped email that clears their verification.
+     */
+    public function update(User $user, User $target): bool
+    {
+        return $user->isAdmin() && $user->id !== $target->id;
+    }
+
     /** An admin can't deactivate themselves, so the clinic can't lock itself out by accident. */
     public function deactivate(User $user, User $target): bool
     {

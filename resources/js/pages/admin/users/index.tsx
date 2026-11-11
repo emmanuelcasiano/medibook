@@ -19,7 +19,7 @@ export default function AdminUsersIndex({ users }: Props) {
             <div className="space-y-6 p-4">
                 <PageHeader
                     title="Users"
-                    description="Create staff, doctor, nurse and admin accounts, or deactivate an account. Patients register themselves."
+                    description="Create staff, doctor, nurse and admin accounts, edit a name or email, or deactivate an account. Patients register themselves."
                     actions={
                         <Button asChild>
                             <Link href={UserController.create()}>Add user</Link>
@@ -80,6 +80,21 @@ export default function AdminUsersIndex({ users }: Props) {
                                     </StatePill>
                                 </Td>
                                 <ActionsTd>
+                                    {user.can.update && (
+                                        <Button asChild variant="outline">
+                                            <Link
+                                                href={UserController.edit(
+                                                    user.id,
+                                                )}
+                                            >
+                                                Edit
+                                                <span className="sr-only">
+                                                    {' '}
+                                                    {user.name}
+                                                </span>
+                                            </Link>
+                                        </Button>
+                                    )}
                                     {user.can.deactivate && (
                                         <Form
                                             {...UserController.deactivate.form(

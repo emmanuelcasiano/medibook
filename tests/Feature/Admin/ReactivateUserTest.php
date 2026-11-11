@@ -112,8 +112,8 @@ describe('the users list', function () {
                 ->where('users.data', function ($rows) use ($active, $inactive): bool {
                     $rows = collect($rows);
 
-                    return $rows->firstWhere('id', $active->id)['can'] === ['deactivate' => true, 'reactivate' => false]
-                        && $rows->firstWhere('id', $inactive->id)['can'] === ['deactivate' => false, 'reactivate' => true];
+                    return $rows->firstWhere('id', $active->id)['can'] === ['update' => true, 'deactivate' => true, 'reactivate' => false]
+                        && $rows->firstWhere('id', $inactive->id)['can'] === ['update' => true, 'deactivate' => false, 'reactivate' => true];
                 }));
     });
 });
