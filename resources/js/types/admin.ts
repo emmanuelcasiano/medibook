@@ -13,6 +13,13 @@ export type AdminUserListItem = {
     can: { update: boolean; deactivate: boolean; reactivate: boolean };
 };
 
+/** The users filters as typed in the form. An empty string means "not set". `status` is `active` or `inactive`. */
+export type AdminUserFilters = {
+    q: string;
+    role: Role | '';
+    status: 'active' | 'inactive' | '';
+};
+
 /** The user the admin edit page shows. The role is read-only text. */
 export type AdminUserFormValues = {
     id: number;
