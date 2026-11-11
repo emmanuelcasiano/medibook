@@ -1,8 +1,9 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
+import StatePill from '@/components/admin/state-pill';
 import AlertError from '@/components/alert-error';
+import { ActionsTd, DataTable, Pager, Td, Th } from '@/components/data-table';
 import PageHeader from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AdminServiceListItem, Paginated } from '@/types';
 
@@ -40,179 +41,108 @@ export default function AdminServicesIndex({ services }: Props) {
                     )}
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border bg-card">
-                    <table className="w-full text-sm">
-                        <caption className="sr-only">
-                            All services of the clinic
-                        </caption>
-                        <thead className="bg-muted/50 text-left">
-                            <tr>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Service
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Length
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Buffer
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Doctors
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Bookable
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 text-right font-medium"
-                                >
-                                    <span className="sr-only">Actions</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {services.data.map((service) => (
-                                <tr key={service.id}>
-                                    <td className="px-4 py-3">
-                                        <div className="font-medium">
-                                            {service.name}
+                <DataTable caption="All services of the clinic">
+                    <thead>
+                        <tr>
+                            <Th>Service</Th>
+                            <Th>Length</Th>
+                            <Th>Buffer</Th>
+                            <Th>Doctors</Th>
+                            <Th>Status</Th>
+                            <Th srOnly>Actions</Th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {services.data.map((service) => (
+                            <tr key={service.id}>
+                                <Td>
+                                    <div className="font-medium">
+                                        {service.name}
+                                    </div>
+                                    {service.description && (
+                                        <div className="text-muted-foreground">
+                                            {service.description}
                                         </div>
-                                        {service.description && (
-                                            <div className="text-muted-foreground">
-                                                {service.description}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        {service.durationMinutes} min
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap">
-                                        {service.bufferMinutes} min
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {service.doctorNames.length > 0
-                                            ? service.doctorNames.join(', ')
-                                            : 'None yet'}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge
-                                            variant={
-                                                service.isActive
-                                                    ? 'secondary'
-                                                    : 'outline'
+                                    )}
+                                </Td>
+                                <Td className="whitespace-nowrap">
+                                    {service.durationMinutes} min
+                                </Td>
+                                <Td className="whitespace-nowrap">
+                                    {service.bufferMinutes} min
+                                </Td>
+                                <Td>
+                                    {service.doctorNames.length > 0 ? (
+                                        service.doctorNames.join(', ')
+                                    ) : (
+                                        <span className="text-muted-foreground">
+                                            None yet
+                                        </span>
+                                    )}
+                                </Td>
+                                <Td>
+                                    <StatePill
+                                        tone={
+                                            service.isActive
+                                                ? 'good'
+                                                : 'neutral'
+                                        }
+                                    >
+                                        {service.isActive
+                                            ? 'Bookable'
+                                            : 'Not bookable'}
+                                    </StatePill>
+                                </Td>
+                                <ActionsTd>
+                                    {service.can.update && (
+                                        <Button asChild variant="outline">
+                                            <Link
+                                                href={ServiceController.edit(
+                                                    service.id,
+                                                )}
+                                            >
+                                                Edit
+                                                <span className="sr-only">
+                                                    {' '}
+                                                    {service.name}
+                                                </span>
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {service.can.delete && (
+                                        <Form
+                                            {...ServiceController.destroy.form(
+                                                service.id,
+                                            )}
+                                            onBefore={() =>
+                                                window.confirm(
+                                                    `Delete ${service.name}? Doctors will no longer offer it. This cannot be undone.`,
+                                                )
                                             }
+                                            options={{ preserveScroll: true }}
                                         >
-                                            {service.isActive ? 'Yes' : 'No'}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex justify-end gap-2">
-                                            {service.can.update && (
+                                            {({ processing }) => (
                                                 <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    size="sm"
+                                                    type="submit"
+                                                    variant="destructive-outline"
+                                                    disabled={processing}
                                                 >
-                                                    <Link
-                                                        href={ServiceController.edit(
-                                                            service.id,
-                                                        )}
-                                                    >
-                                                        Edit
-                                                        <span className="sr-only">
-                                                            {' '}
-                                                            {service.name}
-                                                        </span>
-                                                    </Link>
+                                                    Delete
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        {service.name}
+                                                    </span>
                                                 </Button>
                                             )}
-                                            {service.can.delete && (
-                                                <Form
-                                                    {...ServiceController.destroy.form(
-                                                        service.id,
-                                                    )}
-                                                    onBefore={() =>
-                                                        window.confirm(
-                                                            `Delete ${service.name}? Doctors will no longer offer it. This cannot be undone.`,
-                                                        )
-                                                    }
-                                                    options={{
-                                                        preserveScroll: true,
-                                                    }}
-                                                >
-                                                    {({ processing }) => (
-                                                        <Button
-                                                            type="submit"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled={
-                                                                processing
-                                                            }
-                                                        >
-                                                            Delete
-                                                            <span className="sr-only">
-                                                                {' '}
-                                                                {service.name}
-                                                            </span>
-                                                        </Button>
-                                                    )}
-                                                </Form>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        </Form>
+                                    )}
+                                </ActionsTd>
+                            </tr>
+                        ))}
+                    </tbody>
+                </DataTable>
 
-                <nav
-                    className="flex items-center justify-between text-sm"
-                    aria-label="Pagination"
-                >
-                    <p className="text-muted-foreground">
-                        {services.from !== null
-                            ? `Showing ${services.from} to ${services.to} of ${services.total}`
-                            : 'No services yet'}
-                    </p>
-                    <div className="flex gap-2">
-                        {services.prev_page_url ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link
-                                    href={services.prev_page_url}
-                                    preserveScroll
-                                >
-                                    Previous
-                                </Link>
-                            </Button>
-                        ) : null}
-                        {services.next_page_url ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link
-                                    href={services.next_page_url}
-                                    preserveScroll
-                                >
-                                    Next
-                                </Link>
-                            </Button>
-                        ) : null}
-                    </div>
-                </nav>
+                <Pager paginator={services} empty="No services yet" />
 
                 <p className="text-sm text-muted-foreground">
                     A service with appointments can&apos;t be deleted, because

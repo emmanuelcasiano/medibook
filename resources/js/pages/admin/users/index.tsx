@@ -1,7 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
+import RoleBadge from '@/components/admin/role-badge';
+import StatePill from '@/components/admin/state-pill';
+import { ActionsTd, DataTable, Pager, Td, Th } from '@/components/data-table';
 import PageHeader from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { AdminUserListItem, Paginated } from '@/types';
 
@@ -25,139 +27,93 @@ export default function AdminUsersIndex({ users }: Props) {
                     }
                 />
 
-                <div className="overflow-x-auto rounded-xl border bg-card">
-                    <table className="w-full text-sm">
-                        <caption className="sr-only">All user accounts</caption>
-                        <thead className="bg-muted/50 text-left">
-                            <tr>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Name
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Role
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    2FA
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 font-medium"
-                                >
-                                    Status
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-3 text-right font-medium"
-                                >
-                                    <span className="sr-only">Actions</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                            {users.data.map((user) => (
-                                <tr key={user.id}>
-                                    <td className="px-4 py-3">
-                                        <div className="font-medium">
-                                            {user.name}
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                            {user.email}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge variant="outline">
-                                            {user.roleLabel}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {user.twoFactorEnabled ? 'On' : 'Off'}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge
-                                            variant={
-                                                user.isActive
-                                                    ? 'secondary'
-                                                    : 'destructive'
+                <DataTable caption="All user accounts">
+                    <thead>
+                        <tr>
+                            <Th>Name</Th>
+                            <Th>Role</Th>
+                            <Th>2FA</Th>
+                            <Th>Status</Th>
+                            <Th srOnly>Actions</Th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.data.map((user) => (
+                            <tr key={user.id}>
+                                <Td>
+                                    <div className="font-medium">
+                                        {user.name}
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                        {user.email}
+                                    </div>
+                                </Td>
+                                <Td>
+                                    <RoleBadge
+                                        role={user.role}
+                                        label={user.roleLabel}
+                                    />
+                                </Td>
+                                <Td>
+                                    {/* Staff, doctor, nurse and admin accounts must have 2FA, so "off" stands out for them. */}
+                                    <StatePill
+                                        small
+                                        tone={
+                                            user.twoFactorEnabled ||
+                                            user.role === 'patient'
+                                                ? 'neutral'
+                                                : 'warning'
+                                        }
+                                    >
+                                        {user.twoFactorEnabled
+                                            ? '2FA on'
+                                            : '2FA off'}
+                                    </StatePill>
+                                </Td>
+                                <Td>
+                                    <StatePill
+                                        tone={
+                                            user.isActive ? 'good' : 'neutral'
+                                        }
+                                    >
+                                        {user.isActive ? 'Active' : 'Inactive'}
+                                    </StatePill>
+                                </Td>
+                                <ActionsTd>
+                                    {user.can.deactivate && (
+                                        <Form
+                                            {...UserController.deactivate.form(
+                                                user.id,
+                                            )}
+                                            onBefore={() =>
+                                                window.confirm(
+                                                    `Deactivate ${user.name}? They will be signed out and can no longer log in.`,
+                                                )
                                             }
+                                            options={{ preserveScroll: true }}
                                         >
-                                            {user.isActive
-                                                ? 'Active'
-                                                : 'Deactivated'}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        {user.can.deactivate && (
-                                            <Form
-                                                {...UserController.deactivate.form(
-                                                    user.id,
-                                                )}
-                                                onBefore={() =>
-                                                    window.confirm(
-                                                        `Deactivate ${user.name}? They will be signed out and can no longer log in.`,
-                                                    )
-                                                }
-                                                options={{
-                                                    preserveScroll: true,
-                                                }}
-                                            >
-                                                {({ processing }) => (
-                                                    <Button
-                                                        type="submit"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={processing}
-                                                    >
-                                                        Deactivate
-                                                        <span className="sr-only">
-                                                            {' '}
-                                                            {user.name}
-                                                        </span>
-                                                    </Button>
-                                                )}
-                                            </Form>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                            {({ processing }) => (
+                                                <Button
+                                                    type="submit"
+                                                    variant="destructive-outline"
+                                                    disabled={processing}
+                                                >
+                                                    Deactivate
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        {user.name}
+                                                    </span>
+                                                </Button>
+                                            )}
+                                        </Form>
+                                    )}
+                                </ActionsTd>
+                            </tr>
+                        ))}
+                    </tbody>
+                </DataTable>
 
-                <nav
-                    className="flex items-center justify-between text-sm"
-                    aria-label="Pagination"
-                >
-                    <p className="text-muted-foreground">
-                        {users.from !== null
-                            ? `Showing ${users.from} to ${users.to} of ${users.total}`
-                            : 'No users'}
-                    </p>
-                    <div className="flex gap-2">
-                        {users.prev_page_url ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link href={users.prev_page_url} preserveScroll>
-                                    Previous
-                                </Link>
-                            </Button>
-                        ) : null}
-                        {users.next_page_url ? (
-                            <Button asChild variant="outline" size="sm">
-                                <Link href={users.next_page_url} preserveScroll>
-                                    Next
-                                </Link>
-                            </Button>
-                        ) : null}
-                    </div>
-                </nav>
+                <Pager paginator={users} empty="No users" />
             </div>
         </>
     );
