@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Admin\CreateStaffUser;
 use App\Actions\Admin\DeactivateUser;
+use App\Actions\Admin\ReactivateUser;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
@@ -34,7 +35,10 @@ final class UserController extends Controller
                 'roleLabel' => $user->role->label(),
                 'isActive' => $user->is_active,
                 'twoFactorEnabled' => $user->hasEnabledTwoFactorAuthentication(),
-                'can' => ['deactivate' => $user->is_active && Gate::allows('deactivate', $user)],
+                'can' => [
+                    'deactivate' => $user->is_active && Gate::allows('deactivate', $user),
+                    'reactivate' => Gate::allows('reactivate', $user),
+                ],
             ]);
 
         return Inertia::render('admin/users/index', ['users' => $users]);
@@ -82,6 +86,17 @@ final class UserController extends Controller
         $deactivate->handle($actor, $user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been deactivated.', ['name' => $user->name])]);
+
+        return to_route('admin.users.index');
+    }
+
+    public function reactivate(#[CurrentUser] User $actor, User $user, ReactivateUser $reactivate): RedirectResponse
+    {
+        Gate::authorize('reactivate', $user);
+
+        $reactivate->handle($actor, $user);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __(':name has been reactivated.', ['name' => $user->name])]);
 
         return to_route('admin.users.index');
     }

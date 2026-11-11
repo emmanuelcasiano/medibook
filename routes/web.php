@@ -61,6 +61,7 @@ Route::middleware(['auth', 'verified', 'two-factor'])->group(function () {
         Route::get('users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('users', [UserController::class, 'store'])->middleware('throttle:20,1')->name('users.store');
         Route::patch('users/{user}/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+        Route::patch('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
 
         Route::resource('services', ServiceController::class)->except(['show', 'store']);
         Route::post('services', [ServiceController::class, 'store'])->middleware('throttle:20,1')->name('services.store');

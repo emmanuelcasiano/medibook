@@ -51,6 +51,7 @@ it('sends guests to the login page on every write route', function (string $meth
     'delete service' => ['DELETE', 'admin.services.destroy', ['service' => 1]],
     'create user' => ['POST', 'admin.users.store', []],
     'deactivate user' => ['PATCH', 'admin.users.deactivate', ['user' => 1]],
+    'reactivate user' => ['PATCH', 'admin.users.reactivate', ['user' => 1]],
     'confirm booking' => ['POST', 'booking.store', ['service' => 'any-service']],
     'finish visit' => ['POST', 'doctor.appointments.complete', ['appointment' => 'x']],
     'review summary' => ['POST', 'doctor.appointments.summary.review', ['appointment' => 'x']],
