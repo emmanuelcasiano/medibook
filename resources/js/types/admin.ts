@@ -10,7 +10,15 @@ export type AdminUserListItem = {
     roleLabel: string;
     isActive: boolean;
     twoFactorEnabled: boolean;
-    can: { deactivate: boolean; reactivate: boolean };
+    can: { update: boolean; deactivate: boolean; reactivate: boolean };
+};
+
+/** The user the admin edit page shows. The role is read-only text. */
+export type AdminUserFormValues = {
+    id: number;
+    name: string;
+    email: string;
+    roleLabel: string;
 };
 
 export type RoleOption = {

@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
+import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import WorkingHourController from '@/actions/App/Http/Controllers/Admin/WorkingHourController';
 import DoctorForm from '@/components/admin/doctor-form';
 import PageHeader from '@/components/page-header';
@@ -9,9 +10,11 @@ import type { AdminDoctorFormValues, AdminDoctorServiceOption } from '@/types';
 type Props = {
     doctor: AdminDoctorFormValues;
     services: AdminDoctorServiceOption[];
+    /** The doctor's user id, or null when the Policy would refuse the user edit screen. */
+    userId: number | null;
 };
 
-export default function AdminDoctorsEdit({ doctor, services }: Props) {
+export default function AdminDoctorsEdit({ doctor, services, userId }: Props) {
     return (
         <>
             <Head title={`Edit ${doctor.name}`} />
@@ -45,6 +48,19 @@ export default function AdminDoctorsEdit({ doctor, services }: Props) {
                         time off
                     </Link>{' '}
                     page.
+                    {userId !== null && (
+                        <>
+                            {' '}
+                            The name and email are changed on the{' '}
+                            <Link
+                                href={UserController.edit(userId)}
+                                className="font-medium underline underline-offset-4"
+                            >
+                                user account
+                            </Link>{' '}
+                            page.
+                        </>
+                    )}
                 </p>
             </div>
         </>
