@@ -176,7 +176,7 @@ export default function CheckInButton({
                             <div role="alert">
                                 {errors.appointment &&
                                     (compact ? (
-                                        <p className="text-xs text-destructive">
+                                        <p className="text-xs text-destructive-foreground">
                                             {errors.appointment}
                                         </p>
                                     ) : (

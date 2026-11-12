@@ -123,11 +123,12 @@
     --subtle-foreground: #5f6c6a;
     --accent: #e3f1ef;
     --accent-foreground: #0b524e;
+    /* `destructive` is a fill or a border. Red text uses `destructive-foreground`, which stays readable in both themes. */
     --destructive: #b42318;
     --destructive-foreground: #b42318;
     --border: #dde3e1;
-    /* Darker than the border on purpose, so form fields can be seen. */
-    --input: #c9d2cf;
+    /* Darker than the border on purpose: a field's edge must reach 3:1 against the page and the card (WCAG 1.4.11). */
+    --input: #7f8c88;
     --ring: #2a9d93;
     --chart-1: #0e6b66;
     --chart-2: #1f5fad;
@@ -203,7 +204,7 @@
     --destructive: #d92d20;
     --destructive-foreground: #f97066;
     --border: #2a3a37;
-    --input: #3d504c;
+    --input: #6b7e79;
     --ring: #5bc7bc;
     --chart-1: #5bc7bc;
     --chart-2: #7eaaf0;

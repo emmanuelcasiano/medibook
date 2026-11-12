@@ -254,7 +254,7 @@ const sectionTitle =
 // The header is sticky, so a section reached from its links stops below it.
 const anchored = 'scroll-mt-16';
 const linkClass =
-    'inline-flex min-h-8 items-center rounded-md underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+    'inline-flex min-h-8 items-center rounded-md pointer-coarse:min-h-11 underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 type Props = {
     /** The doctors a patient can book, as the booking pages receive them. Empty when there are none. */
@@ -822,7 +822,7 @@ export default function Welcome({ doctors }: Props) {
                                         open={index === 0}
                                         className="group p-5"
                                     >
-                                        <summary className="flex min-h-6 cursor-pointer list-none items-center justify-between gap-4 rounded-md font-semibold marker:content-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                                        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 rounded-md font-semibold marker:content-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                                             {q}
                                             <span
                                                 aria-hidden

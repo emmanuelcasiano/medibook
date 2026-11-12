@@ -1,6 +1,7 @@
 import { Form, usePage } from '@inertiajs/react';
 import { roleLabels } from '@/components/role-badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { login as demoLogin } from '@/routes/demo';
 import type { Role } from '@/types';
 
@@ -43,7 +44,8 @@ export default function DemoLogins() {
                                 data-test={`demo-login-${role}`}
                                 className="h-auto min-h-14 w-full flex-col items-start gap-0.5 px-3 py-2 text-left"
                             >
-                                <span className="font-semibold">
+                                <span className="flex items-center gap-2 font-semibold">
+                                    {processing && <Spinner />}
                                     {roleLabels[role]}
                                 </span>
                                 <span className="text-xs font-normal text-muted-foreground">

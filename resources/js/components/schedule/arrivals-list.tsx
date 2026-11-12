@@ -25,7 +25,7 @@ type Props = {
 };
 
 const chip =
-    'inline-flex h-8 items-center rounded-full border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+    'inline-flex h-8 items-center rounded-full border px-3 pointer-coarse:h-11 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 /**
  * The day as one list in time order across all doctors, grouped by what the front desk does next (on today: waiting,

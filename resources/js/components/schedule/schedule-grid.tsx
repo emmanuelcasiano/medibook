@@ -1,4 +1,6 @@
+import { Stethoscope } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import EmptyState from '@/components/empty-state';
 import { useNow } from '@/hooks/use-now';
 import { formatClinicTime } from '@/lib/clinic-time';
 import { formatWait, lateMinutes } from '@/lib/schedule-time';
@@ -165,11 +167,11 @@ export default function ScheduleGrid({
 
     if (doctors.length === 0) {
         return (
-            <p className="hidden rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground md:block">
+            <EmptyState icon={Stethoscope} className="max-md:hidden">
                 No doctors to show. Everyone who works today is filtered out, or
                 every doctor is off today. Change the chips or use the toggle
                 above.
-            </p>
+            </EmptyState>
         );
     }
 

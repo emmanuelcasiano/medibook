@@ -240,7 +240,7 @@ export default function WalkInDialog({ today }: Props) {
                                 {errors.service_id && (
                                     <p
                                         id={`${serviceFieldId}-error`}
-                                        className="text-sm text-destructive"
+                                        className="text-sm text-destructive-foreground"
                                     >
                                         {errors.service_id}
                                     </p>
@@ -284,7 +284,7 @@ export default function WalkInDialog({ today }: Props) {
                                 {errors.doctor && (
                                     <p
                                         id={`${doctorFieldId}-error`}
-                                        className="text-sm text-destructive"
+                                        className="text-sm text-destructive-foreground"
                                     >
                                         {errors.doctor}
                                     </p>
@@ -321,7 +321,7 @@ export default function WalkInDialog({ today }: Props) {
                                 {errors.starts_at && (
                                     <p
                                         role="alert"
-                                        className="text-sm text-destructive"
+                                        className="text-sm text-destructive-foreground"
                                     >
                                         {errors.starts_at}
                                     </p>

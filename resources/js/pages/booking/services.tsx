@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ChevronRight, Clock, Stethoscope } from 'lucide-react';
 import DoctorController from '@/actions/App/Http/Controllers/Booking/DoctorController';
 import BookingSteps from '@/components/booking/booking-steps';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import type { BookableService } from '@/types';
 
@@ -23,10 +24,10 @@ export default function BookingServices({ services }: Props) {
                 />
 
                 {services.length === 0 ? (
-                    <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+                    <EmptyState icon={Stethoscope}>
                         No services are open for booking right now. Please check
                         back later.
-                    </p>
+                    </EmptyState>
                 ) : (
                     <ul className="grid gap-3 sm:grid-cols-2">
                         {services.map((service) => (

@@ -1,11 +1,14 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { SearchX } from 'lucide-react';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import RoleBadge from '@/components/admin/role-badge';
 import StatePill from '@/components/admin/state-pill';
 import { ActionsTd, DataTable, Pager, Td, Th } from '@/components/data-table';
+import EmptyState from '@/components/empty-state';
 import InputError from '@/components/input-error';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -96,6 +99,7 @@ function UserFilterForm({
 
                     <div className="flex items-end gap-3">
                         <Button type="submit" disabled={processing}>
+                            {processing && <Spinner />}
                             Search
                         </Button>
                         {hasFilters && (
@@ -133,14 +137,18 @@ export default function AdminUsersIndex({ users, filters, roles }: Props) {
                 />
 
                 {users.data.length === 0 ? (
-                    <div className="rounded-xl border bg-card px-4 py-10 text-center">
-                        <p className="text-muted-foreground">
-                            No users match these filters
-                        </p>
-                        <Button asChild variant="outline" className="mt-4">
-                            <Link href={UserController.index()}>Clear</Link>
-                        </Button>
-                    </div>
+                    <EmptyState
+                        icon={SearchX}
+                        action={
+                            <Button asChild variant="outline">
+                                <Link href={UserController.index()}>
+                                    Clear filters
+                                </Link>
+                            </Button>
+                        }
+                    >
+                        No users match these filters.
+                    </EmptyState>
                 ) : (
                     <>
                         <DataTable caption="User accounts">
@@ -240,6 +248,9 @@ export default function AdminUsersIndex({ users, filters, roles }: Props) {
                                                                 processing
                                                             }
                                                         >
+                                                            {processing && (
+                                                                <Spinner />
+                                                            )}
                                                             Deactivate
                                                             <span className="sr-only">
                                                                 {' '}
@@ -271,6 +282,9 @@ export default function AdminUsersIndex({ users, filters, roles }: Props) {
                                                                 processing
                                                             }
                                                         >
+                                                            {processing && (
+                                                                <Spinner />
+                                                            )}
                                                             Reactivate
                                                             <span className="sr-only">
                                                                 {' '}

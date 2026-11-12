@@ -1,11 +1,14 @@
 import { Form, Head } from '@inertiajs/react';
+import { CalendarOff } from 'lucide-react';
 import DoctorController from '@/actions/App/Http/Controllers/Admin/DoctorController';
 import TimeOffController from '@/actions/App/Http/Controllers/Admin/TimeOffController';
 import StatePill from '@/components/admin/state-pill';
 import TimeOffForm from '@/components/admin/time-off-form';
 import { ActionsTd, DataTable, Pager, Td, Th } from '@/components/data-table';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { formatClinicDateTime } from '@/lib/clinic-time';
 import type {
     AdminTimeOffDoctor,
@@ -35,9 +38,10 @@ export default function AdminDoctorsTimeOffs({ doctor, timeOffs }: Props) {
                     </h2>
 
                     {timeOffs.data.length === 0 ? (
-                        <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-                            No time off planned.
-                        </p>
+                        <EmptyState icon={CalendarOff}>
+                            No time off planned. Add a day or hours below when{' '}
+                            {doctor.name} is away.
+                        </EmptyState>
                     ) : (
                         <DataTable
                             caption={`Upcoming time off of ${doctor.name}`}
@@ -110,6 +114,9 @@ export default function AdminDoctorsTimeOffs({ doctor, timeOffs }: Props) {
                                                         variant="outline"
                                                         disabled={processing}
                                                     >
+                                                        {processing && (
+                                                            <Spinner />
+                                                        )}
                                                         Remove
                                                         <span className="sr-only">
                                                             {' '}

@@ -1,7 +1,13 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    Stethoscope,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ScheduleController from '@/actions/App/Http/Controllers/Staff/ScheduleController';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import AppointmentPanel from '@/components/schedule/appointment-panel';
 import ArrivalsList from '@/components/schedule/arrivals-list';
@@ -275,6 +281,12 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                             showOff={showOff}
                             onShowOffChange={setShowOff}
                         />
+                        {appointments.length === 0 && (
+                            <EmptyState icon={CalendarDays} className="p-5">
+                                No appointments on this day yet. Bookings and
+                                walk-ins show up here.
+                            </EmptyState>
+                        )}
                         {view === 'grid' && (
                             <ScheduleGrid
                                 schedule={schedule}
@@ -301,9 +313,10 @@ export default function StaffSchedule({ schedule, selected, move }: Props) {
                         )}
                     </div>
                 ) : (
-                    <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
-                        There are no doctors to show.
-                    </p>
+                    <EmptyState icon={Stethoscope}>
+                        No doctors are set up yet. An admin can add them under
+                        Doctors.
+                    </EmptyState>
                 )}
             </div>
 

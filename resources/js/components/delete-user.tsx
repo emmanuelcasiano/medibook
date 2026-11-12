@@ -5,6 +5,7 @@ import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Dialog,
     DialogClose,
@@ -104,7 +105,9 @@ export default function DeleteUser() {
                                             <button
                                                 type="submit"
                                                 data-test="confirm-delete-user-button"
+                                                className="inline-flex items-center gap-2"
                                             >
+                                                {processing && <Spinner />}
                                                 Delete account
                                             </button>
                                         </Button>
