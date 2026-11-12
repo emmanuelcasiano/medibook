@@ -64,6 +64,9 @@ function NoteForm({
         <Form
             {...VisitNoteController.update.form(appointmentUlid)}
             options={{ preserveScroll: true }}
+            // The Save button disables itself while sending, which drops the focus on the page. A refused note takes it
+            // back to the field that has the message.
+            onError={() => document.getElementById('visit-note-body')?.focus()}
             className="space-y-3"
         >
             {({ errors, processing }) => (

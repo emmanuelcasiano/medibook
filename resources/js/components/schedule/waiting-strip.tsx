@@ -28,7 +28,7 @@ type WaitingDoctor = {
     patients: Waiting[];
 };
 
-const longWait = 'text-amber-700 dark:text-amber-400';
+const longWait = 'text-amber-ink';
 
 /**
  * Who has checked in and is still waiting, by doctor, longest wait first. Built from the bookings the page already

@@ -18,7 +18,7 @@ export default function LateLabel({ minutes, className }: Props) {
         <span
             data-test="late-label"
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded border border-amber-300 bg-amber-100 px-1 text-[0.7rem] leading-4 font-medium whitespace-nowrap text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200',
+                'inline-flex shrink-0 items-center gap-1 rounded border border-amber-line bg-amber-soft px-1 text-[0.7rem] leading-4 font-medium whitespace-nowrap text-amber-ink',
                 className,
             )}
         >

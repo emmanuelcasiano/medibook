@@ -198,6 +198,12 @@ export default function BookingSlots({
                         <h2 id="times-heading" className="font-semibold">
                             Open times on {formatClinicDate(selectedDate)}
                         </h2>
+                        {/* A day link keeps the page in place (`preserveState`), so this region is announced when its text changes. */}
+                        <p role="status" className="sr-only">
+                            {slots.length === 0
+                                ? `No open times on ${formatClinicDate(selectedDate)}.`
+                                : `${slots.length} open ${slots.length === 1 ? 'time' : 'times'} on ${formatClinicDate(selectedDate)}.`}
+                        </p>
 
                         {slots.length === 0 ? (
                             <EmptyState

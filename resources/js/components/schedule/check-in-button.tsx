@@ -199,10 +199,10 @@ function EmergencyNotice({ compact }: { compact: boolean }) {
     return (
         <p
             className={cn(
-                'flex items-start gap-2 font-medium text-red-700 dark:text-red-400',
+                'flex items-start gap-2 font-medium text-danger-ink',
                 compact
                     ? 'text-xs'
-                    : 'rounded-md border border-red-200 bg-red-50 p-3 text-sm dark:border-red-900 dark:bg-red-950/40',
+                    : 'rounded-md border border-danger-line bg-danger-soft p-3 text-sm',
             )}
         >
             <Siren

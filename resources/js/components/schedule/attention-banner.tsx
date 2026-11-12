@@ -46,7 +46,7 @@ export default function AttentionBanner({ schedule }: Props) {
         <section
             aria-label="Needs attention"
             data-test="attention-banner"
-            className="rounded-xl border border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100"
+            className="rounded-xl border border-danger-line bg-danger-soft text-danger-ink"
         >
             <button
                 type="button"
@@ -72,7 +72,7 @@ export default function AttentionBanner({ schedule }: Props) {
             {open && (
                 <ul
                     id={listId}
-                    className="divide-y divide-red-200 border-t border-red-200 px-4 dark:divide-red-900 dark:border-red-900"
+                    className="divide-y divide-danger-line border-t border-danger-line px-4"
                 >
                     {flagged.map(({ appointment, doctorName }) => (
                         <li

@@ -31,13 +31,13 @@ export default function AppointmentFlags({
             key: 'emergency',
             text: emergencyText,
             Icon: Siren,
-            tone: 'text-red-700 dark:text-red-400',
+            tone: 'text-danger-ink',
         },
         appointment.intakeMissing && {
             key: 'intake',
             text: intakeMissingText,
             Icon: ClipboardX,
-            tone: 'text-amber-700 dark:text-amber-400',
+            tone: 'text-amber-ink',
         },
         appointment.vitalsTaken && {
             key: 'vitals',
