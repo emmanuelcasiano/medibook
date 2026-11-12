@@ -91,7 +91,7 @@ export default function AdminAiUsageIndex({ usage }: Props) {
                         of {numberFormat.format(cap.daily)} tokens used today.
                     </p>
                     {cap.reached ? (
-                        <p className="text-sm font-medium text-destructive">
+                        <p className="text-sm font-medium text-destructive-foreground">
                             Cap reached. New summaries are skipped until
                             tomorrow, and the raw answers are still shown.
                         </p>

@@ -5,6 +5,7 @@ import AuditLogController from '@/actions/App/Http/Controllers/Admin/AuditLogCon
 import InputError from '@/components/input-error';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -141,6 +142,7 @@ function AuditFilterForm({
 
             <div className="flex items-end gap-3">
                 <Button type="submit" disabled={form.processing}>
+                    {form.processing && <Spinner />}
                     Filter
                 </Button>
                 {hasFilters && (

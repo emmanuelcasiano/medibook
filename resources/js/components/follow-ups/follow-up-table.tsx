@@ -1,5 +1,7 @@
 import { Link } from '@inertiajs/react';
+import { PhoneCall } from 'lucide-react';
 import FollowUpController from '@/actions/App/Http/Controllers/Staff/FollowUpController';
+import EmptyState from '@/components/empty-state';
 import FollowUpStateBadge from '@/components/follow-ups/follow-up-state-badge';
 import { formatClinicShortMonth, clinicDayOfMonth } from '@/lib/clinic-time';
 import { cn } from '@/lib/utils';
@@ -27,9 +29,11 @@ export default function FollowUpTable({
 }: Props) {
     if (followUps.length === 0) {
         return (
-            <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
-                Nothing here.
-            </p>
+            <EmptyState icon={PhoneCall}>
+                {filter === null
+                    ? 'No follow-ups yet.'
+                    : 'No follow-ups in this group.'}
+            </EmptyState>
         );
     }
 

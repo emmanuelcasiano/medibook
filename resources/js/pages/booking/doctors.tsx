@@ -1,10 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
-import { ChevronRight, Zap } from 'lucide-react';
+import { ChevronRight, Stethoscope, Zap } from 'lucide-react';
 import ServiceController from '@/actions/App/Http/Controllers/Booking/ServiceController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
 import BookingSteps from '@/components/booking/booking-steps';
 import DoctorAvatar from '@/components/booking/doctor-avatar';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
+import { Button } from '@/components/ui/button';
 import type { BookableDoctor, BookableService } from '@/types';
 
 type Props = {
@@ -39,10 +41,18 @@ export default function BookingDoctors({ service, doctors }: Props) {
                 />
 
                 {doctors.length === 0 ? (
-                    <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-                        No doctor offers this service right now. Please pick
-                        another service.
-                    </p>
+                    <EmptyState
+                        icon={Stethoscope}
+                        action={
+                            <Button asChild variant="outline">
+                                <Link href={ServiceController.index()}>
+                                    Pick another service
+                                </Link>
+                            </Button>
+                        }
+                    >
+                        No doctor offers this service right now.
+                    </EmptyState>
                 ) : (
                     <ul className="space-y-3">
                         <li>

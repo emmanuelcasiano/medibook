@@ -28,7 +28,7 @@ type Props = {
 };
 
 const chip =
-    'inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+    'inline-flex h-9 items-center gap-1.5 rounded-full border px-3 pointer-coarse:h-11 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 /**
  * The doctor chips above the schedule ("All" or one or more doctors), and the toggle for the doctors who are off today.

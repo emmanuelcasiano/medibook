@@ -28,7 +28,7 @@ export default function ViewToggle({ view, options, onChange }: Props) {
                         aria-pressed={pressed}
                         onClick={() => onChange(option.view)}
                         className={cn(
-                            'h-8 rounded-sm px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                            'h-8 rounded-sm px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none pointer-coarse:h-11',
                             pressed
                                 ? 'bg-primary text-primary-foreground'
                                 : 'hover:bg-accent',

@@ -1,10 +1,13 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { ClipboardList } from 'lucide-react';
 import ServiceController from '@/actions/App/Http/Controllers/Admin/ServiceController';
 import StatePill from '@/components/admin/state-pill';
 import AlertError from '@/components/alert-error';
 import { ActionsTd, DataTable, Pager, Td, Th } from '@/components/data-table';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import type { AdminServiceListItem, Paginated } from '@/types';
 
 type Props = {
@@ -41,108 +44,129 @@ export default function AdminServicesIndex({ services }: Props) {
                     )}
                 </div>
 
-                <DataTable caption="All services of the clinic">
-                    <thead>
-                        <tr>
-                            <Th>Service</Th>
-                            <Th>Length</Th>
-                            <Th>Buffer</Th>
-                            <Th>Doctors</Th>
-                            <Th>Status</Th>
-                            <Th srOnly>Actions</Th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {services.data.map((service) => (
-                            <tr key={service.id}>
-                                <Td>
-                                    <div className="font-medium">
-                                        {service.name}
-                                    </div>
-                                    {service.description && (
-                                        <div className="text-muted-foreground">
-                                            {service.description}
+                {services.data.length === 0 ? (
+                    <EmptyState
+                        icon={ClipboardList}
+                        action={
+                            <Button asChild variant="outline">
+                                <Link href={ServiceController.create()}>
+                                    Add service
+                                </Link>
+                            </Button>
+                        }
+                    >
+                        No services yet. Patients can&apos;t book until you add
+                        one.
+                    </EmptyState>
+                ) : (
+                    <DataTable caption="All services of the clinic">
+                        <thead>
+                            <tr>
+                                <Th>Service</Th>
+                                <Th>Length</Th>
+                                <Th>Buffer</Th>
+                                <Th>Doctors</Th>
+                                <Th>Status</Th>
+                                <Th srOnly>Actions</Th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {services.data.map((service) => (
+                                <tr key={service.id}>
+                                    <Td>
+                                        <div className="font-medium">
+                                            {service.name}
                                         </div>
-                                    )}
-                                </Td>
-                                <Td className="whitespace-nowrap">
-                                    {service.durationMinutes} min
-                                </Td>
-                                <Td className="whitespace-nowrap">
-                                    {service.bufferMinutes} min
-                                </Td>
-                                <Td>
-                                    {service.doctorNames.length > 0 ? (
-                                        service.doctorNames.join(', ')
-                                    ) : (
-                                        <span className="text-muted-foreground">
-                                            None yet
-                                        </span>
-                                    )}
-                                </Td>
-                                <Td>
-                                    <StatePill
-                                        tone={
-                                            service.isActive
-                                                ? 'good'
-                                                : 'neutral'
-                                        }
-                                    >
-                                        {service.isActive
-                                            ? 'Bookable'
-                                            : 'Not bookable'}
-                                    </StatePill>
-                                </Td>
-                                <ActionsTd>
-                                    {service.can.update && (
-                                        <Button asChild variant="outline">
-                                            <Link
-                                                href={ServiceController.edit(
-                                                    service.id,
-                                                )}
-                                            >
-                                                Edit
-                                                <span className="sr-only">
-                                                    {' '}
-                                                    {service.name}
-                                                </span>
-                                            </Link>
-                                        </Button>
-                                    )}
-                                    {service.can.delete && (
-                                        <Form
-                                            {...ServiceController.destroy.form(
-                                                service.id,
-                                            )}
-                                            onBefore={() =>
-                                                window.confirm(
-                                                    `Delete ${service.name}? Doctors will no longer offer it. This cannot be undone.`,
-                                                )
+                                        {service.description && (
+                                            <div className="text-muted-foreground">
+                                                {service.description}
+                                            </div>
+                                        )}
+                                    </Td>
+                                    <Td className="whitespace-nowrap">
+                                        {service.durationMinutes} min
+                                    </Td>
+                                    <Td className="whitespace-nowrap">
+                                        {service.bufferMinutes} min
+                                    </Td>
+                                    <Td>
+                                        {service.doctorNames.length > 0 ? (
+                                            service.doctorNames.join(', ')
+                                        ) : (
+                                            <span className="text-muted-foreground">
+                                                None yet
+                                            </span>
+                                        )}
+                                    </Td>
+                                    <Td>
+                                        <StatePill
+                                            tone={
+                                                service.isActive
+                                                    ? 'good'
+                                                    : 'neutral'
                                             }
-                                            options={{ preserveScroll: true }}
                                         >
-                                            {({ processing }) => (
-                                                <Button
-                                                    type="submit"
-                                                    variant="destructive-outline"
-                                                    disabled={processing}
+                                            {service.isActive
+                                                ? 'Bookable'
+                                                : 'Not bookable'}
+                                        </StatePill>
+                                    </Td>
+                                    <ActionsTd>
+                                        {service.can.update && (
+                                            <Button asChild variant="outline">
+                                                <Link
+                                                    href={ServiceController.edit(
+                                                        service.id,
+                                                    )}
                                                 >
-                                                    Delete
+                                                    Edit
                                                     <span className="sr-only">
                                                         {' '}
                                                         {service.name}
                                                     </span>
-                                                </Button>
-                                            )}
-                                        </Form>
-                                    )}
-                                </ActionsTd>
-                            </tr>
-                        ))}
-                    </tbody>
-                </DataTable>
+                                                </Link>
+                                            </Button>
+                                        )}
+                                        {service.can.delete && (
+                                            <Form
+                                                {...ServiceController.destroy.form(
+                                                    service.id,
+                                                )}
+                                                onBefore={() =>
+                                                    window.confirm(
+                                                        `Delete ${service.name}? Doctors will no longer offer it. This cannot be undone.`,
+                                                    )
+                                                }
+                                                options={{
+                                                    preserveScroll: true,
+                                                }}
+                                            >
+                                                {({ processing }) => (
+                                                    <Button
+                                                        type="submit"
+                                                        variant="destructive-outline"
+                                                        disabled={processing}
+                                                    >
+                                                        {processing && (
+                                                            <Spinner />
+                                                        )}
+                                                        Delete
+                                                        <span className="sr-only">
+                                                            {' '}
+                                                            {service.name}
+                                                        </span>
+                                                    </Button>
+                                                )}
+                                            </Form>
+                                        )}
+                                    </ActionsTd>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </DataTable>
+                )}
 
-                <Pager paginator={services} empty="No services yet" />
+                <Pager paginator={services} empty="" />
 
                 <p className="text-sm text-muted-foreground">
                     A service with appointments can&apos;t be deleted, because

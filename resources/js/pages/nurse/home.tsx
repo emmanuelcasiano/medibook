@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ChevronRight, HeartPulse } from 'lucide-react';
 import VitalsController from '@/actions/App/Http/Controllers/Nurse/VitalsController';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { formatClinicTime } from '@/lib/clinic-time';
@@ -126,13 +127,7 @@ function QueueSection({
             ) : quiet ? (
                 <p className="text-sm text-muted-foreground">{empty}</p>
             ) : (
-                <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
-                    <HeartPulse
-                        aria-hidden
-                        className="size-7 text-muted-foreground"
-                    />
-                    <p className="font-medium">{empty}</p>
-                </div>
+                <EmptyState icon={HeartPulse}>{empty}</EmptyState>
             )}
         </section>
     );

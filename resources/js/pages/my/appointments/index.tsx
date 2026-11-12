@@ -3,6 +3,7 @@ import { CalendarDays, Info, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import AppointmentCard from '@/components/appointments/appointment-card';
 import FollowUpCard from '@/components/appointments/follow-up-card';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -177,20 +178,18 @@ export default function MyAppointments({
                             ))}
                         </ul>
                     ) : (
-                        <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
-                            <CalendarDays
-                                aria-hidden
-                                className="size-7 text-muted-foreground"
-                            />
-                            <p className="font-medium">
-                                No upcoming appointments.
-                            </p>
-                            <Button asChild variant="outline">
-                                <Link href={bookingServices()}>
-                                    Book an appointment
-                                </Link>
-                            </Button>
-                        </div>
+                        <EmptyState
+                            icon={CalendarDays}
+                            action={
+                                <Button asChild variant="outline">
+                                    <Link href={bookingServices()}>
+                                        Book an appointment
+                                    </Link>
+                                </Button>
+                            }
+                        >
+                            No upcoming appointments.
+                        </EmptyState>
                     )}
                 </section>
 

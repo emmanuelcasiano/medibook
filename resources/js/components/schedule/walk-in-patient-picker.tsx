@@ -168,7 +168,10 @@ export default function WalkInPatientPicker({
                     value={choice.patient.id}
                 />
                 {errors.patient_id && (
-                    <p role="alert" className="text-sm text-destructive">
+                    <p
+                        role="alert"
+                        className="text-sm text-destructive-foreground"
+                    >
                         {errors.patient_id}
                     </p>
                 )}
@@ -220,7 +223,7 @@ export default function WalkInPatientPicker({
                     {errors['new_patient.name'] && (
                         <p
                             id={`${nameId}-error`}
-                            className="text-sm text-destructive"
+                            className="text-sm text-destructive-foreground"
                         >
                             {errors['new_patient.name']}
                         </p>
@@ -249,7 +252,7 @@ export default function WalkInPatientPicker({
                     {errors['new_patient.email'] && (
                         <p
                             id={`${emailId}-error`}
-                            className="text-sm text-destructive"
+                            className="text-sm text-destructive-foreground"
                         >
                             {errors['new_patient.email']}
                         </p>
@@ -277,7 +280,7 @@ export default function WalkInPatientPicker({
                     {errors['new_patient.birth_date'] && (
                         <p
                             id={`${birthId}-error`}
-                            className="text-sm text-destructive"
+                            className="text-sm text-destructive-foreground"
                         >
                             {errors['new_patient.birth_date']}
                         </p>
@@ -285,7 +288,10 @@ export default function WalkInPatientPicker({
                 </div>
 
                 {errors.new_patient && (
-                    <p role="alert" className="text-sm text-destructive">
+                    <p
+                        role="alert"
+                        className="text-sm text-destructive-foreground"
+                    >
                         {errors.new_patient}
                     </p>
                 )}
@@ -375,7 +381,7 @@ export default function WalkInPatientPicker({
             </Button>
 
             {(errors.patient_id || errors.new_patient) && (
-                <p role="alert" className="text-sm text-destructive">
+                <p role="alert" className="text-sm text-destructive-foreground">
                     {errors.patient_id ?? errors.new_patient}
                 </p>
             )}

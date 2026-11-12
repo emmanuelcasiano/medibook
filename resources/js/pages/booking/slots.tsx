@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { CalendarX } from 'lucide-react';
 import { useRef, useState } from 'react';
 import DoctorController from '@/actions/App/Http/Controllers/Booking/DoctorController';
 import SlotController from '@/actions/App/Http/Controllers/Booking/SlotController';
@@ -8,6 +9,7 @@ import AlertError from '@/components/alert-error';
 import BookingSteps from '@/components/booking/booking-steps';
 import DayPicker from '@/components/booking/day-picker';
 import SlotGrid from '@/components/booking/slot-grid';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { formatClinicDate, formatClinicTime } from '@/lib/clinic-time';
@@ -198,10 +200,13 @@ export default function BookingSlots({
                         </h2>
 
                         {slots.length === 0 ? (
-                            <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                            <EmptyState
+                                icon={CalendarX}
+                                className="border-dashed bg-transparent p-6"
+                            >
                                 No open times on this day. Pick another day from
                                 the week above.
-                            </p>
+                            </EmptyState>
                         ) : (
                             <SlotGrid
                                 slots={slots}

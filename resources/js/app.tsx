@@ -35,7 +35,8 @@ void createInertiaApp({
         );
     },
     progress: {
-        color: '#0E6B66',
+        // The ring colour reaches 3:1 on the page in both themes. The brand teal would vanish on the dark page.
+        color: 'var(--ring)',
     },
 });
 

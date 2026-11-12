@@ -26,9 +26,9 @@ const buttonVariants = cva(
       // 44 px is the touch target. `sm` is for dense tables and toolbars.
       size: {
         default: "h-11 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-10 rounded-md px-3 has-[>svg]:px-2.5",
+        sm: "h-10 pointer-coarse:h-11 rounded-md px-3 has-[>svg]:px-2.5",
         lg: "h-12 rounded-lg px-6 text-base has-[>svg]:px-4",
-        icon: "size-10",
+        icon: "size-10 pointer-coarse:size-11",
       },
     },
     defaultVariants: {

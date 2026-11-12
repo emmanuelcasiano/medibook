@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import DoctorAppointmentController from '@/actions/App/Http/Controllers/Doctor/AppointmentController';
 import UpNextCard from '@/components/doctor/up-next-card';
+import EmptyState from '@/components/empty-state';
 import PageHeader from '@/components/page-header';
 import StatusBadge from '@/components/status-badge';
 import { formatClinicDate, formatClinicTime } from '@/lib/clinic-time';
@@ -146,13 +147,10 @@ export default function DoctorToday({ date, appointments }: Props) {
                         })}
                     </ul>
                 ) : (
-                    <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-8 text-center">
-                        <CalendarDays
-                            aria-hidden
-                            className="size-7 text-muted-foreground"
-                        />
-                        <p className="font-medium">No appointments today.</p>
-                    </div>
+                    <EmptyState icon={CalendarDays}>
+                        No appointments today. New bookings show up here as they
+                        come in.
+                    </EmptyState>
                 )}
             </div>
         </>
