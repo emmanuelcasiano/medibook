@@ -47,7 +47,7 @@ export default function AuthSimpleLayout({
                     </p>
                 </aside>
 
-                <div className="flex items-center justify-center bg-card p-6 md:p-12">
+                <main className="flex items-center justify-center bg-card p-6 md:p-12">
                     <div className="flex w-full max-w-sm flex-col gap-8">
                         <div className="flex flex-col gap-6">
                             {/* The brand side is hidden on a phone, so the logo moves here. */}
@@ -73,7 +73,7 @@ export default function AuthSimpleLayout({
                         </div>
                         {children}
                     </div>
-                </div>
+                </main>
             </div>
         </div>
     );

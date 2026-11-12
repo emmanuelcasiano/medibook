@@ -1,5 +1,5 @@
 import { Form, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import IntakeController from '@/actions/App/Http/Controllers/Patient/IntakeController';
 import InputError from '@/components/input-error';
 import IntakeSection from '@/components/intake/intake-section';
@@ -31,10 +31,33 @@ export default function IntakeForm({
     answers,
     durations,
 }: Props) {
+    // While the form is sent every field is disabled, which drops the focus on the page. When the server refuses the
+    // answers, the focus goes to the first field with a message, once the fields are enabled again.
+    const firstInvalid = useRef<string | null>(null);
+
     return (
         <Form
             {...IntakeController.update.form(appointmentUlid)}
             disableWhileProcessing
+            onError={(errors) => {
+                firstInvalid.current = Object.keys(errors)[0] ?? null;
+            }}
+            onFinish={() => {
+                const name = firstInvalid.current;
+
+                firstInvalid.current = null;
+
+                if (name !== null) {
+                    // A tick later: the fields are enabled again only after this callback.
+                    window.setTimeout(
+                        () =>
+                            document
+                                .querySelector<HTMLElement>(`[name="${name}"]`)
+                                ?.focus(),
+                        0,
+                    );
+                }
+            }}
             className="grid gap-6"
         >
             {({ processing, errors }) => (
@@ -90,6 +113,7 @@ export default function IntakeForm({
                             </NativeSelect>
                             <InputError
                                 id="duration-error"
+                                role="alert"
                                 message={errors.duration}
                             />
                         </div>
@@ -193,7 +217,7 @@ function TextField({
                 aria-describedby={error ? `${counterId} ${errorId}` : counterId}
             />
             <div className="flex items-start justify-between gap-3">
-                <InputError id={errorId} message={error} />
+                <InputError id={errorId} role="alert" message={error} />
                 <span
                     id={counterId}
                     className="ml-auto text-xs text-muted-foreground tabular-nums"
@@ -254,7 +278,7 @@ function YesNo({ name, label, defaultValue, error }: YesNoProps) {
                     ))}
                 </div>
             </div>
-            <InputError id={errorId} message={error} />
+            <InputError id={errorId} role="alert" message={error} />
         </div>
     );
 }

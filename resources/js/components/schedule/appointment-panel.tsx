@@ -273,6 +273,9 @@ function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
                         appointment.ulid,
                     )}
                     options={{ preserveScroll: true }}
+                    // The submit button disables itself while sending, which drops the focus on the dialog. A refused
+                    // reason takes it back to the field that has the message.
+                    onError={() => document.getElementById(reasonId)?.focus()}
                     className="space-y-4"
                 >
                     {({ errors, processing }) => (
@@ -309,6 +312,7 @@ function CancelDialog({ appointment }: { appointment: ScheduleAppointment }) {
                                 />
                                 <InputError
                                     id={`${reasonId}-error`}
+                                    role="alert"
                                     message={errors.reason}
                                 />
                             </div>

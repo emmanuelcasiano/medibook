@@ -267,7 +267,7 @@ function PatientResult({
 
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:w-52 md:shrink-0 md:flex-nowrap md:justify-end">
                 {appointment.intakeMissing && (
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                    <span className="text-xs font-medium text-amber-ink">
                         No intake yet
                     </span>
                 )}

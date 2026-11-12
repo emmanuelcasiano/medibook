@@ -1,7 +1,8 @@
 import { Link } from '@inertiajs/react';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import {
     clinicDayOfMonth,
@@ -53,6 +54,8 @@ export default function DayPicker({
 }: Props) {
     const [page, setPage] = useState(() => pageOf(days, selectedDate));
     const [seenDate, setSeenDate] = useState(selectedDate);
+    const earlierRef = useRef<HTMLButtonElement>(null);
+    const laterRef = useRef<HTMLButtonElement>(null);
 
     // When the server shows a day on another week (for example after an error), follow it.
     if (seenDate !== selectedDate) {
@@ -67,30 +70,48 @@ export default function DayPicker({
         return null;
     }
 
+    // A button that disables itself while it has focus drops focus on the page body, so a keyboard user has to tab in
+    // from the top again. At the end of the window, focus moves to the button that still works.
+    const goTo = (next: number) => {
+        // Flushed first, so the button to focus is already enabled when focus moves to it.
+        flushSync(() => setPage(next));
+
+        if (next === 0) {
+            laterRef.current?.focus();
+        } else if (next >= pageCount - 1) {
+            earlierRef.current?.focus();
+        }
+    };
+
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-                <h3 className="text-base font-semibold">{weekTitle(week)}</h3>
+                {/* Polite, so a screen reader says the new week when the buttons below change it. */}
+                <h3 aria-live="polite" className="text-base font-semibold">
+                    {weekTitle(week)}
+                </h3>
                 <div className="flex gap-1.5">
                     <Button
+                        ref={earlierRef}
                         type="button"
                         variant="outline"
                         size="icon"
                         className="size-11"
                         aria-label="Earlier days"
                         disabled={page === 0}
-                        onClick={() => setPage(page - 1)}
+                        onClick={() => goTo(page - 1)}
                     >
                         <ChevronLeft aria-hidden />
                     </Button>
                     <Button
+                        ref={laterRef}
                         type="button"
                         variant="outline"
                         size="icon"
                         className="size-11"
                         aria-label="Later days"
                         disabled={page >= pageCount - 1}
-                        onClick={() => setPage(page + 1)}
+                        onClick={() => goTo(page + 1)}
                     >
                         <ChevronRight aria-hidden />
                     </Button>
